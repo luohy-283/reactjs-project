@@ -1,75 +1,48 @@
-# React + TypeScript + Vite
+# Hệ thống Đặt phòng họp — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite + Ant Design + React Router + Axios.
 
-Currently, two official plugins are available:
+Xem `AGENTS.md` để biết conventions cho coding agents.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Chạy dự án
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Yêu cầu Node.js >= 20 (Ant Design v6).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Tài khoản mock
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Email | Mật khẩu | Role |
+| --- | --- | --- |
+| `admin@company.com` | `123456` | ADMIN |
+| `user@company.com` | `123456` | USER |
+
+## Cấu trúc thư mục
 
 ```
+src/
+  api/          # Service layer (auth, rooms, bookings) + hooks
+  components/   # Layout, guards, listeners
+  context/      # AuthContext
+  lib/          # api-client, mockApi, auth-events
+  pages/        # Login, Dashboard, AdminRooms
+```
+
+## Luồng chính
+
+- **Login** (`/login`): `AuthContext.login()` → `api/auth/auth.service.ts`
+- **Dashboard** (`/dashboard`): `useRoomSchedule` hook + modal đặt phòng
+- **Admin** (`/admin/rooms`): `useRooms` hook + CRUD qua `api/rooms/`
+
+## Kết nối Backend thật
+
+Thay implementation trong `src/api/*/*.service.ts` bằng `apiClient` từ `src/lib/api-client.ts`. Giữ nguyên interface — pages/hooks không đổi.
+
+## Scripts
+
+- `npm run dev` — chạy dev server
+- `npm run build` — build production
+- `npm run lint` — ESLint
