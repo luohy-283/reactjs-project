@@ -1,20 +1,12 @@
-import { Layout, Menu, Button } from "antd";
-import { Outlet, useLocation, useNavigate } from "react-router";
+import { Layout, Button } from "antd";
+import { Outlet, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
-const { Header, Content, Sider } = Layout;
+const { Header, Content } = Layout;
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const menuItems = [
-    { key: "/dashboard", label: "Dashboard" },
-    ...(user?.role === "ADMIN"
-      ? [{ key: "/admin/rooms", label: "Quản lý phòng" }]
-      : []),
-  ];
 
   const handleLogout = () => {
     logout();
@@ -41,23 +33,9 @@ export default function AppLayout() {
           <Button onClick={handleLogout}>Đăng xuất</Button>
         </div>
       </Header>
-      <Layout>
-        <Sider breakpoint="lg" collapsedWidth={0} width={220}>
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[location.pathname]}
-            items={menuItems}
-            onClick={({ key }) => navigate(key)}
-            style={{ height: "100%" }}
-          />
-        </Sider>
-        <Layout>
-          <Content style={{ margin: 24, minHeight: 280 }}>
-            <Outlet />
-          </Content>
-        </Layout>
-      </Layout>
+      <Content style={{ margin: 24, minHeight: 280 }}>
+        <Outlet />
+      </Content>
     </Layout>
   );
 }
