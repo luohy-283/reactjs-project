@@ -24,7 +24,7 @@ Yêu cầu Node.js >= 20 (Ant Design v6).
 
 ```
 src/
-  api/          # Service layer (auth, rooms, bookings) + hooks
+  api/          # Service layer (auth, rooms) + hooks
   components/   # Layout, guards, listeners
   context/      # AuthContext
   lib/          # api-client, mockApi, auth-events
@@ -34,7 +34,7 @@ src/
 ## Luồng chính
 
 - **Login** (`/login`): `AuthContext.login()` → `api/auth/auth.service.ts`
-- **Dashboard** (`/dashboard`): `useRoomSchedule` hook + modal đặt phòng
+- **Dashboard** (`/dashboard`): xác nhận đăng nhập thành công
 - **Admin** (`/admin/rooms`): `useRooms` hook + CRUD qua `api/rooms/`
 
 ## Kết nối Backend thật
