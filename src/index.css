@@ -5,3 +5,8 @@ body {
 #root {
   min-height: 100vh;
 }
+
+.room-schedule-table .ant-table table {
+  table-layout: fixed;
+  width: 100%;
+}

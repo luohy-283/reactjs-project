@@ -167,12 +167,23 @@ function isOverlapping(
   });
 }
 
+/** Local calendar date (YYYY-MM-DD) — do not use ISO slice (UTC). */
+function toLocalDateString(iso: string): string {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function mockGetBookings(date: string): Promise<Booking[]> {
   return new Promise((resolve) => {
     setTimeout(() => {
       const result = mockBookings.filter((booking) => {
-        const bookingDate = booking.startTime.slice(0, 10);
-        return bookingDate === date && booking.status !== "CANCELLED";
+        return (
+          toLocalDateString(booking.startTime) === date &&
+          booking.status !== "CANCELLED"
+        );
       });
       resolve(result);
     }, 500);

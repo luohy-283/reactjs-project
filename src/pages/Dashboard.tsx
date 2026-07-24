@@ -25,12 +25,14 @@ interface RoomScheduleRow {
   key: number;
   roomName: string;
   capacity: number;
-  bookings: string;
+  bookingLines: string[];
 }
 
 function formatTimeRange(startTime: string, endTime: string): string {
   return `${dayjs(startTime).format("HH:mm")} - ${dayjs(endTime).format("HH:mm")}`;
 }
+
+const TABLE_SCROLL_X = 640;
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -47,27 +49,44 @@ export default function Dashboard() {
     title: string;
   }>();
 
-  const scheduleRows: RoomScheduleRow[] = rooms.map((room) => {
-    const roomBookings = bookings
+  const scheduleRows: RoomScheduleRow[] = rooms.map((room) => ({
+    key: room.id,
+    roomName: room.name,
+    capacity: room.capacity,
+    bookingLines: bookings
       .filter((booking) => booking.roomId === room.id)
       .map(
         (booking) =>
           `${formatTimeRange(booking.startTime, booking.endTime)} — ${booking.title}`,
-      );
-
-    return {
-      key: room.id,
-      roomName: room.name,
-      capacity: room.capacity,
-      bookings:
-        roomBookings.length > 0 ? roomBookings.join("; ") : "Trống cả ngày",
-    };
-  });
+      ),
+  }));
 
   const columns: ColumnsType<RoomScheduleRow> = [
-    { title: "Phòng", dataIndex: "roomName", key: "roomName" },
-    { title: "Sức chứa", dataIndex: "capacity", key: "capacity", width: 100 },
-    { title: "Lịch đã đặt", dataIndex: "bookings", key: "bookings" },
+    { title: "Phòng", dataIndex: "roomName", key: "roomName", width: 180 },
+    {
+      title: "Sức chứa",
+      dataIndex: "capacity",
+      key: "capacity",
+      width: 100,
+      align: "center",
+    },
+    {
+      title: "Lịch đã đặt",
+      key: "bookings",
+      onCell: () => ({
+        style: { wordBreak: "break-word", whiteSpace: "normal" },
+      }),
+      render: (_, row) =>
+        row.bookingLines.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {row.bookingLines.map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </div>
+        ) : (
+          <span style={{ color: "rgba(0, 0, 0, 0.45)" }}>Trống cả ngày</span>
+        ),
+    },
   ];
 
   const combineDateTime = (time: Dayjs): Dayjs =>
@@ -138,12 +157,13 @@ export default function Dashboard() {
       </Row>
 
       <Table
+        className="room-schedule-table"
         rowKey="key"
         columns={columns}
         dataSource={scheduleRows}
         loading={isLoading}
         pagination={false}
-        scroll={{ x: true }}
+        scroll={{ x: TABLE_SCROLL_X }}
       />
 
       <Modal
