@@ -55,10 +55,11 @@ export default function Dashboard() {
     capacity: room.capacity,
     bookingLines: bookings
       .filter((booking) => booking.roomId === room.id)
-      .map(
-        (booking) =>
-          `${formatTimeRange(booking.startTime, booking.endTime)} — ${booking.title}`,
-      ),
+      .map((booking) => {
+        const statusHint =
+          booking.status === "PENDING" ? " (chờ duyệt)" : "";
+        return `${formatTimeRange(booking.startTime, booking.endTime)} — ${booking.title}${statusHint}`;
+      }),
   }));
 
   const columns: ColumnsType<RoomScheduleRow> = [
@@ -118,7 +119,11 @@ export default function Dashboard() {
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
       });
-      message.success("Đặt phòng thành công");
+      message.success(
+        user.role === "ADMIN"
+          ? "Đặt phòng thành công"
+          : "Đã gửi yêu cầu đặt phòng — chờ admin duyệt",
+      );
       setModalOpen(false);
       form.resetFields();
       await refetch();

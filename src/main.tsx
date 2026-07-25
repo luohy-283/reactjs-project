@@ -12,6 +12,7 @@ import AuthLogoutListener from "./components/AuthLogoutListener";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import AdminRooms from "./pages/AdminRooms";
+import AdminBookings from "./pages/AdminBookings";
 import "./lib/api-client";
 import "./index.css";
 
@@ -38,6 +39,14 @@ createRoot(document.getElementById("root")!).render(
                   element={
                     <RequireRole allowedRoles={["ADMIN"]}>
                       <AdminRooms />
+                    </RequireRole>
+                  }
+                />
+                <Route
+                  path="/admin/bookings"
+                  element={
+                    <RequireRole allowedRoles={["ADMIN"]}>
+                      <AdminBookings />
                     </RequireRole>
                   }
                 />

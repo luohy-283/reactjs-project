@@ -12,7 +12,10 @@ export default function AppLayout() {
   const menuItems = [
     { key: "/dashboard", label: "Dashboard" },
     ...(user?.role === "ADMIN"
-      ? [{ key: "/admin/rooms", label: "Quản lý phòng" }]
+      ? [
+          { key: "/admin/rooms", label: "Quản lý phòng" },
+          { key: "/admin/bookings", label: "Duyệt đặt phòng" },
+        ]
       : []),
   ];
 

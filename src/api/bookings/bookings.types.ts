@@ -8,6 +8,9 @@ export interface Booking {
   startTime: string;
   endTime: string;
   status: BookingStatus;
+  /** Display helpers from nested JHipster DTO */
+  roomName?: string;
+  userLogin?: string;
 }
 
 export interface CreateBookingPayload {
