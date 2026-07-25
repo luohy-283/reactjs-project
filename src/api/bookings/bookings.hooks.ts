@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getBookings } from "./bookings.service";
 import { getRooms } from "../rooms/rooms.service";
+import { isAbortError } from "../../lib/api-error";
 import type { Booking } from "./bookings.types";
 import type { Room } from "../rooms/rooms.types";
 
@@ -29,12 +30,12 @@ export function useBookings() {
       setIsLoading(true);
       setError(null);
       try {
-        const bookings = await getBookings();
+        const bookings = await getBookings(undefined, controller.signal);
         if (!controller.signal.aborted) {
           setData(bookings);
         }
       } catch (err) {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && !isAbortError(err)) {
           setError(err);
         }
       } finally {
@@ -81,15 +82,15 @@ export function useRoomSchedule(date: string) {
       setError(null);
       try {
         const [roomsData, bookingsData] = await Promise.all([
-          getRooms(),
-          getBookings(date),
+          getRooms(controller.signal),
+          getBookings(date, controller.signal),
         ]);
         if (!controller.signal.aborted) {
           setRooms(roomsData.filter((room) => room.isActive));
           setBookings(bookingsData);
         }
       } catch (err) {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && !isAbortError(err)) {
           setError(err);
         }
       } finally {

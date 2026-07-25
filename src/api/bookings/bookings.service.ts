@@ -1,5 +1,5 @@
 import { apiClient } from "../../lib/api-client";
-import { getApiErrorMessage } from "../../lib/api-error";
+import { isAbortError, toApiError } from "../../lib/api-error";
 import type { Booking, CreateBookingPayload } from "./bookings.types";
 
 interface BackendBooking {
@@ -26,14 +26,19 @@ function toBooking(booking: BackendBooking): Booking {
   };
 }
 
-export async function getBookings(date?: string): Promise<Booking[]> {
+export async function getBookings(
+  date?: string,
+  signal?: AbortSignal,
+): Promise<Booking[]> {
   try {
     const { data } = await apiClient.get<BackendBooking[]>("/bookings", {
       params: date ? { date } : undefined,
+      signal,
     });
     return data.map(toBooking);
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, "Không tải được lịch đặt"));
+    if (isAbortError(error)) throw error;
+    throw toApiError(error, "Không tải được lịch đặt");
   }
 }
 
@@ -49,9 +54,7 @@ export async function createBooking(
     });
     return toBooking(data);
   } catch (error) {
-    throw new Error(
-      getApiErrorMessage(error, "Không đặt được phòng"),
-    );
+    throw toApiError(error, "Không đặt được phòng");
   }
 }
 
@@ -62,7 +65,7 @@ export async function approveBooking(id: number): Promise<Booking> {
     );
     return toBooking(data);
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, "Không duyệt được yêu cầu"));
+    throw toApiError(error, "Không duyệt được yêu cầu");
   }
 }
 
@@ -73,6 +76,17 @@ export async function rejectBooking(id: number): Promise<Booking> {
     );
     return toBooking(data);
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, "Không từ chối được yêu cầu"));
+    throw toApiError(error, "Không từ chối được yêu cầu");
+  }
+}
+
+export async function cancelBooking(id: number): Promise<Booking> {
+  try {
+    const { data } = await apiClient.post<BackendBooking>(
+      `/bookings/${id}/cancel`,
+    );
+    return toBooking(data);
+  } catch (error) {
+    throw toApiError(error, "Không hủy được lịch đặt");
   }
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getRooms } from "./rooms.service";
+import { isAbortError } from "../../lib/api-error";
 import type { Room } from "./rooms.types";
 
 export function useRooms() {
@@ -26,12 +27,12 @@ export function useRooms() {
       setIsLoading(true);
       setError(null);
       try {
-        const rooms = await getRooms();
+        const rooms = await getRooms(controller.signal);
         if (!controller.signal.aborted) {
           setData(rooms);
         }
       } catch (err) {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && !isAbortError(err)) {
           setError(err);
         }
       } finally {

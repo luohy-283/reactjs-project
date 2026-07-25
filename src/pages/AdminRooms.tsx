@@ -56,15 +56,23 @@ export default function AdminRooms() {
   };
 
   const handleDeactivate = async (room: Room) => {
-    await updateRoom({ id: room.id, isActive: false });
-    message.success(`Đã vô hiệu hóa ${room.name}`);
-    await refetch();
+    try {
+      await updateRoom({ id: room.id, isActive: false });
+      message.success(`Đã vô hiệu hóa ${room.name}`);
+      await refetch();
+    } catch (err) {
+      message.error((err as Error).message);
+    }
   };
 
   const handleActivate = async (room: Room) => {
-    await updateRoom({ id: room.id, isActive: true });
-    message.success(`Đã kích hoạt lại ${room.name}`);
-    await refetch();
+    try {
+      await updateRoom({ id: room.id, isActive: true });
+      message.success(`Đã kích hoạt lại ${room.name}`);
+      await refetch();
+    } catch (err) {
+      message.error((err as Error).message);
+    }
   };
 
   const columns: ColumnsType<Room> = [
@@ -88,7 +96,7 @@ export default function AdminRooms() {
           {room.isActive ? (
             <Popconfirm
               title="Vô hiệu hóa phòng này?"
-              description="Phòng sẽ không thể đặt mới sau khi vô hiệu hóa."
+              description="Chỉ được vô hiệu hóa khi phòng không còn lịch chờ duyệt / đã duyệt chưa kết thúc."
               onConfirm={() => handleDeactivate(room)}
               okText="Xác nhận"
               cancelText="Hủy"

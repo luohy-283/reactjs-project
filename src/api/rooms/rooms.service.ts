@@ -1,5 +1,5 @@
 import { apiClient } from "../../lib/api-client";
-import { getApiErrorMessage } from "../../lib/api-error";
+import { isAbortError, toApiError } from "../../lib/api-error";
 import type {
   CreateRoomPayload,
   Room,
@@ -22,12 +22,13 @@ function toRoom(room: BackendRoom): Room {
   };
 }
 
-export async function getRooms(): Promise<Room[]> {
+export async function getRooms(signal?: AbortSignal): Promise<Room[]> {
   try {
-    const { data } = await apiClient.get<BackendRoom[]>("/rooms");
+    const { data } = await apiClient.get<BackendRoom[]>("/rooms", { signal });
     return data.map(toRoom);
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, "Không tải được danh sách phòng"));
+    if (isAbortError(error)) throw error;
+    throw toApiError(error, "Không tải được danh sách phòng");
   }
 }
 
@@ -40,7 +41,7 @@ export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
     });
     return toRoom(data);
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, "Không tạo được phòng"));
+    throw toApiError(error, "Không tạo được phòng");
   }
 }
 
@@ -54,6 +55,6 @@ export async function updateRoom(payload: UpdateRoomPayload): Promise<Room> {
     });
     return toRoom(data);
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, "Không cập nhật được phòng"));
+    throw toApiError(error, "Không cập nhật được phòng");
   }
 }

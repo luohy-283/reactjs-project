@@ -14,6 +14,7 @@ import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import {
   approveBooking,
+  cancelBooking,
   rejectBooking,
 } from "../api/bookings/bookings.service";
 import { useBookings } from "../api/bookings/bookings.hooks";
@@ -22,7 +23,7 @@ import type { Booking, BookingStatus } from "../api/bookings/bookings.types";
 const STATUS_LABEL: Record<BookingStatus, string> = {
   PENDING: "Chờ duyệt",
   APPROVED: "Đã duyệt",
-  CANCELLED: "Từ chối",
+  CANCELLED: "Đã hủy",
 };
 
 const STATUS_COLOR: Record<BookingStatus, string> = {
@@ -43,6 +44,20 @@ export default function AdminBookings() {
     () =>
       bookings
         .filter((b) => b.status === "PENDING")
+        .sort(
+          (a, b) =>
+            dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf(),
+        ),
+    [bookings],
+  );
+
+  const upcomingApproved = useMemo(
+    () =>
+      bookings
+        .filter(
+          (b) =>
+            b.status === "APPROVED" && dayjs(b.startTime).isAfter(dayjs()),
+        )
         .sort(
           (a, b) =>
             dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf(),
@@ -76,6 +91,19 @@ export default function AdminBookings() {
     try {
       await rejectBooking(booking.id);
       message.success("Đã từ chối yêu cầu đặt phòng");
+      await refetch();
+    } catch (err) {
+      message.error((err as Error).message);
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const handleCancel = async (booking: Booking) => {
+    setActingId(booking.id);
+    try {
+      await cancelBooking(booking.id);
+      message.success("Đã hủy lịch đặt phòng");
       await refetch();
     } catch (err) {
       message.error((err as Error).message);
@@ -146,7 +174,7 @@ export default function AdminBookings() {
           </Popconfirm>
           <Popconfirm
             title="Từ chối yêu cầu này?"
-            description="Lịch sẽ bị hủy (CANCELLED)."
+            description="Lịch sẽ bị hủy."
             onConfirm={() => handleReject(booking)}
             okText="Từ chối"
             cancelText="Hủy"
@@ -157,6 +185,30 @@ export default function AdminBookings() {
             </Button>
           </Popconfirm>
         </Space>
+      ),
+    },
+  ];
+
+  const upcomingColumns: ColumnsType<Booking> = [
+    ...baseColumns.filter((col) => col.key !== "status"),
+    {
+      title: "Thao tác",
+      key: "actions",
+      width: 140,
+      fixed: "right",
+      render: (_, booking) => (
+        <Popconfirm
+          title="Hủy lịch đã duyệt này?"
+          description="Lịch sẽ chuyển sang Đã hủy."
+          onConfirm={() => handleCancel(booking)}
+          okText="Hủy lịch"
+          cancelText="Đóng"
+          okButtonProps={{ danger: true }}
+        >
+          <Button danger size="small" loading={actingId === booking.id}>
+            Hủy lịch
+          </Button>
+        </Popconfirm>
       ),
     },
   ];
@@ -179,6 +231,30 @@ export default function AdminBookings() {
                 dataSource={pending}
                 loading={isLoading}
                 locale={{ emptyText: "Không có yêu cầu chờ duyệt" }}
+                scroll={{ x: 900 }}
+                pagination={{ pageSize: 10 }}
+              />
+            ),
+          },
+          {
+            key: "upcoming",
+            label: (
+              <Badge
+                count={upcomingApproved.length}
+                offset={[10, 0]}
+                size="small"
+                color="blue"
+              >
+                Đã duyệt (chưa diễn ra)
+              </Badge>
+            ),
+            children: (
+              <Table
+                rowKey="id"
+                columns={upcomingColumns}
+                dataSource={upcomingApproved}
+                loading={isLoading}
+                locale={{ emptyText: "Không có lịch đã duyệt sắp tới" }}
                 scroll={{ x: 900 }}
                 pagination={{ pageSize: 10 }}
               />
