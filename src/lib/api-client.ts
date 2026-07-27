@@ -2,8 +2,11 @@ import axios from "axios";
 import { AUTH_TOKEN_KEY } from "./auth-storage";
 import { emitAuthLogout } from "./auth-events";
 
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api";
+
 export const apiClient = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: apiBaseUrl,
 });
 
 apiClient.interceptors.request.use((config) => {
