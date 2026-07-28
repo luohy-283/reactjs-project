@@ -38,7 +38,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const dateStr = selectedDate.format("YYYY-MM-DD");
-  const { rooms, bookings, isLoading, refetch } = useRoomSchedule(dateStr);
+  const { rooms, bookings, error, isLoading, refetch } = useRoomSchedule(dateStr);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState("");
@@ -142,6 +142,15 @@ export default function Dashboard() {
 
   return (
     <Card title="Lịch phòng họp">
+      {error ? (
+        <Alert
+          type="error"
+          showIcon
+          message={(error as Error).message || "Không tải được lịch phòng"}
+          style={{ marginBottom: 16 }}
+        />
+      ) : null}
+
       <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
           <Space direction="vertical" style={{ width: "100%" }}>
@@ -169,6 +178,7 @@ export default function Dashboard() {
         loading={isLoading}
         pagination={false}
         scroll={{ x: TABLE_SCROLL_X }}
+        locale={{ emptyText: "Trống" }}
       />
 
       <Modal

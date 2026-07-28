@@ -5,8 +5,14 @@ import { emitAuthLogout } from "./auth-events";
 const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api";
 
+// Only needed when the browser talks to ngrok directly (no Vite proxy).
+const isDirectNgrok = /ngrok/i.test(apiBaseUrl);
+
 export const apiClient = axios.create({
   baseURL: apiBaseUrl,
+  headers: isDirectNgrok
+    ? { "ngrok-skip-browser-warning": "true" }
+    : undefined,
 });
 
 apiClient.interceptors.request.use((config) => {
