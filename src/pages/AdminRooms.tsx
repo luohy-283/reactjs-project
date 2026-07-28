@@ -15,11 +15,21 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { createRoom, updateRoom } from "../api/rooms/rooms.service";
-import { useRooms } from "../api/rooms/rooms.hooks";
+import { usePaginatedRooms } from "../api/rooms/rooms.hooks";
 import type { Room } from "../api/rooms/rooms.types";
 
+const PAGE_SIZE = 10;
+
 export default function AdminRooms() {
-  const { data: rooms, isLoading, refetch } = useRooms();
+  const {
+    data: rooms,
+    page,
+    pageSize,
+    total,
+    isLoading,
+    refetch,
+    onPageChange,
+  } = usePaginatedRooms(PAGE_SIZE);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
@@ -139,6 +149,13 @@ export default function AdminRooms() {
         dataSource={rooms}
         loading={isLoading}
         scroll={{ x: true }}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: false,
+          onChange: onPageChange,
+        }}
       />
 
       <Modal

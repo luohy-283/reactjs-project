@@ -1,6 +1,12 @@
 import { isAxiosError, type AxiosError } from "axios";
 import { apiClient } from "../../lib/api-client";
 import { isAbortError, toApiError } from "../../lib/api-error";
+import {
+  type PageParams,
+  type PagedResult,
+  type SpringPageResponse,
+  toPagedResult,
+} from "../../lib/pagination";
 import type { Booking, CreateBookingPayload } from "./bookings.types";
 
 interface BackendBooking {
@@ -9,22 +15,19 @@ interface BackendBooking {
   startTime: string;
   endTime: string;
   status: Booking["status"];
-  /** Flat remote DTO */
   roomId?: number;
   userId?: number;
   roomName?: string;
   userLogin?: string;
   userEmail?: string;
   userFullName?: string;
-  /** Nested JHipster DTO */
   room?: { id: number; name?: string };
   user?: { id: number; login?: string; email?: string };
 }
 
-function asArray<T>(data: T[] | T | null | undefined): T[] {
-  if (Array.isArray(data)) return data;
-  if (data == null) return [];
-  return [data];
+export interface GetBookingsOptions extends PageParams {
+  date?: string;
+  signal?: AbortSignal;
 }
 
 function toBooking(booking: BackendBooking): Booking {
@@ -46,34 +49,49 @@ function toBooking(booking: BackendBooking): Booking {
   };
 }
 
-/** Local JHipster may not expose `/admin/*` (404/500). */
 function isMissingAdminRoute(error: unknown): error is AxiosError {
   if (!isAxiosError(error)) return false;
   const status = error.response?.status;
   return status === 404 || status === 500;
 }
 
-/** Shared list/create — USER + ADMIN. */
-export async function getBookings(
-  date?: string,
-  signal?: AbortSignal,
-): Promise<Booking[]> {
+function buildQueryParams(options: GetBookingsOptions) {
+  const params: Record<string, string | number> = {};
+  if (options.date) params.date = options.date;
+  if (options.page != null) params.page = options.page;
+  if (options.size != null) params.size = options.size;
+  if (options.sort) params.sort = options.sort;
+  return Object.keys(params).length > 0 ? params : undefined;
+}
+
+/** Paginated list — Admin history table. */
+export async function getBookingsPage(
+  options: GetBookingsOptions = {},
+): Promise<PagedResult<Booking>> {
+  const { signal, ...query } = options;
   try {
-    const { data } = await apiClient.get<BackendBooking[] | BackendBooking>(
-      "/bookings",
-      {
-        params: date ? { date } : undefined,
-        signal,
-      },
-    );
-    return asArray(data).map(toBooking);
+    const { data } = await apiClient.get<
+      BackendBooking[] | BackendBooking | SpringPageResponse<BackendBooking>
+    >("/bookings", {
+      params: buildQueryParams(query),
+      signal,
+    });
+    return toPagedResult(data, toBooking);
   } catch (error) {
     if (isAbortError(error)) throw error;
     throw toApiError(error, "Không tải được lịch đặt");
   }
 }
 
-/** Shared create — USER + ADMIN. */
+/** Full list helper — pending/upcoming tabs & Dashboard (large page size). */
+export async function getBookings(
+  date?: string,
+  signal?: AbortSignal,
+): Promise<Booking[]> {
+  const result = await getBookingsPage({ date, page: 0, size: 500, signal });
+  return result.items;
+}
+
 export async function createBooking(
   payload: CreateBookingPayload,
 ): Promise<Booking> {
@@ -92,7 +110,6 @@ export async function createBooking(
   }
 }
 
-/** ADMIN only — duyệt / từ chối / hủy lịch. */
 async function postBookingAction(
   id: number,
   action: "approve" | "reject" | "cancel",

@@ -1,6 +1,12 @@
 import { isAxiosError, type AxiosError } from "axios";
 import { apiClient } from "../../lib/api-client";
 import { isAbortError, toApiError } from "../../lib/api-error";
+import {
+  type PageParams,
+  type PagedResult,
+  type SpringPageResponse,
+  toPagedResult,
+} from "../../lib/pagination";
 import type {
   CreateRoomPayload,
   Room,
@@ -15,10 +21,8 @@ interface BackendRoom {
   active?: boolean;
 }
 
-function asArray<T>(data: T[] | T | null | undefined): T[] {
-  if (Array.isArray(data)) return data;
-  if (data == null) return [];
-  return [data];
+export interface GetRoomsOptions extends PageParams {
+  signal?: AbortSignal;
 }
 
 function toRoom(room: BackendRoom): Room {
@@ -30,28 +34,46 @@ function toRoom(room: BackendRoom): Room {
   };
 }
 
-/** Local JHipster may not expose `/admin/*` (404/500). */
 function isMissingAdminRoute(error: unknown): error is AxiosError {
   if (!isAxiosError(error)) return false;
   const status = error.response?.status;
   return status === 404 || status === 500;
 }
 
-/** Shared list — no role check; both USER and ADMIN use this. */
-export async function getRooms(signal?: AbortSignal): Promise<Room[]> {
+function buildPageParams(options?: PageParams) {
+  if (!options?.page && !options?.size && !options?.sort) return undefined;
+  return {
+    page: options.page,
+    size: options.size,
+    sort: options.sort,
+  };
+}
+
+/** Paginated list — Admin rooms table. */
+export async function getRoomsPage(
+  options: GetRoomsOptions = {},
+): Promise<PagedResult<Room>> {
+  const { signal, ...pageParams } = options;
   try {
-    const { data } = await apiClient.get<BackendRoom[] | BackendRoom>(
-      "/rooms",
-      { signal },
-    );
-    return asArray(data).map(toRoom);
+    const { data } = await apiClient.get<
+      BackendRoom[] | BackendRoom | SpringPageResponse<BackendRoom>
+    >("/rooms", {
+      params: buildPageParams(pageParams),
+      signal,
+    });
+    return toPagedResult(data, toRoom);
   } catch (error) {
     if (isAbortError(error)) throw error;
     throw toApiError(error, "Không tải được danh sách phòng");
   }
 }
 
-/** ADMIN only — quản lý phòng. */
+/** Full list helper — Dashboard dropdown / schedule (large page size). */
+export async function getRooms(signal?: AbortSignal): Promise<Room[]> {
+  const result = await getRoomsPage({ page: 0, size: 500, signal });
+  return result.items;
+}
+
 export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
   const body = {
     name: payload.name,
@@ -72,7 +94,6 @@ export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
   }
 }
 
-/** ADMIN only — quản lý phòng. */
 export async function updateRoom(payload: UpdateRoomPayload): Promise<Room> {
   const body = {
     id: payload.id,

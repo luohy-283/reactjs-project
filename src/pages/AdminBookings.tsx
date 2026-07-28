@@ -17,8 +17,13 @@ import {
   cancelBooking,
   rejectBooking,
 } from "../api/bookings/bookings.service";
-import { useBookings } from "../api/bookings/bookings.hooks";
+import {
+  useBookings,
+  usePaginatedBookings,
+} from "../api/bookings/bookings.hooks";
 import type { Booking, BookingStatus } from "../api/bookings/bookings.types";
+
+const PAGE_SIZE = 10;
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
   PENDING: "Chờ duyệt",
@@ -37,8 +42,25 @@ function formatRange(startTime: string, endTime: string): string {
 }
 
 export default function AdminBookings() {
-  const { data: bookings, isLoading, refetch } = useBookings();
+  const {
+    data: bookings,
+    isLoading: isQueueLoading,
+    refetch: refetchQueue,
+  } = useBookings();
+  const {
+    data: history,
+    page: historyPage,
+    pageSize: historyPageSize,
+    total: historyTotal,
+    isLoading: isHistoryLoading,
+    refetch: refetchHistory,
+    onPageChange: onHistoryPageChange,
+  } = usePaginatedBookings(PAGE_SIZE);
   const [actingId, setActingId] = useState<number | null>(null);
+
+  const refetch = async () => {
+    await Promise.all([refetchQueue(), refetchHistory()]);
+  };
 
   const pending = useMemo(
     () =>
@@ -62,14 +84,6 @@ export default function AdminBookings() {
           (a, b) =>
             dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf(),
         ),
-    [bookings],
-  );
-
-  const history = useMemo(
-    () =>
-      [...bookings].sort(
-        (a, b) => dayjs(b.startTime).valueOf() - dayjs(a.startTime).valueOf(),
-      ),
     [bookings],
   );
 
@@ -229,10 +243,10 @@ export default function AdminBookings() {
                 rowKey="id"
                 columns={pendingColumns}
                 dataSource={pending}
-                loading={isLoading}
+                loading={isQueueLoading}
                 locale={{ emptyText: "Không có yêu cầu chờ duyệt" }}
                 scroll={{ x: 900 }}
-                pagination={{ pageSize: 10 }}
+                pagination={{ pageSize: PAGE_SIZE }}
               />
             ),
           },
@@ -253,10 +267,10 @@ export default function AdminBookings() {
                 rowKey="id"
                 columns={upcomingColumns}
                 dataSource={upcomingApproved}
-                loading={isLoading}
+                loading={isQueueLoading}
                 locale={{ emptyText: "Không có lịch đã duyệt sắp tới" }}
                 scroll={{ x: 900 }}
-                pagination={{ pageSize: 10 }}
+                pagination={{ pageSize: PAGE_SIZE }}
               />
             ),
           },
@@ -268,10 +282,16 @@ export default function AdminBookings() {
                 rowKey="id"
                 columns={baseColumns}
                 dataSource={history}
-                loading={isLoading}
+                loading={isHistoryLoading}
                 locale={{ emptyText: "Chưa có lịch đặt nào" }}
                 scroll={{ x: 900 }}
-                pagination={{ pageSize: 10 }}
+                pagination={{
+                  current: historyPage,
+                  pageSize: historyPageSize,
+                  total: historyTotal,
+                  showSizeChanger: false,
+                  onChange: onHistoryPageChange,
+                }}
               />
             ),
           },
