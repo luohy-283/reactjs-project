@@ -11,6 +11,8 @@ export interface Booking {
   /** Display helpers from nested JHipster DTO */
   roomName?: string;
   userLogin?: string;
+  pricePerHour?: number;
+  amount?: number;
 }
 
 export interface CreateBookingPayload {

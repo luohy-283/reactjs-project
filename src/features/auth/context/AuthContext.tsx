@@ -16,6 +16,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  setUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -46,6 +47,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   }, []);
 
+  const updateStoredUser = useCallback((next: User) => {
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(next));
+    setUser(next);
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -53,8 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(token),
       login,
       logout,
+      setUser: updateStoredUser,
     }),
-    [user, token, login, logout],
+    [user, token, login, logout, updateStoredUser],
   );
 
   return (

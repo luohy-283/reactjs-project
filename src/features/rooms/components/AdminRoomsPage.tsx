@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button, Form, Input, InputNumber } from "antd";
+import { Button, Form, Input, InputNumber, Select } from "antd";
 import { ConfirmDialog } from "@/components/ui/dialog/ConfirmDialog";
 import { CreateDialog } from "@/components/ui/dialog/CreateDialog";
 import { DataTable } from "@/components/ui/table/DataTable";
@@ -22,12 +22,21 @@ import { RefreshButton } from "@/components/ui/toolbar/RefreshButton";
 import { TableRowActions } from "@/components/ui/table/TableRowActions";
 import { actionsColumn, defineColumns } from "@/components/ui/table/columnDefs";
 import { useAppModal, useToast } from "@/components/ui/feedback/useFeedback";
+import { useDepartments } from "@/features/departments/api/departments.hooks";
 import { createRoom, updateRoom } from "@/features/rooms/api/rooms.service";
 import { useRooms } from "@/features/rooms/api/rooms.hooks";
 import type { Room } from "@/features/rooms/api/rooms.types";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { formatVnd } from "@/lib/money";
 
 type RoomActiveFilter = "ACTIVE" | "INACTIVE";
+
+type RoomFormValues = {
+  name: string;
+  capacity: number;
+  lockedDepartmentId?: number | null;
+  pricePerHour: number;
+};
 
 const ROOM_STATUS_OPTIONS = [
   { value: "ACTIVE" as const, label: "Đang hoạt động" },
@@ -48,6 +57,7 @@ export default function AdminRoomsPage() {
   const toast = useToast();
   const appModal = useAppModal();
   const { data: rooms, error, isLoading, refetch } = useRooms();
+  const { data: departments } = useDepartments();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RoomActiveFilter | "ALL">(
     "ALL",
@@ -58,17 +68,23 @@ export default function AdminRoomsPage() {
   const [deactivateTarget, setDeactivateTarget] = useState<Room | null>(null);
   const [activateTarget, setActivateTarget] = useState<Room | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [form] = Form.useForm<{ name: string; capacity: number }>();
+  const [form] = Form.useForm<RoomFormValues>();
 
   const openCreateModal = () => {
     setEditingRoom(null);
     form.resetFields();
+    form.setFieldsValue({ lockedDepartmentId: null, pricePerHour: 100000 });
     setModalOpen(true);
   };
 
   const openEditModal = (room: Room) => {
     setEditingRoom(room);
-    form.setFieldsValue({ name: room.name, capacity: room.capacity });
+    form.setFieldsValue({
+      name: room.name,
+      capacity: room.capacity,
+      lockedDepartmentId: room.lockedDepartment?.id ?? null,
+      pricePerHour: room.pricePerHour,
+    });
     setModalOpen(true);
   };
 
@@ -78,14 +94,27 @@ export default function AdminRoomsPage() {
     form.resetFields();
   };
 
-  const handleSubmit = async (values: { name: string; capacity: number }) => {
+  const handleSubmit = async (values: RoomFormValues) => {
     setSubmitting(true);
     try {
+      const lockedDepartmentId = values.lockedDepartmentId ?? null;
       if (editingRoom) {
-        await updateRoom({ id: editingRoom.id, ...values });
+        await updateRoom({
+          id: editingRoom.id,
+          name: values.name,
+          capacity: values.capacity,
+          isActive: editingRoom.isActive,
+          lockedDepartmentId,
+          pricePerHour: values.pricePerHour,
+        });
         toast.success("Cập nhật phòng thành công");
       } else {
-        await createRoom(values);
+        await createRoom({
+          name: values.name,
+          capacity: values.capacity,
+          lockedDepartmentId,
+          pricePerHour: values.pricePerHour,
+        });
         toast.success("Thêm phòng thành công");
       }
       closeFormModal();
@@ -144,7 +173,8 @@ export default function AdminRoomsPage() {
       if (!q) return true;
       return (
         room.name.toLowerCase().includes(q) ||
-        String(room.capacity).includes(q)
+        String(room.capacity).includes(q) ||
+        (room.lockedDepartment?.name ?? "chung").toLowerCase().includes(q)
       );
     });
   }, [rooms, search, statusFilter]);
@@ -154,14 +184,21 @@ export default function AdminRoomsPage() {
     setStatusFilter("ALL");
   };
 
-  const hasActiveFilters =
-    Boolean(search.trim()) || statusFilter !== "ALL";
+  const hasActiveFilters = Boolean(search.trim()) || statusFilter !== "ALL";
 
   const tableEmpty = hasActiveFilters ? (
     <NoSearchResult onReset={resetFilters} />
   ) : (
     <NoData description="Chưa có phòng họp" />
   );
+
+  const departmentOptions = [
+    { value: null as number | null, label: "Công khai (mọi phòng ban)" },
+    ...departments.map((d) => ({
+      value: d.id,
+      label: `${d.name} (${d.code})`,
+    })),
+  ];
 
   const roomForm = (
     <Form form={form} layout="vertical" onFinish={handleSubmit}>
@@ -187,12 +224,49 @@ export default function AdminRoomsPage() {
       >
         <InputNumber min={1} style={{ width: "100%" }} />
       </Form.Item>
+
+      <Form.Item
+        label="Giá thuê / giờ (VND)"
+        name="pricePerHour"
+        rules={[
+          { required: true, message: "Vui lòng nhập giá" },
+          { type: "number", min: 0, message: "Giá không âm" },
+        ]}
+      >
+        <InputNumber min={0} step={10000} style={{ width: "100%" }} />
+      </Form.Item>
+
+      <Form.Item
+        label="Khóa theo phòng ban"
+        name="lockedDepartmentId"
+        tooltip="Công khai: mọi đơn vị đều thấy. Chọn 1 phòng ban: chỉ đơn vị đó (và admin) thấy/đặt."
+      >
+        <Select
+          allowClear
+          placeholder="Công khai (mọi phòng ban)"
+          options={departmentOptions}
+        />
+      </Form.Item>
     </Form>
   );
 
   const columns = defineColumns<Room>([
     { title: "Tên phòng", dataIndex: "name", key: "name" },
     { title: "Sức chứa", dataIndex: "capacity", key: "capacity" },
+    {
+      title: "Giá / giờ",
+      dataIndex: "pricePerHour",
+      key: "pricePerHour",
+      render: (price: number) => formatVnd(price),
+    },
+    {
+      title: "Phạm vi",
+      key: "lockedDepartment",
+      render: (_, room) =>
+        room.lockedDepartment
+          ? `${room.lockedDepartment.name} (${room.lockedDepartment.code})`
+          : "Công khai",
+    },
     {
       title: "Trạng thái",
       dataIndex: "isActive",
@@ -239,7 +313,7 @@ export default function AdminRoomsPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Tìm theo tên, sức chứa…"
+            placeholder="Tìm theo tên, sức chứa, phòng ban…"
           />
           <StatusFilter
             value={statusFilter}

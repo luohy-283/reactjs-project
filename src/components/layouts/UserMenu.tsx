@@ -1,26 +1,60 @@
-import { Button } from "antd";
+import { Avatar, Button, Dropdown } from "antd";
+import type { MenuProps } from "antd";
+import { UserOutlined } from "@ant-design/icons";
 
 export type UserMenuProps = {
   userName?: string;
   role?: string;
+  departmentName?: string;
   onLogout: () => void;
+  onOpenProfile?: () => void;
+  onOpenInvoices?: () => void;
   logoutLabel?: string;
 };
 
-/** Header user strip — name/role + logout. Auth via props only (no features imports). */
+/** Header user strip — avatar dropdown. Auth via props only (no features imports). */
 export function UserMenu({
   userName,
   role,
+  departmentName,
   onLogout,
+  onOpenProfile,
+  onOpenInvoices,
   logoutLabel = "Đăng xuất",
 }: UserMenuProps) {
+  const items: MenuProps["items"] = [
+    {
+      key: "info",
+      label: (
+        <div style={{ maxWidth: 220 }}>
+          <div style={{ fontWeight: 600 }}>{userName}</div>
+          {role ? <div style={{ fontSize: 12, opacity: 0.75 }}>{role}</div> : null}
+          {departmentName ? (
+            <div style={{ fontSize: 12, opacity: 0.75 }}>{departmentName}</div>
+          ) : null}
+        </div>
+      ),
+      disabled: true,
+    },
+    { type: "divider" },
+    ...(onOpenProfile
+      ? [{ key: "profile", label: "Thông tin cá nhân", onClick: onOpenProfile }]
+      : []),
+    ...(onOpenInvoices
+      ? [{ key: "invoices", label: "Hóa đơn của tôi", onClick: onOpenInvoices }]
+      : []),
+    { key: "logout", label: logoutLabel, onClick: onLogout },
+  ];
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-      <span style={{ color: "#fff" }}>
-        {userName}
-        {role ? ` (${role})` : null}
-      </span>
-      <Button onClick={onLogout}>{logoutLabel}</Button>
-    </div>
+    <Dropdown menu={{ items }} placement="bottomRight" trigger={["click"]}>
+      <Button
+        type="text"
+        style={{ color: "#fff", display: "flex", alignItems: "center", gap: 8 }}
+      >
+        <Avatar size="small" icon={<UserOutlined />} />
+        <span>{userName}</span>
+      </Button>
+    </Dropdown>
   );
 }

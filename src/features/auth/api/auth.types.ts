@@ -1,10 +1,17 @@
 export type UserRole = "ADMIN" | "USER";
 
+export interface DepartmentSummary {
+  id: number;
+  code: string;
+  name: string;
+}
+
 export interface User {
   id: number;
   email: string;
   fullName: string;
   role: UserRole;
+  department?: DepartmentSummary | null;
 }
 
 export interface LoginRequest {
@@ -31,5 +38,6 @@ export interface LoginApiResponse {
   email?: string;
   fullName?: string;
   role?: string;
+  department?: DepartmentSummary | null;
   user?: User;
 }

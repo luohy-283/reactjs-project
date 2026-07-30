@@ -16,13 +16,18 @@ function normalizeRole(role: string | undefined): UserRole {
 function mapLoginResponse(data: LoginApiResponse): LoginResponse {
   const token = data.accessToken ?? data.token;
   const user: User | undefined = data.user
-    ? { ...data.user, role: normalizeRole(data.user.role) }
+    ? {
+        ...data.user,
+        role: normalizeRole(data.user.role),
+        department: data.user.department ?? null,
+      }
     : data.id != null && data.email
       ? {
           id: data.id,
           email: data.email,
           fullName: data.fullName ?? "",
           role: normalizeRole(data.role),
+          department: data.department ?? null,
         }
       : undefined;
 

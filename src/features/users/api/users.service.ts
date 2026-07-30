@@ -1,0 +1,233 @@
+import { apiClient } from "@/lib/api-client";
+import { isAbortError, toApiError } from "@/lib/api-error";
+import type { UserRole } from "@/features/auth/api/auth.types";
+import type { Department } from "@/features/departments/api/departments.types";
+import type {
+  AccountProfile,
+  CreateUserPayload,
+  DepartmentChangeRequest,
+  ManagedUser,
+  UpdateAccountPayload,
+  UpdateUserPayload,
+} from "@/features/users/api/users.types";
+
+interface BackendAdminUser {
+  id: number;
+  login: string;
+  email: string;
+  fullName?: string;
+  activated: boolean;
+  authorities?: string[];
+  department?: Department | null;
+}
+
+function toRole(authorities: string[] | undefined): UserRole {
+  if (authorities?.some((a) => a === "ROLE_ADMIN" || a === "ADMIN")) {
+    return "ADMIN";
+  }
+  return "USER";
+}
+
+function toAuthorities(role: UserRole): string[] {
+  return role === "ADMIN" ? ["ROLE_ADMIN", "ROLE_USER"] : ["ROLE_USER"];
+}
+
+function toManagedUser(u: BackendAdminUser): ManagedUser {
+  const authorities = u.authorities ?? [];
+  return {
+    id: u.id,
+    login: u.login,
+    email: u.email,
+    fullName: u.fullName ?? "",
+    activated: u.activated,
+    authorities,
+    role: toRole(authorities),
+    department: u.department ?? null,
+  };
+}
+
+function toAccountProfile(u: BackendAdminUser): AccountProfile {
+  return {
+    id: u.id,
+    login: u.login,
+    email: u.email,
+    fullName: u.fullName ?? "",
+    activated: u.activated,
+    authorities: u.authorities ?? [],
+    department: u.department ?? null,
+  };
+}
+
+export async function getAccount(
+  signal?: AbortSignal,
+): Promise<AccountProfile> {
+  try {
+    const { data } = await apiClient.get<BackendAdminUser>("/account", {
+      signal,
+    });
+    return toAccountProfile(data);
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    throw toApiError(error, "Không tải được thông tin tài khoản");
+  }
+}
+
+export async function updateAccount(
+  payload: UpdateAccountPayload,
+): Promise<AccountProfile> {
+  try {
+    const { data } = await apiClient.put<BackendAdminUser>("/account", payload);
+    return toAccountProfile(data);
+  } catch (error) {
+    throw toApiError(error, "Không cập nhật được thông tin");
+  }
+}
+
+export async function requestDepartmentChange(
+  requestedDepartmentId: number,
+): Promise<DepartmentChangeRequest> {
+  try {
+    const { data } = await apiClient.post<DepartmentChangeRequest>(
+      "/account/department-change-requests",
+      { requestedDepartmentId },
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Không gửi được yêu cầu đổi phòng ban");
+  }
+}
+
+export async function getMyPendingDepartmentChange(
+  signal?: AbortSignal,
+): Promise<DepartmentChangeRequest | null> {
+  try {
+    const { data, status } = await apiClient.get<DepartmentChangeRequest>(
+      "/account/department-change-requests/pending",
+      { signal, validateStatus: (s) => s === 200 || s === 204 },
+    );
+    if (status === 204 || !data) return null;
+    return data;
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    throw toApiError(error, "Không tải được yêu cầu đổi phòng ban");
+  }
+}
+
+export async function getUsers(signal?: AbortSignal): Promise<ManagedUser[]> {
+  try {
+    const { data } = await apiClient.get<BackendAdminUser[]>("/admin/users", {
+      params: { page: 0, size: 200, sort: "id,asc" },
+      signal,
+    });
+    return (Array.isArray(data) ? data : []).map(toManagedUser);
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    throw toApiError(error, "Không tải được danh sách user");
+  }
+}
+
+export async function createUser(
+  payload: CreateUserPayload,
+): Promise<ManagedUser> {
+  const body = {
+    login: payload.email.toLowerCase(),
+    email: payload.email.toLowerCase(),
+    fullName: payload.fullName,
+    password: payload.password,
+    activated: payload.activated ?? true,
+    authorities: toAuthorities(payload.role),
+    department:
+      payload.departmentId != null ? { id: payload.departmentId } : null,
+  };
+  try {
+    const { data } = await apiClient.post<BackendAdminUser>(
+      "/admin/users",
+      body,
+    );
+    return toManagedUser({
+      ...data,
+      authorities: data.authorities ?? body.authorities,
+      department: data.department ?? null,
+    });
+  } catch (error) {
+    throw toApiError(error, "Không tạo được user");
+  }
+}
+
+export async function updateUser(
+  payload: UpdateUserPayload,
+): Promise<ManagedUser> {
+  const body = {
+    id: payload.id,
+    login: payload.login.toLowerCase(),
+    email: payload.email.toLowerCase(),
+    fullName: payload.fullName,
+    activated: payload.activated,
+    authorities: toAuthorities(payload.role),
+    password: payload.password,
+    department:
+      payload.departmentId != null ? { id: payload.departmentId } : null,
+  };
+  try {
+    const { data } = await apiClient.put<BackendAdminUser>(
+      "/admin/users",
+      body,
+    );
+    return toManagedUser(data);
+  } catch (error) {
+    throw toApiError(error, "Không cập nhật được user");
+  }
+}
+
+export async function deactivateUser(login: string): Promise<void> {
+  try {
+    await apiClient.delete(`/admin/users/${encodeURIComponent(login)}`);
+  } catch (error) {
+    throw toApiError(error, "Không vô hiệu hóa được user");
+  }
+}
+
+export async function getDepartmentChangeRequests(
+  status: "PENDING" | "APPROVED" | "REJECTED" | undefined = "PENDING",
+  signal?: AbortSignal,
+): Promise<DepartmentChangeRequest[]> {
+  try {
+    const { data } = await apiClient.get<
+      DepartmentChangeRequest[] | { content: DepartmentChangeRequest[] }
+    >("/admin/department-change-requests", {
+      params: { status, page: 0, size: 100, sort: "id,desc" },
+      signal,
+    });
+    if (Array.isArray(data)) return data;
+    return data.content ?? [];
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    throw toApiError(error, "Không tải được yêu cầu đổi phòng ban");
+  }
+}
+
+export async function approveDepartmentChange(
+  id: number,
+): Promise<DepartmentChangeRequest> {
+  try {
+    const { data } = await apiClient.post<DepartmentChangeRequest>(
+      `/admin/department-change-requests/${id}/approve`,
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Không duyệt được yêu cầu");
+  }
+}
+
+export async function rejectDepartmentChange(
+  id: number,
+): Promise<DepartmentChangeRequest> {
+  try {
+    const { data } = await apiClient.post<DepartmentChangeRequest>(
+      `/admin/department-change-requests/${id}/reject`,
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Không từ chối được yêu cầu");
+  }
+}

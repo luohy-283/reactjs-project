@@ -28,6 +28,8 @@ import { useToast } from "@/components/ui/feedback/useFeedback";
 import { createBooking } from "@/features/bookings/api/bookings.service";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useRoomSchedule } from "@/app/hooks/use-room-schedule";
+import { estimateBookingAmount, formatVnd } from "@/lib/money";
+import { Typography } from "antd";
 
 interface RoomScheduleRow {
   key: number;
@@ -59,6 +61,10 @@ export default function DashboardRoute() {
     endTime: Dayjs;
     title: string;
   }>();
+
+  const watchedRoomId = Form.useWatch("roomId", form);
+  const watchedStart = Form.useWatch("startTime", form);
+  const watchedEnd = Form.useWatch("endTime", form);
 
   const scheduleRows: RoomScheduleRow[] = useMemo(
     () =>
@@ -122,6 +128,15 @@ export default function DashboardRoute() {
       .minute(time.minute())
       .second(0)
       .millisecond(0);
+
+  const estimatedFee = useMemo(() => {
+    const room = rooms.find((r) => r.id === watchedRoomId);
+    if (!room || !watchedStart || !watchedEnd) return null;
+    const startIso = combineDateTime(watchedStart).toISOString();
+    const endIso = combineDateTime(watchedEnd).toISOString();
+    if (!dayjs(endIso).isAfter(dayjs(startIso))) return null;
+    return estimateBookingAmount(room.pricePerHour, startIso, endIso);
+  }, [rooms, watchedRoomId, watchedStart, watchedEnd, selectedDate]);
 
   const disabledPastDate = (current: Dayjs | null) =>
     !!current && current.isBefore(dayjs(), "day");
@@ -280,7 +295,7 @@ export default function DashboardRoute() {
               placeholder="Chọn phòng"
               options={rooms.map((room) => ({
                 value: room.id,
-                label: `${room.name} (${room.capacity} người)`,
+                label: `${room.name} (${room.capacity} người) — ${formatVnd(room.pricePerHour)}/giờ`,
               }))}
             />
           </Form.Item>
@@ -351,6 +366,15 @@ export default function DashboardRoute() {
           >
             <Input placeholder="VD: Họp planning tuần" />
           </Form.Item>
+
+          {estimatedFee != null ? (
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+              Ước tính phí: <strong>{formatVnd(estimatedFee)}</strong>
+              {" "}
+              (làm tròn lên theo khối 30 phút, tối thiểu 1 khối)
+              {user?.role !== "ADMIN" ? " — tính sau khi admin duyệt" : null}
+            </Typography.Paragraph>
+          ) : null}
         </Form>
       </CreateDialog>
     </PageLayout>

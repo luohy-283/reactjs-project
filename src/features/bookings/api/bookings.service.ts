@@ -21,7 +21,9 @@ interface BackendBooking {
   userLogin?: string;
   userEmail?: string;
   userFullName?: string;
-  room?: { id: number; name?: string };
+  pricePerHour?: number;
+  amount?: number;
+  room?: { id: number; name?: string; pricePerHour?: number };
   user?: { id: number; login?: string; email?: string };
 }
 
@@ -46,6 +48,13 @@ function toBooking(booking: BackendBooking): Booking {
       booking.userEmail ??
       booking.user?.login ??
       booking.user?.email,
+    pricePerHour:
+      booking.pricePerHour != null
+        ? Number(booking.pricePerHour)
+        : booking.room?.pricePerHour != null
+          ? Number(booking.room.pricePerHour)
+          : undefined,
+    amount: booking.amount != null ? Number(booking.amount) : undefined,
   };
 }
 

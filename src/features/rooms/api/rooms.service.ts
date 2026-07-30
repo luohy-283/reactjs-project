@@ -12,6 +12,7 @@ import type {
   Room,
   UpdateRoomPayload,
 } from "@/features/rooms/api/rooms.types";
+import type { Department } from "@/features/departments/api/departments.types";
 
 interface BackendRoom {
   id: number;
@@ -19,6 +20,8 @@ interface BackendRoom {
   capacity: number;
   isActive?: boolean;
   active?: boolean;
+  lockedDepartment?: Department | null;
+  pricePerHour?: number;
 }
 
 export interface GetRoomsOptions extends PageParams {
@@ -31,6 +34,8 @@ function toRoom(room: BackendRoom): Room {
     name: room.name,
     capacity: room.capacity,
     isActive: room.isActive ?? room.active ?? true,
+    lockedDepartment: room.lockedDepartment ?? null,
+    pricePerHour: Number(room.pricePerHour ?? 0),
   };
 }
 
@@ -69,9 +74,9 @@ export async function getRoomsPage(
   }
 }
 
-/** Full list — BE returns all rooms; UI tables paginate client-side. */
+/** Full list — BE returns a page; request a large size for admin/schedule tables. */
 export async function getRooms(signal?: AbortSignal): Promise<Room[]> {
-  const result = await getRoomsPage({ signal });
+  const result = await getRoomsPage({ signal, page: 0, size: 200 });
   return result.items;
 }
 
@@ -80,6 +85,11 @@ export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
     name: payload.name,
     capacity: payload.capacity,
     isActive: true,
+    pricePerHour: payload.pricePerHour,
+    lockedDepartment:
+      payload.lockedDepartmentId != null
+        ? { id: payload.lockedDepartmentId }
+        : null,
   };
   try {
     try {
@@ -96,22 +106,52 @@ export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
 }
 
 export async function updateRoom(payload: UpdateRoomPayload): Promise<Room> {
-  const body = {
-    id: payload.id,
-    name: payload.name,
-    capacity: payload.capacity,
-    isActive: payload.isActive,
-  };
+  const isStatusOnly =
+    payload.isActive !== undefined &&
+    payload.name === undefined &&
+    payload.capacity === undefined &&
+    payload.lockedDepartmentId === undefined &&
+    payload.pricePerHour === undefined;
+
   try {
+    if (isStatusOnly) {
+      const body = { id: payload.id, isActive: payload.isActive };
+      try {
+        const { data } = await apiClient.patch<BackendRoom>(
+          `/admin/rooms/${payload.id}`,
+          body,
+        );
+        return toRoom(data);
+      } catch (error) {
+        if (!isMissingAdminRoute(error)) throw error;
+        const { data } = await apiClient.patch<BackendRoom>(
+          `/rooms/${payload.id}`,
+          body,
+        );
+        return toRoom(data);
+      }
+    }
+
+    const body = {
+      id: payload.id,
+      name: payload.name,
+      capacity: payload.capacity,
+      isActive: payload.isActive,
+      pricePerHour: payload.pricePerHour,
+      lockedDepartment:
+        payload.lockedDepartmentId != null
+          ? { id: payload.lockedDepartmentId }
+          : null,
+    };
     try {
-      const { data } = await apiClient.patch<BackendRoom>(
+      const { data } = await apiClient.put<BackendRoom>(
         `/admin/rooms/${payload.id}`,
         body,
       );
       return toRoom(data);
     } catch (error) {
       if (!isMissingAdminRoute(error)) throw error;
-      const { data } = await apiClient.patch<BackendRoom>(
+      const { data } = await apiClient.put<BackendRoom>(
         `/rooms/${payload.id}`,
         body,
       );
