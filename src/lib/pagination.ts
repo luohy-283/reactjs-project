@@ -1,3 +1,12 @@
+/** Shared page size for every list Table in the app. */
+export const DEFAULT_PAGE_SIZE = 10;
+
+/** Ant Design Table pagination — same config on all list screens. */
+export const TABLE_PAGINATION = {
+  pageSize: DEFAULT_PAGE_SIZE,
+  showSizeChanger: false,
+} as const;
+
 export interface PageParams {
   /** Spring page index, 0-based */
   page?: number;
