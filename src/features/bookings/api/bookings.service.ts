@@ -7,55 +7,20 @@ import {
   type SpringPageResponse,
   toPagedResult,
 } from "@/lib/pagination";
-import type { Booking, CreateBookingPayload } from "@/features/bookings/api/bookings.types";
-
-interface BackendBooking {
-  id: number;
-  title: string;
-  startTime: string;
-  endTime: string;
-  status: Booking["status"];
-  roomId?: number;
-  userId?: number;
-  roomName?: string;
-  userLogin?: string;
-  userEmail?: string;
-  userFullName?: string;
-  pricePerHour?: number;
-  amount?: number;
-  room?: { id: number; name?: string; pricePerHour?: number };
-  user?: { id: number; login?: string; email?: string };
-}
+import {
+  mapBackendBooking,
+  type BackendBookingDto,
+} from "@/features/bookings/api/mapBackendBooking";
+import type { Booking, BookingStatus, CreateBookingPayload } from "@/features/bookings/api/bookings.types";
 
 export interface GetBookingsOptions extends PageParams {
   date?: string;
+  status?: BookingStatus;
+  /** Text search: title, room name, user login/email/fullName */
+  q?: string;
+  /** APPROVED bookings with startTime after now */
+  upcoming?: boolean;
   signal?: AbortSignal;
-}
-
-function toBooking(booking: BackendBooking): Booking {
-  return {
-    id: booking.id,
-    roomId: booking.roomId ?? booking.room?.id ?? 0,
-    userId: booking.userId ?? booking.user?.id ?? 0,
-    title: booking.title,
-    startTime: booking.startTime,
-    endTime: booking.endTime,
-    status: booking.status,
-    roomName: booking.roomName ?? booking.room?.name,
-    userLogin:
-      booking.userLogin ??
-      booking.userFullName ??
-      booking.userEmail ??
-      booking.user?.login ??
-      booking.user?.email,
-    pricePerHour:
-      booking.pricePerHour != null
-        ? Number(booking.pricePerHour)
-        : booking.room?.pricePerHour != null
-          ? Number(booking.room.pricePerHour)
-          : undefined,
-    amount: booking.amount != null ? Number(booking.amount) : undefined,
-  };
 }
 
 function isMissingAdminRoute(error: unknown): error is AxiosError {
@@ -65,8 +30,11 @@ function isMissingAdminRoute(error: unknown): error is AxiosError {
 }
 
 function buildQueryParams(options: GetBookingsOptions) {
-  const params: Record<string, string | number> = {};
+  const params: Record<string, string | number | boolean> = {};
   if (options.date) params.date = options.date;
+  if (options.status) params.status = options.status;
+  if (options.q?.trim()) params.q = options.q.trim();
+  if (options.upcoming) params.upcoming = true;
   if (options.page != null) params.page = options.page;
   if (options.size != null) params.size = options.size;
   if (options.sort) params.sort = options.sort;
@@ -80,12 +48,14 @@ export async function getBookingsPage(
   const { signal, ...query } = options;
   try {
     const { data } = await apiClient.get<
-      BackendBooking[] | BackendBooking | SpringPageResponse<BackendBooking>
+      | BackendBookingDto[]
+      | BackendBookingDto
+      | SpringPageResponse<BackendBookingDto>
     >("/bookings", {
       params: buildQueryParams(query),
       signal,
     });
-    return toPagedResult(data, toBooking);
+    return toPagedResult(data, mapBackendBooking);
   } catch (error) {
     if (isAbortError(error)) throw error;
     throw toApiError(error, "Không tải được lịch đặt");
@@ -112,8 +82,8 @@ export async function createBooking(
     room: { id: payload.roomId },
   };
   try {
-    const { data } = await apiClient.post<BackendBooking>("/bookings", body);
-    return toBooking(data);
+    const { data } = await apiClient.post<BackendBookingDto>("/bookings", body);
+    return mapBackendBooking(data);
   } catch (error) {
     throw toApiError(error, "Không đặt được phòng");
   }
@@ -126,19 +96,31 @@ async function postBookingAction(
 ): Promise<Booking> {
   try {
     try {
-      const { data } = await apiClient.post<BackendBooking>(
+      const { data } = await apiClient.post<BackendBookingDto>(
         `/admin/bookings/${id}/${action}`,
       );
-      return toBooking(data);
+      return mapBackendBooking(data);
     } catch (error) {
       if (!isMissingAdminRoute(error)) throw error;
-      const { data } = await apiClient.post<BackendBooking>(
+      const { data } = await apiClient.post<BackendBookingDto>(
         `/bookings/${id}/${action}`,
       );
-      return toBooking(data);
+      return mapBackendBooking(data);
     }
   } catch (error) {
     throw toApiError(error, errorMessage);
+  }
+}
+
+export async function getBooking(id: number, signal?: AbortSignal): Promise<Booking> {
+  try {
+    const { data } = await apiClient.get<BackendBookingDto>(`/bookings/${id}`, {
+      signal,
+    });
+    return mapBackendBooking(data);
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    throw toApiError(error, "Không tải được lịch đặt");
   }
 }
 

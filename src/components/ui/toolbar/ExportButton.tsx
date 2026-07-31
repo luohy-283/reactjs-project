@@ -9,8 +9,7 @@ export type ExportButtonProps = Omit<ButtonProps, "children" | "icon"> & {
 };
 
 /**
- * Export trigger wrapper. Wire `onClick` only when a real export API exists —
- * do not invent client-only CSV downloads.
+ * Export trigger. Wire `onClick` to a real download API (e.g. CSV export).
  */
 export function ExportButton({
   children = "Xuất",

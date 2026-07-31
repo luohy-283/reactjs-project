@@ -1,48 +1,82 @@
 import { useMemo, useState } from "react";
-import { Card, Col, DatePicker, Row } from "antd";
-import { Area, Column, Pie } from "@ant-design/plots";
+import { DatePicker, Space } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { DataTable } from "@/components/ui/table/DataTable";
-import { ErrorPage } from "@/components/ui/error/ErrorPage";
+import { FetchError } from "@/components/ui/error/FetchError";
 import { NoData } from "@/components/ui/empty/NoData";
+import { NoSearchResult } from "@/components/ui/empty/NoSearchResult";
 import { PageContent } from "@/components/ui/page/PageContent";
 import { PageHeader } from "@/components/ui/page/PageHeader";
 import { PageLayout } from "@/components/ui/page/PageLayout";
+import { ExportButton } from "@/components/ui/toolbar/ExportButton";
 import { RefreshButton } from "@/components/ui/toolbar/RefreshButton";
-import { RetryButton } from "@/components/ui/error/RetryButton";
-import { defineColumns } from "@/components/ui/table/columnDefs";
-import { useMonthlyRevenue } from "@/features/revenue/api/revenue.hooks";
+import { SearchForm } from "@/components/ui/search/SearchForm";
+import { SearchInput } from "@/components/ui/search/SearchInput";
+import {
+  defineColumns,
+  sortableColumn,
+} from "@/components/ui/table/columnDefs";
+import {
+  useMonthlyRevenue,
+  useRevenueByRoomPage,
+} from "@/features/revenue/api/revenue.hooks";
 import type { RevenueByRoom } from "@/features/revenue/api/revenue.types";
 import { RevenueKpiCards } from "@/features/revenue/components/RevenueKpiCards";
-import { getApiErrorMessage } from "@/lib/api-error";
+import { RevenueRoomCharts } from "@/features/revenue/components/RevenueRoomCharts";
+import { RevenueTrendArea } from "@/features/revenue/components/RevenueTrendArea";
 import { formatVnd } from "@/lib/money";
-
-/** Top slices on pie; remainder grouped as "Khác". */
-const PIE_TOP_ROOMS = 8;
-/** Top rooms on vertical column (absolute comparison). */
-const COLUMN_TOP_ROOMS = 8;
+import { useAuthenticatedExport } from "@/lib/useAuthenticatedExport";
+import { useServerTableQuery } from "@/lib/useServerTableQuery";
 
 export default function AdminRevenuePage() {
   const [month, setMonth] = useState<Dayjs>(dayjs());
+  const [search, setSearch] = useState("");
+  const { query, setQuery, pageParams, resetPage } =
+    useServerTableQuery("amount,desc");
+  const { exporting, runExport } = useAuthenticatedExport();
   const yearMonth = month.format("YYYY-MM");
-  const { data, error, isLoading, refetch } = useMonthlyRevenue(yearMonth);
+  const q = search.trim() || undefined;
+  const {
+    data,
+    error,
+    isLoading,
+    refetch,
+  } = useMonthlyRevenue(yearMonth);
+  const {
+    data: byRoomPage,
+    error: byRoomError,
+    isLoading: byRoomLoading,
+    refetch: refetchByRoom,
+  } = useRevenueByRoomPage({
+    yearMonth,
+    ...pageParams,
+    q,
+  });
 
   const roomColumns = defineColumns<RevenueByRoom>([
-    { title: "Phòng", dataIndex: "roomName", key: "roomName" },
-    { title: "Số lượt đặt", dataIndex: "bookingCount", key: "bookingCount" },
-    {
+    sortableColumn<RevenueByRoom>({
+      title: "Tên phòng",
+      dataIndex: "roomName",
+      key: "roomName",
+    }),
+    sortableColumn<RevenueByRoom>({
+      title: "Số lượt đặt",
+      dataIndex: "bookingCount",
+      key: "bookingCount",
+    }),
+    sortableColumn<RevenueByRoom>({
       title: "Doanh thu",
       dataIndex: "amount",
       key: "amount",
       render: (amount: number) => formatVnd(amount),
-    },
-    {
+    }),
+    sortableColumn<RevenueByRoom>({
       title: "Tỷ trọng",
       dataIndex: "sharePercent",
       key: "sharePercent",
       render: (share: number) => `${Number(share ?? 0).toFixed(1)}%`,
-    },
+    }),
   ]);
 
   const dayChartData = useMemo(
@@ -59,198 +93,106 @@ export default function AdminRevenuePage() {
     [data],
   );
 
-  const roomPieData = useMemo(() => {
-    const top = roomsWithRevenue.slice(0, PIE_TOP_ROOMS);
-    const rest = roomsWithRevenue.slice(PIE_TOP_ROOMS);
-    const items = top.map((r) => ({
-      room: r.roomName,
-      amount: r.amount,
-    }));
-    const restAmount = rest.reduce((sum, r) => sum + r.amount, 0);
-    if (restAmount > 0) {
-      items.push({ room: "Khác", amount: restAmount });
-    }
-    const total = items.reduce((sum, r) => sum + r.amount, 0);
-    return items.map((item) => ({
-      ...item,
-      percentLabel:
-        total > 0 ? `${((item.amount / total) * 100).toFixed(0)}%` : "0%",
-    }));
-  }, [roomsWithRevenue]);
+  const resetSearch = () => {
+    setSearch("");
+    resetPage();
+  };
 
-  const roomColumnData = useMemo(
-    () =>
-      roomsWithRevenue.slice(0, COLUMN_TOP_ROOMS).map((r) => ({
-        room: r.roomName,
-        amount: r.amount,
-      })),
-    [roomsWithRevenue],
-  );
+  const refetchAll = async () => {
+    await Promise.all([refetch(), refetchByRoom()]);
+  };
 
-  const hasDayRevenue = dayChartData.some((d) => d.amount > 0);
-  const hasRoomRevenue = roomsWithRevenue.length > 0;
+  const pageError = error ?? byRoomError;
+  const pageLoading = isLoading || byRoomLoading;
 
   return (
     <PageLayout>
       <PageHeader
         title="Doanh thu"
         extra={
-          <DatePicker
-            picker="month"
-            value={month}
-            onChange={(v) => v && setMonth(v)}
-            allowClear={false}
-            format="MM/YYYY"
-          />
+          <Space>
+            <ExportButton
+              loading={exporting}
+              onClick={() =>
+                void runExport(
+                  "/admin/revenue/export",
+                  `revenue-${yearMonth}.csv`,
+                  { yearMonth },
+                )
+              }
+            >
+              Xuất CSV
+            </ExportButton>
+            <DatePicker
+              picker="month"
+              value={month}
+              onChange={(v) => {
+                if (!v) return;
+                setMonth(v);
+                resetPage();
+              }}
+              allowClear={false}
+              format="MM/YYYY"
+            />
+          </Space>
         }
       />
 
       <PageContent>
-        {error ? (
-          <ErrorPage
-            description={getApiErrorMessage(
-              error,
-              "Không tải được doanh thu",
-            )}
-            extra={
-              <RetryButton
-                onRetry={() => void refetch()}
-                loading={isLoading}
-              />
-            }
+        {pageError ? (
+          <FetchError
+            error={pageError}
+            fallback="Không tải được doanh thu"
+            onRetry={() => void refetchAll()}
+            loading={pageLoading}
           />
         ) : (
           <>
             <RevenueKpiCards data={data} loading={isLoading} />
-
-            <Card
-              title={`Xu hướng doanh thu theo ngày · ${yearMonth}`}
+            <RevenueTrendArea
+              yearMonth={yearMonth}
               loading={isLoading}
-              style={{ marginBottom: 24 }}
-            >
-              {!hasDayRevenue ? (
-                <NoData description="Chưa có doanh thu trong tháng này" />
-              ) : (
-                <Area
-                  data={dayChartData}
-                  xField="date"
-                  yField="amount"
-                  height={320}
-                  shapeField="smooth"
-                  style={{
-                    fill: "linear-gradient(-90deg, white 0%, #69b1ff 100%)",
-                    fillOpacity: 0.4,
-                    lineWidth: 2,
+              data={dayChartData}
+            />
+            <RevenueRoomCharts
+              loading={isLoading}
+              roomsWithRevenue={roomsWithRevenue}
+            />
+            <div style={{ marginBottom: 16 }}>
+              <SearchForm onReset={resetSearch}>
+                <SearchInput
+                  value={search}
+                  onChange={(value) => {
+                    setSearch(value);
+                    resetPage();
                   }}
-                  axis={{
-                    y: {
-                      labelFormatter: (v: string | number) =>
-                        formatVnd(Number(v)),
-                    },
-                  }}
-                  tooltip={{
-                    items: [
-                      {
-                        channel: "y",
-                        name: "Doanh thu",
-                        valueFormatter: (v: number) => formatVnd(v),
-                      },
-                    ],
-                  }}
+                  placeholder="Tìm theo tên phòng…"
                 />
-              )}
-            </Card>
-
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-              <Col xs={24} lg={12}>
-                <Card
-                  title="Tỷ trọng doanh thu theo phòng"
-                  loading={isLoading}
-                >
-                  {!hasRoomRevenue ? (
-                    <NoData description="Chưa có dữ liệu theo phòng" />
-                  ) : (
-                    <Pie
-                      data={roomPieData}
-                      angleField="amount"
-                      colorField="room"
-                      radius={0.9}
-                      innerRadius={0.6}
-                      height={320}
-                      legend={{
-                        color: {
-                          position: "bottom",
-                          layout: { justifyContent: "center" },
-                        },
-                      }}
-                      label={{
-                        text: "percentLabel",
-                        position: "spider",
-                        transform: [{ type: "overlapDodgeY" }],
-                      }}
-                      tooltip={{
-                        title: "room",
-                        items: [
-                          {
-                            channel: "y",
-                            name: "Doanh thu",
-                            valueFormatter: (v: number) => formatVnd(v),
-                          },
-                        ],
-                      }}
-                    />
-                  )}
-                </Card>
-              </Col>
-              <Col xs={24} lg={12}>
-                <Card
-                  title={`Top ${COLUMN_TOP_ROOMS} phòng theo doanh thu`}
-                  loading={isLoading}
-                >
-                  {roomColumnData.length === 0 ? (
-                    <NoData description="Chưa có dữ liệu theo phòng" />
-                  ) : (
-                    <Column
-                      data={roomColumnData}
-                      xField="room"
-                      yField="amount"
-                      height={320}
-                      axis={{
-                        x: {
-                          labelAutoRotate: true,
-                          labelAutoHide: true,
-                        },
-                        y: {
-                          labelFormatter: (v: string | number) =>
-                            formatVnd(Number(v)),
-                        },
-                      }}
-                      tooltip={{
-                        items: [
-                          {
-                            channel: "y",
-                            name: "Doanh thu",
-                            valueFormatter: (v: number) => formatVnd(v),
-                          },
-                        ],
-                      }}
-                    />
-                  )}
-                </Card>
-              </Col>
-            </Row>
-
+              </SearchForm>
+            </div>
             <DataTable
               rowKey="roomId"
               columns={roomColumns}
-              data={data?.byRoom ?? []}
-              loading={isLoading}
+              data={byRoomPage.items}
+              loading={byRoomLoading}
               scroll={{ x: true }}
-              emptyText={<NoData description="Chưa có doanh thu theo phòng" />}
+              emptyText={
+                q ? (
+                  <NoSearchResult onReset={resetSearch} />
+                ) : (
+                  <NoData description="Chưa có doanh thu theo phòng" />
+                )
+              }
+              serverSide
+              total={byRoomPage.totalElements}
+              page={query.page}
+              pageSize={query.pageSize}
+              sort={query.sort}
+              onQueryChange={setQuery}
               toolbarExtra={
                 <RefreshButton
-                  loading={isLoading}
-                  onClick={() => void refetch()}
+                  loading={pageLoading}
+                  onClick={() => void refetchAll()}
                 />
               }
             />

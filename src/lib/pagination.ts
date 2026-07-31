@@ -11,7 +11,43 @@ export interface PageParams {
   /** Spring page index, 0-based */
   page?: number;
   size?: number;
+  /** Spring sort, e.g. `startTime,desc` */
   sort?: string;
+}
+
+/** Ant Design table query (1-based page) → map to Spring `PageParams` via `toPageParams`. */
+export type TableQuery = {
+  page: number;
+  pageSize: number;
+  sort?: string;
+};
+
+export function toPageParams(query: TableQuery): PageParams {
+  return {
+    page: Math.max(0, query.page - 1),
+    size: query.pageSize,
+    sort: query.sort,
+  };
+}
+
+/** Build Spring `sort` from Ant Design sorter field + order. */
+export function toSortParam(
+  field: string | undefined,
+  order: "ascend" | "descend" | null | undefined,
+): string | undefined {
+  if (!field || !order) return undefined;
+  return `${field},${order === "ascend" ? "asc" : "desc"}`;
+}
+
+export function parseSortParam(
+  sort: string | undefined,
+): { field: string; order: "ascend" | "descend" } | null {
+  if (!sort) return null;
+  const [field, dir] = sort.split(",");
+  if (!field) return null;
+  if (dir === "asc") return { field, order: "ascend" };
+  if (dir === "desc") return { field, order: "descend" };
+  return null;
 }
 
 export interface PagedResult<T> {

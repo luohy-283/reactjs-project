@@ -1,8 +1,20 @@
 import { Card, Col, Row, Statistic, Typography } from "antd";
+import type { ReactNode } from "react";
 import type { RevenuePeriod, RevenueReport } from "@/features/revenue/api/revenue.types";
 import { formatVnd } from "@/lib/money";
 
 type DeltaKind = "higherBetter" | "lowerBetter";
+
+type KpiDef = {
+  key: string;
+  title: string;
+  value: number;
+  previous: number;
+  kind: DeltaKind;
+  formatter?: (v: number | string) => ReactNode;
+  suffix?: string;
+  precision?: number;
+};
 
 function percentDelta(current: number, previous: number): number | null {
   if (previous === 0) {
@@ -57,6 +69,46 @@ function KpiDelta({
   );
 }
 
+function buildKpis(
+  data: RevenueReport | null,
+  previous: RevenuePeriod,
+): KpiDef[] {
+  return [
+    {
+      key: "total",
+      title: "Tổng doanh thu",
+      value: data?.totalAmount ?? 0,
+      previous: previous.totalAmount,
+      kind: "higherBetter",
+      formatter: (v) => formatVnd(Number(v)),
+    },
+    {
+      key: "bookings",
+      title: "Lịch đã duyệt",
+      value: data?.totalBookings ?? 0,
+      previous: previous.totalBookings,
+      kind: "higherBetter",
+    },
+    {
+      key: "average",
+      title: "Doanh thu TB / lịch",
+      value: data?.averageAmount ?? 0,
+      previous: previous.averageAmount,
+      kind: "higherBetter",
+      formatter: (v) => formatVnd(Number(v)),
+    },
+    {
+      key: "cancelRate",
+      title: "Tỷ lệ hủy",
+      value: data?.cancellationRate ?? 0,
+      previous: previous.cancellationRate,
+      kind: "lowerBetter",
+      suffix: "%",
+      precision: 1,
+    },
+  ];
+}
+
 export function RevenueKpiCards({
   data,
   loading,
@@ -76,68 +128,29 @@ export function RevenueKpiCards({
     ? previous.yearMonth.slice(5) + "/" + previous.yearMonth.slice(0, 4)
     : "tháng trước";
 
+  const kpis = buildKpis(data, previous);
+
   return (
     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-      <Col xs={24} sm={12} xl={6}>
-        <Card loading={loading}>
-          <Statistic
-            title="Tổng doanh thu"
-            value={data?.totalAmount ?? 0}
-            formatter={(v) => formatVnd(Number(v))}
-          />
-          <KpiDelta
-            current={data?.totalAmount ?? 0}
-            previous={previous.totalAmount}
-            previousMonth={previousMonth}
-            kind="higherBetter"
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} xl={6}>
-        <Card loading={loading}>
-          <Statistic
-            title="Lịch đã duyệt"
-            value={data?.totalBookings ?? 0}
-          />
-          <KpiDelta
-            current={data?.totalBookings ?? 0}
-            previous={previous.totalBookings}
-            previousMonth={previousMonth}
-            kind="higherBetter"
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} xl={6}>
-        <Card loading={loading}>
-          <Statistic
-            title="Doanh thu TB / lịch"
-            value={data?.averageAmount ?? 0}
-            formatter={(v) => formatVnd(Number(v))}
-          />
-          <KpiDelta
-            current={data?.averageAmount ?? 0}
-            previous={previous.averageAmount}
-            previousMonth={previousMonth}
-            kind="higherBetter"
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} xl={6}>
-        <Card loading={loading}>
-          <Statistic
-            title="Tỷ lệ hủy"
-            value={data?.cancellationRate ?? 0}
-            suffix="%"
-            precision={1}
-          />
-          <KpiDelta
-            current={data?.cancellationRate ?? 0}
-            previous={previous.cancellationRate}
-            previousMonth={previousMonth}
-            kind="lowerBetter"
-          />
-        </Card>
-      </Col>
+      {kpis.map((kpi) => (
+        <Col key={kpi.key} xs={24} sm={12} xl={6}>
+          <Card loading={loading}>
+            <Statistic
+              title={kpi.title}
+              value={kpi.value}
+              formatter={kpi.formatter}
+              suffix={kpi.suffix}
+              precision={kpi.precision}
+            />
+            <KpiDelta
+              current={kpi.value}
+              previous={kpi.previous}
+              previousMonth={previousMonth}
+              kind={kpi.kind}
+            />
+          </Card>
+        </Col>
+      ))}
     </Row>
   );
 }

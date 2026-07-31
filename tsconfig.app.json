@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     // TS 6+: silences baseUrl/paths deprecation (TS5101). Required for `tsc -b` — do NOT change to "5.0".
     // IDE error "Invalid value" → use workspace TS: .vscode/settings.json → typescript.tsdk.
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]

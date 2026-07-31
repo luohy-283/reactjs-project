@@ -10,6 +10,7 @@ import type {
   UpdateAccountPayload,
   UpdateUserPayload,
 } from "@/features/users/api/users.types";
+import type { PageParams, PagedResult } from "@/lib/pagination";
 
 interface BackendAdminUser {
   id: number;
@@ -114,12 +115,47 @@ export async function getMyPendingDepartmentChange(
 }
 
 export async function getUsers(signal?: AbortSignal): Promise<ManagedUser[]> {
+  const page = await getUsersPage({ page: 0, size: 200, sort: "id,asc", signal });
+  return page.items;
+}
+
+export interface GetUsersOptions extends PageParams {
+  /** Search fullName, email, login, department name */
+  q?: string;
+  /** `true` / `false`; omit for all */
+  activated?: boolean;
+  signal?: AbortSignal;
+}
+
+/** Paginated admin users — JHipster returns a list body + `X-Total-Count`. */
+export async function getUsersPage(
+  options: GetUsersOptions = {},
+): Promise<PagedResult<ManagedUser>> {
+  const { signal, page = 0, size = 10, sort = "id,asc", q, activated } = options;
   try {
-    const { data } = await apiClient.get<BackendAdminUser[]>("/admin/users", {
-      params: { page: 0, size: 200, sort: "id,asc" },
-      signal,
-    });
-    return (Array.isArray(data) ? data : []).map(toManagedUser);
+    const { data, headers } = await apiClient.get<BackendAdminUser[]>(
+      "/admin/users",
+      {
+        params: {
+          page,
+          size,
+          sort,
+          ...(q?.trim() ? { q: q.trim() } : {}),
+          ...(activated !== undefined ? { activated } : {}),
+        },
+        signal,
+      },
+    );
+    const items = (Array.isArray(data) ? data : []).map(toManagedUser);
+    const totalHeader = headers["x-total-count"];
+    const totalElements = totalHeader != null ? Number(totalHeader) : items.length;
+    return {
+      items,
+      page,
+      size,
+      totalElements: Number.isFinite(totalElements) ? totalElements : items.length,
+      totalPages: size > 0 ? Math.ceil((Number.isFinite(totalElements) ? totalElements : items.length) / size) : 1,
+    };
   } catch (error) {
     if (isAbortError(error)) throw error;
     throw toApiError(error, "Không tải được danh sách user");

@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { Alert, Form, Input, Modal, Select, Typography } from "antd";
 import { useDepartments } from "@/features/departments/api/departments.hooks";
-import type { DepartmentSummary, User } from "@/features/auth/api/auth.types";
+import type { User, UserRole } from "@/features/auth/api/auth.types";
 import {
+  getAccount,
   getMyPendingDepartmentChange,
   requestDepartmentChange,
   updateAccount,
 } from "@/features/users/api/users.service";
-import type { DepartmentChangeRequest } from "@/features/users/api/users.types";
+import type {
+  AccountProfile,
+  DepartmentChangeRequest,
+} from "@/features/users/api/users.types";
 import { getApiErrorMessage, isAbortError } from "@/lib/api-error";
 import { useToast } from "@/components/ui/feedback/useFeedback";
 
@@ -24,6 +28,23 @@ export type ProfileDialogProps = {
   onUpdated: (next: User) => void;
 };
 
+function roleFromAuthorities(authorities: string[] | undefined): UserRole {
+  if (authorities?.some((a) => a === "ROLE_ADMIN" || a === "ADMIN")) {
+    return "ADMIN";
+  }
+  return "USER";
+}
+
+function toAuthUser(profile: AccountProfile, fallbackRole?: UserRole): User {
+  return {
+    id: profile.id,
+    email: profile.email,
+    fullName: profile.fullName,
+    role: roleFromAuthorities(profile.authorities) || fallbackRole || "USER",
+    department: profile.department ?? null,
+  };
+}
+
 export function ProfileDialog({
   open,
   user,
@@ -35,33 +56,57 @@ export function ProfileDialog({
   const [form] = Form.useForm<ProfileFormValues>();
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState<DepartmentChangeRequest | null>(null);
-  const [loadingPending, setLoadingPending] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  /** Fresh account from GET /api/account — source of truth while dialog is open. */
+  const [account, setAccount] = useState<AccountProfile | null>(null);
 
   useEffect(() => {
     if (!open || !user) return;
-    form.setFieldsValue({
-      fullName: user.fullName,
-      email: user.email,
-      requestedDepartmentId: undefined,
-    });
 
     const controller = new AbortController();
-    setLoadingPending(true);
-    void getMyPendingDepartmentChange(controller.signal)
-      .then((req) => {
-        if (!controller.signal.aborted) setPending(req);
-      })
-      .catch((err) => {
-        if (!controller.signal.aborted && !isAbortError(err)) {
-          setPending(null);
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoadingPending(false);
-      });
+    setLoading(true);
+    setLoadError("");
+    setPending(null);
+    setAccount(null);
+
+    void (async () => {
+      try {
+        const [profile, pendingReq] = await Promise.all([
+          getAccount(controller.signal),
+          getMyPendingDepartmentChange(controller.signal),
+        ]);
+        if (controller.signal.aborted) return;
+
+        setAccount(profile);
+        setPending(pendingReq);
+        form.setFieldsValue({
+          fullName: profile.fullName,
+          email: profile.email,
+          requestedDepartmentId: undefined,
+        });
+        // Keep AuthContext / avatar in sync with DB.
+        onUpdated(toAuthUser(profile, user.role));
+      } catch (err) {
+        if (controller.signal.aborted || isAbortError(err)) return;
+        setLoadError(getApiErrorMessage(err, "Không tải được thông tin tài khoản"));
+        form.setFieldsValue({
+          fullName: user.fullName,
+          email: user.email,
+          requestedDepartmentId: undefined,
+        });
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    })();
 
     return () => controller.abort();
-  }, [open, user, form]);
+    // Intentionally omit onUpdated/form from deps — open+user gate the fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user?.id]);
+
+  const currentDepartment = account?.department ?? user?.department ?? null;
+  const currentDepartmentId = currentDepartment?.id;
 
   const handleOk = async () => {
     if (!user) return;
@@ -72,12 +117,11 @@ export function ProfileDialog({
         fullName: values.fullName,
         email: values.email,
       });
-      const department: DepartmentSummary | null | undefined =
-        updated.department ?? user.department;
+      const department = updated.department ?? currentDepartment;
 
       if (
         values.requestedDepartmentId != null &&
-        values.requestedDepartmentId !== user.department?.id &&
+        values.requestedDepartmentId !== currentDepartmentId &&
         !pending
       ) {
         const req = await requestDepartmentChange(values.requestedDepartmentId);
@@ -87,13 +131,15 @@ export function ProfileDialog({
         toast.success("Cập nhật thông tin thành công");
       }
 
-      onUpdated({
-        id: updated.id,
-        email: updated.email,
-        fullName: updated.fullName,
-        role: user.role,
+      const nextUser = toAuthUser(
+        { ...updated, department: department ?? null },
+        user.role,
+      );
+      setAccount({
+        ...updated,
         department: department ?? null,
       });
+      onUpdated(nextUser);
       onClose();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Cập nhật thất bại"));
@@ -111,8 +157,17 @@ export function ProfileDialog({
       confirmLoading={submitting}
       okText="Lưu"
       cancelText="Đóng"
+      okButtonProps={{ disabled: loading || Boolean(loadError) }}
       destroyOnHidden
     >
+      {loadError ? (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={loadError}
+        />
+      ) : null}
       {pending ? (
         <Alert
           type="info"
@@ -121,12 +176,12 @@ export function ProfileDialog({
           message={`Đang chờ duyệt đổi sang: ${pending.requestedDepartment.name}`}
         />
       ) : null}
-      {loadingPending ? (
+      {loading ? (
         <Typography.Paragraph type="secondary">
-          Đang tải…
+          Đang tải thông tin tài khoản…
         </Typography.Paragraph>
       ) : null}
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" disabled={loading}>
         <Form.Item
           label="Họ tên"
           name="fullName"
@@ -148,8 +203,8 @@ export function ProfileDialog({
           <Input
             disabled
             value={
-              user?.department
-                ? `${user.department.name} (${user.department.code})`
+              currentDepartment
+                ? `${currentDepartment.name} (${currentDepartment.code})`
                 : "Chưa gán"
             }
           />
@@ -161,10 +216,10 @@ export function ProfileDialog({
         >
           <Select
             allowClear
-            disabled={Boolean(pending)}
+            disabled={Boolean(pending) || loading}
             placeholder="Chọn phòng ban mới (tuỳ chọn)"
             options={departments
-              .filter((d) => d.id !== user?.department?.id)
+              .filter((d) => d.id !== currentDepartmentId)
               .map((d) => ({
                 value: d.id,
                 label: `${d.name} (${d.code})`,

@@ -1,47 +1,55 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import dayjs from "dayjs";
-import { Descriptions } from "antd";
+import { Descriptions, Space } from "antd";
 import { DataTable } from "@/components/ui/table/DataTable";
 import { ViewButton } from "@/components/ui/button/ViewButton";
 import { EditDialog } from "@/components/ui/dialog/EditDialog";
-import { ErrorPage } from "@/components/ui/error/ErrorPage";
+import { FetchError } from "@/components/ui/error/FetchError";
 import { NoData } from "@/components/ui/empty/NoData";
 import { NoSearchResult } from "@/components/ui/empty/NoSearchResult";
 import { PageContent } from "@/components/ui/page/PageContent";
 import { PageHeader } from "@/components/ui/page/PageHeader";
 import { PageLayout } from "@/components/ui/page/PageLayout";
+import { ExportButton } from "@/components/ui/toolbar/ExportButton";
 import { RefreshButton } from "@/components/ui/toolbar/RefreshButton";
-import { RetryButton } from "@/components/ui/error/RetryButton";
 import { SearchForm } from "@/components/ui/search/SearchForm";
 import { SearchInput } from "@/components/ui/search/SearchInput";
 import { TableRowActions } from "@/components/ui/table/TableRowActions";
-import { actionsColumn, defineColumns } from "@/components/ui/table/columnDefs";
-import { useMyInvoices } from "@/features/invoices/api/invoices.hooks";
+import {
+  actionsColumn,
+  defineColumns,
+  sortableColumn,
+} from "@/components/ui/table/columnDefs";
+import { useMyInvoicesPage } from "@/features/invoices/api/invoices.hooks";
 import type { Booking } from "@/features/bookings/api/bookings.types";
-import { getApiErrorMessage } from "@/lib/api-error";
+import { formatDateTimeRange } from "@/lib/datetime";
 import { billableHours, durationHours, formatVnd } from "@/lib/money";
+import { useAuthenticatedExport } from "@/lib/useAuthenticatedExport";
+import { useServerTableQuery } from "@/lib/useServerTableQuery";
 
 export default function MyInvoicesPage() {
-  const { data, error, isLoading, refetch } = useMyInvoices();
   const [search, setSearch] = useState("");
+  const { query, setQuery, pageParams, resetPage } =
+    useServerTableQuery("startTime,desc");
+  const q = search.trim() || undefined;
+  const pageOpts = { ...pageParams, q };
+  const { data: invoicesPage, error, isLoading, refetch } =
+    useMyInvoicesPage(pageOpts);
   const [detail, setDetail] = useState<Booking | null>(null);
+  const { exporting, runExport } = useAuthenticatedExport();
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return data;
-    return data.filter(
-      (inv) =>
-        inv.title.toLowerCase().includes(q) ||
-        (inv.roomName ?? "").toLowerCase().includes(q),
-    );
-  }, [data, search]);
+  const resetSearch = () => {
+    setSearch("");
+    resetPage();
+  };
 
   const columns = defineColumns<Booking>([
-    {
+    sortableColumn<Booking>({
       title: "Ngày",
-      key: "date",
+      dataIndex: "startTime",
+      key: "startTime",
       render: (_, inv) => dayjs(inv.startTime).format("DD/MM/YYYY"),
-    },
+    }),
     {
       title: "Giờ",
       key: "time",
@@ -54,18 +62,23 @@ export default function MyInvoicesPage() {
       key: "roomName",
       render: (name: string | undefined) => name ?? "—",
     },
-    { title: "Tiêu đề", dataIndex: "title", key: "title" },
+    sortableColumn<Booking>({
+      title: "Tiêu đề",
+      dataIndex: "title",
+      key: "title",
+    }),
     {
       title: "Giờ tính phí",
       key: "hours",
       render: (_, inv) =>
         billableHours(inv.startTime, inv.endTime).toFixed(2),
     },
-    {
+    sortableColumn<Booking>({
       title: "Thành tiền",
+      dataIndex: "amount",
       key: "amount",
       render: (_, inv) => formatVnd(inv.amount),
-    },
+    }),
     actionsColumn<Booking>((_, inv) => (
       <TableRowActions>
         <ViewButton onClick={() => setDetail(inv)} />
@@ -76,10 +89,13 @@ export default function MyInvoicesPage() {
   return (
     <PageLayout>
       <PageHeader title="Hóa đơn của tôi">
-        <SearchForm onReset={() => setSearch("")}>
+        <SearchForm onReset={resetSearch}>
           <SearchInput
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              resetPage();
+            }}
             placeholder="Tìm theo phòng, tiêu đề…"
           />
         </SearchForm>
@@ -87,34 +103,47 @@ export default function MyInvoicesPage() {
 
       <PageContent>
         {error ? (
-          <ErrorPage
-            description={getApiErrorMessage(error, "Không tải được hóa đơn")}
-            extra={
-              <RetryButton
-                onRetry={() => void refetch()}
-                loading={isLoading}
-              />
-            }
+          <FetchError
+            error={error}
+            fallback="Không tải được hóa đơn"
+            onRetry={() => void refetch()}
+            loading={isLoading}
           />
         ) : (
           <DataTable
             rowKey="id"
             columns={columns}
-            data={filtered}
+            data={invoicesPage.items}
             loading={isLoading}
             scroll={{ x: true }}
             emptyText={
-              search.trim() ? (
-                <NoSearchResult onReset={() => setSearch("")} />
+              q ? (
+                <NoSearchResult onReset={resetSearch} />
               ) : (
                 <NoData description="Chưa có hóa đơn (chỉ hiện lịch đã duyệt)" />
               )
             }
+            serverSide
+            total={invoicesPage.totalElements}
+            page={query.page}
+            pageSize={query.pageSize}
+            sort={query.sort}
+            onQueryChange={setQuery}
             toolbarExtra={
-              <RefreshButton
-                loading={isLoading}
-                onClick={() => void refetch()}
-              />
+              <Space>
+                <ExportButton
+                  loading={exporting}
+                  onClick={() =>
+                    void runExport("/account/invoices/export", "invoices.csv")
+                  }
+                >
+                  Xuất CSV
+                </ExportButton>
+                <RefreshButton
+                  loading={isLoading}
+                  onClick={() => void refetch()}
+                />
+              </Space>
             }
           />
         )}
@@ -135,8 +164,7 @@ export default function MyInvoicesPage() {
               {detail.roomName ?? "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Thời gian">
-              {dayjs(detail.startTime).format("DD/MM/YYYY HH:mm")} –{" "}
-              {dayjs(detail.endTime).format("HH:mm")}
+              {formatDateTimeRange(detail.startTime, detail.endTime)}
             </Descriptions.Item>
             <Descriptions.Item label="Đơn giá / giờ">
               {formatVnd(detail.pricePerHour)}

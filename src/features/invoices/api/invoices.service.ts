@@ -6,53 +6,35 @@ import {
   type SpringPageResponse,
   toPagedResult,
 } from "@/lib/pagination";
+import {
+  mapBackendBooking,
+  type BackendBookingDto,
+} from "@/features/bookings/api/mapBackendBooking";
 import type { Booking } from "@/features/bookings/api/bookings.types";
 
-interface BackendInvoice {
-  id: number;
-  title: string;
-  startTime: string;
-  endTime: string;
-  status: Booking["status"];
-  pricePerHour?: number;
-  amount?: number;
-  room?: { id: number; name?: string; pricePerHour?: number };
-  user?: { id: number; login?: string };
-}
-
-function toInvoice(booking: BackendInvoice): Booking {
-  return {
-    id: booking.id,
-    roomId: booking.room?.id ?? 0,
-    userId: booking.user?.id ?? 0,
-    title: booking.title,
-    startTime: booking.startTime,
-    endTime: booking.endTime,
-    status: booking.status,
-    roomName: booking.room?.name,
-    userLogin: booking.user?.login,
-    pricePerHour:
-      booking.pricePerHour != null
-        ? Number(booking.pricePerHour)
-        : booking.room?.pricePerHour != null
-          ? Number(booking.room.pricePerHour)
-          : undefined,
-    amount: booking.amount != null ? Number(booking.amount) : undefined,
-  };
+export interface GetMyInvoicesOptions extends PageParams {
+  /** Search title / room name */
+  q?: string;
+  signal?: AbortSignal;
 }
 
 export async function getMyInvoicesPage(
-  options: PageParams & { signal?: AbortSignal } = {},
+  options: GetMyInvoicesOptions = {},
 ): Promise<PagedResult<Booking>> {
-  const { signal, page = 0, size = 50, sort = "startTime,desc" } = options;
+  const { signal, page = 0, size = 10, sort = "startTime,desc", q } = options;
   try {
     const { data } = await apiClient.get<
-      BackendInvoice[] | SpringPageResponse<BackendInvoice>
+      BackendBookingDto[] | SpringPageResponse<BackendBookingDto>
     >("/account/invoices", {
-      params: { page, size, sort },
+      params: {
+        page,
+        size,
+        sort,
+        ...(q?.trim() ? { q: q.trim() } : {}),
+      },
       signal,
     });
-    return toPagedResult(data, toInvoice);
+    return toPagedResult(data, mapBackendBooking);
   } catch (error) {
     if (isAbortError(error)) throw error;
     throw toApiError(error, "Không tải được hóa đơn");
@@ -71,13 +53,13 @@ export async function getMyInvoice(
   signal?: AbortSignal,
 ): Promise<Booking> {
   try {
-    const { data } = await apiClient.get<BackendInvoice>(
+    const { data } = await apiClient.get<BackendBookingDto>(
       `/account/invoices/${id}`,
       { signal },
     );
-    return toInvoice(data);
+    return mapBackendBooking(data);
   } catch (error) {
     if (isAbortError(error)) throw error;
-    throw toApiError(error, "Không tải được chi tiết hóa đơn");
+    throw toApiError(error, "Không tải được hóa đơn");
   }
 }

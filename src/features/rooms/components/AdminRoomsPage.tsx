@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button, Form, Input, InputNumber, Select } from "antd";
 import { ConfirmDialog } from "@/components/ui/dialog/ConfirmDialog";
 import { CreateDialog } from "@/components/ui/dialog/CreateDialog";
@@ -7,11 +7,10 @@ import { DeleteButton } from "@/components/ui/button/DeleteButton";
 import { DeleteDialog } from "@/components/ui/dialog/DeleteDialog";
 import { EditButton } from "@/components/ui/button/EditButton";
 import { EditDialog } from "@/components/ui/dialog/EditDialog";
-import { ErrorPage } from "@/components/ui/error/ErrorPage";
+import { FetchError } from "@/components/ui/error/FetchError";
 import { PageContent } from "@/components/ui/page/PageContent";
 import { PageHeader } from "@/components/ui/page/PageHeader";
 import { PageLayout } from "@/components/ui/page/PageLayout";
-import { RetryButton } from "@/components/ui/error/RetryButton";
 import { SearchForm } from "@/components/ui/search/SearchForm";
 import { SearchInput } from "@/components/ui/search/SearchInput";
 import { StatusBadge } from "@/components/ui/status/StatusBadge";
@@ -20,14 +19,15 @@ import { NoData } from "@/components/ui/empty/NoData";
 import { NoSearchResult } from "@/components/ui/empty/NoSearchResult";
 import { RefreshButton } from "@/components/ui/toolbar/RefreshButton";
 import { TableRowActions } from "@/components/ui/table/TableRowActions";
-import { actionsColumn, defineColumns } from "@/components/ui/table/columnDefs";
+import { actionsColumn, defineColumns, sortableColumn } from "@/components/ui/table/columnDefs";
 import { useAppModal, useToast } from "@/components/ui/feedback/useFeedback";
 import { useDepartments } from "@/features/departments/api/departments.hooks";
 import { createRoom, updateRoom } from "@/features/rooms/api/rooms.service";
-import { useRooms } from "@/features/rooms/api/rooms.hooks";
+import { useRoomsPage } from "@/features/rooms/api/rooms.hooks";
 import type { Room } from "@/features/rooms/api/rooms.types";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatVnd } from "@/lib/money";
+import { useServerTableQuery } from "@/lib/useServerTableQuery";
 
 type RoomActiveFilter = "ACTIVE" | "INACTIVE";
 
@@ -56,12 +56,22 @@ const ROOM_ACTIVE_COLOR: Record<string, string> = {
 export default function AdminRoomsPage() {
   const toast = useToast();
   const appModal = useAppModal();
-  const { data: rooms, error, isLoading, refetch } = useRooms();
   const { data: departments } = useDepartments();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RoomActiveFilter | "ALL">(
     "ALL",
   );
+  const { query, setQuery, pageParams, resetPage } =
+    useServerTableQuery("name,asc");
+  const q = search.trim() || undefined;
+  const active =
+    statusFilter === "ACTIVE"
+      ? true
+      : statusFilter === "INACTIVE"
+        ? false
+        : undefined;
+  const pageOpts = { ...pageParams, q, active };
+  const { data: roomsPage, error, isLoading, refetch } = useRoomsPage(pageOpts);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
@@ -165,26 +175,13 @@ export default function AdminRoomsPage() {
     }
   };
 
-  const filteredRooms = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rooms.filter((room) => {
-      if (statusFilter === "ACTIVE" && !room.isActive) return false;
-      if (statusFilter === "INACTIVE" && room.isActive) return false;
-      if (!q) return true;
-      return (
-        room.name.toLowerCase().includes(q) ||
-        String(room.capacity).includes(q) ||
-        (room.lockedDepartment?.name ?? "chung").toLowerCase().includes(q)
-      );
-    });
-  }, [rooms, search, statusFilter]);
-
   const resetFilters = () => {
     setSearch("");
     setStatusFilter("ALL");
+    resetPage();
   };
 
-  const hasActiveFilters = Boolean(search.trim()) || statusFilter !== "ALL";
+  const hasActiveFilters = Boolean(q) || statusFilter !== "ALL";
 
   const tableEmpty = hasActiveFilters ? (
     <NoSearchResult onReset={resetFilters} />
@@ -251,14 +248,18 @@ export default function AdminRoomsPage() {
   );
 
   const columns = defineColumns<Room>([
-    { title: "Tên phòng", dataIndex: "name", key: "name" },
-    { title: "Sức chứa", dataIndex: "capacity", key: "capacity" },
-    {
+    sortableColumn<Room>({ title: "Tên phòng", dataIndex: "name", key: "name" }),
+    sortableColumn<Room>({
+      title: "Sức chứa",
+      dataIndex: "capacity",
+      key: "capacity",
+    }),
+    sortableColumn<Room>({
       title: "Giá / giờ",
       dataIndex: "pricePerHour",
       key: "pricePerHour",
       render: (price: number) => formatVnd(price),
-    },
+    }),
     {
       title: "Phạm vi",
       key: "lockedDepartment",
@@ -267,7 +268,7 @@ export default function AdminRoomsPage() {
           ? `${room.lockedDepartment.name} (${room.lockedDepartment.code})`
           : "Công khai",
     },
-    {
+    sortableColumn<Room>({
       title: "Trạng thái",
       dataIndex: "isActive",
       key: "isActive",
@@ -278,7 +279,7 @@ export default function AdminRoomsPage() {
           labelMap={ROOM_ACTIVE_LABEL}
         />
       ),
-    },
+    }),
     actionsColumn<Room>((_, room) => (
       <TableRowActions>
         <EditButton onClick={() => openEditModal(room)} />
@@ -312,12 +313,18 @@ export default function AdminRoomsPage() {
         <SearchForm onReset={resetFilters}>
           <SearchInput
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              resetPage();
+            }}
             placeholder="Tìm theo tên, sức chứa, phòng ban…"
           />
-          <StatusFilter
+          <StatusFilter<RoomActiveFilter>
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(value) => {
+              setStatusFilter(value);
+              resetPage();
+            }}
             options={ROOM_STATUS_OPTIONS}
             allLabel="Tất cả trạng thái"
           />
@@ -326,27 +333,26 @@ export default function AdminRoomsPage() {
 
       <PageContent>
         {error ? (
-          <ErrorPage
-            description={getApiErrorMessage(
-              error,
-              "Không tải được danh sách phòng",
-            )}
-            extra={
-              <RetryButton
-                onRetry={() => void refetch()}
-                loading={isLoading}
-              />
-            }
+          <FetchError
+            error={error}
+            fallback="Không tải được danh sách phòng"
+            onRetry={() => void refetch()}
+            loading={isLoading}
           />
         ) : (
           <DataTable
-            key={`${search}-${statusFilter}`}
             rowKey="id"
             columns={columns}
-            data={filteredRooms}
+            data={roomsPage.items}
             loading={isLoading}
             scroll={{ x: true }}
             emptyText={tableEmpty}
+            serverSide
+            total={roomsPage.totalElements}
+            page={query.page}
+            pageSize={query.pageSize}
+            sort={query.sort}
+            onQueryChange={setQuery}
             toolbarExtra={
               <RefreshButton
                 loading={isLoading}

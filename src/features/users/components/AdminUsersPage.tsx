@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Button, Form, Input, Select } from "antd";
+import { useLocation } from "react-router";
 import { ConfirmDialog } from "@/components/ui/dialog/ConfirmDialog";
 import { CreateDialog } from "@/components/ui/dialog/CreateDialog";
 import { DataTable } from "@/components/ui/table/DataTable";
@@ -7,26 +8,27 @@ import { DeleteButton } from "@/components/ui/button/DeleteButton";
 import { DeleteDialog } from "@/components/ui/dialog/DeleteDialog";
 import { EditButton } from "@/components/ui/button/EditButton";
 import { EditDialog } from "@/components/ui/dialog/EditDialog";
-import { ErrorPage } from "@/components/ui/error/ErrorPage";
+import { FetchError } from "@/components/ui/error/FetchError";
 import { NoData } from "@/components/ui/empty/NoData";
 import { NoSearchResult } from "@/components/ui/empty/NoSearchResult";
 import { PageContent } from "@/components/ui/page/PageContent";
 import { PageHeader } from "@/components/ui/page/PageHeader";
 import { PageLayout } from "@/components/ui/page/PageLayout";
 import { RefreshButton } from "@/components/ui/toolbar/RefreshButton";
-import { RetryButton } from "@/components/ui/error/RetryButton";
 import { SearchForm } from "@/components/ui/search/SearchForm";
 import { SearchInput } from "@/components/ui/search/SearchInput";
+import { StatusFilter } from "@/components/ui/search/StatusFilter";
 import { StatusBadge } from "@/components/ui/status/StatusBadge";
 import { TableRowActions } from "@/components/ui/table/TableRowActions";
+import { ApproveRejectActions } from "@/components/ui/table/ApproveRejectActions";
 import { TabBar } from "@/components/ui/tabs/TabBar";
 import { defineTabItems } from "@/components/ui/tabs/TabItem";
-import { actionsColumn, defineColumns } from "@/components/ui/table/columnDefs";
+import { actionsColumn, defineColumns, sortableColumn } from "@/components/ui/table/columnDefs";
 import { useToast } from "@/components/ui/feedback/useFeedback";
 import { useDepartments } from "@/features/departments/api/departments.hooks";
 import {
   usePendingDepartmentChanges,
-  useUsers,
+  useUsersPage,
 } from "@/features/users/api/users.hooks";
 import {
   approveDepartmentChange,
@@ -41,6 +43,10 @@ import type {
 } from "@/features/users/api/users.types";
 import type { UserRole } from "@/features/auth/api/auth.types";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { parseNotificationFlash } from "@/lib/notificationNav";
+import { useServerTableQuery } from "@/lib/useServerTableQuery";
+import { useTableRowHighlight } from "@/lib/useTableRowHighlight";
+import { useUrlTab } from "@/lib/useUrlTab";
 
 type UserFormValues = {
   email: string;
@@ -49,6 +55,20 @@ type UserFormValues = {
   role: UserRole;
   departmentId?: number | null;
 };
+
+type UserActiveFilter = "ACTIVE" | "INACTIVE";
+type UsersTab = "users" | "requests";
+
+function parseUsersTab(raw: string | null): UsersTab {
+  return raw === "requests" ? "requests" : "users";
+}
+
+const USERS_HIGHLIGHT_TABS = ["requests"] as const;
+
+const USER_STATUS_OPTIONS = [
+  { value: "ACTIVE" as const, label: "Hoạt động" },
+  { value: "INACTIVE" as const, label: "Ngừng" },
+];
 
 const ACTIVE_LABEL: Record<string, string> = {
   true: "Hoạt động",
@@ -61,15 +81,39 @@ const ACTIVE_COLOR: Record<string, string> = {
 
 export default function AdminUsersPage() {
   const toast = useToast();
-  const { data: users, error, isLoading, refetch } = useUsers();
+  const location = useLocation();
+  const { tab, setTab, searchParams, setSearchParams } = useUrlTab({
+    defaultTab: "users",
+    parse: parseUsersTab,
+    highlightTabs: USERS_HIGHLIGHT_TABS,
+  });
+  const { query, setQuery, pageParams, resetPage } =
+    useServerTableQuery("id,asc");
   const {
     data: pendingRequests,
     error: pendingError,
     isLoading: pendingLoading,
     refetch: refetchPending,
   } = usePendingDepartmentChanges();
-  const [tab, setTab] = useState("users");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<UserActiveFilter | "ALL">(
+    "ALL",
+  );
+  const [requestSearch, setRequestSearch] = useState("");
+  const hasFilters = Boolean(search.trim()) || statusFilter !== "ALL";
+  const pageOpts = {
+    ...pageParams,
+    ...(search.trim() ? { q: search.trim() } : {}),
+    ...(statusFilter === "ACTIVE"
+      ? { activated: true as const }
+      : statusFilter === "INACTIVE"
+        ? { activated: false as const }
+        : {}),
+  };
+  const { data: usersPage, error, isLoading, refetch } = useUsersPage(
+    pageOpts,
+    tab === "users",
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editing, setEditing] = useState<ManagedUser | null>(null);
@@ -205,16 +249,59 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(
-      (u) =>
-        u.email.toLowerCase().includes(q) ||
-        u.fullName.toLowerCase().includes(q) ||
-        (u.department?.name ?? "").toLowerCase().includes(q),
-    );
-  }, [users, search]);
+  const filteredRequests = useMemo(() => {
+    const q = requestSearch.trim().toLowerCase();
+    if (!q) return pendingRequests;
+    return pendingRequests.filter((r) => {
+      const haystack = [
+        r.userFullName,
+        r.userEmail,
+        r.currentDepartment?.name ?? "",
+        r.requestedDepartment.name,
+        r.requestedDepartment.code,
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [pendingRequests, requestSearch]);
+
+  const flashKey = parseNotificationFlash(location.state);
+
+  const highlightIdParam = searchParams.get("highlight");
+  const requestRowsForHighlight = useMemo(() => {
+    if (!highlightIdParam || !/^\d+$/.test(highlightIdParam)) {
+      return filteredRequests;
+    }
+    const id = Number(highlightIdParam);
+    // Prefer unfiltered pending list so search does not hide the deep-linked row.
+    if (pendingRequests.some((r) => r.id === id)) {
+      return pendingRequests;
+    }
+    return filteredRequests;
+  }, [filteredRequests, pendingRequests, highlightIdParam]);
+
+  const displayRequests =
+    highlightIdParam && /^\d+$/.test(highlightIdParam)
+      ? requestRowsForHighlight
+      : filteredRequests;
+
+  const { onRow: requestOnRow, rowClassName: requestRowClassName } =
+    useTableRowHighlight({
+      searchParams,
+      setSearchParams,
+      ready: tab === "requests" && !pendingLoading,
+      rowIds: displayRequests.map((r) => r.id),
+      missingMessage:
+        "Yêu cầu đổi phòng ban không còn trong danh sách chờ duyệt (có thể đã được xử lý).",
+      flashKey,
+    });
+
+  const resetUserFilters = () => {
+    setSearch("");
+    setStatusFilter("ALL");
+    resetPage();
+  };
 
   const departmentOptions = departments.map((d) => ({
     value: d.id,
@@ -277,15 +364,23 @@ export default function AdminUsersPage() {
   );
 
   const userColumns = defineColumns<ManagedUser>([
-    { title: "Họ tên", dataIndex: "fullName", key: "fullName" },
-    { title: "Email", dataIndex: "email", key: "email" },
+    sortableColumn<ManagedUser>({
+      title: "Họ tên",
+      dataIndex: "fullName",
+      key: "fullName",
+    }),
+    sortableColumn<ManagedUser>({
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+    }),
     { title: "Vai trò", dataIndex: "role", key: "role" },
     {
       title: "Phòng ban",
       key: "department",
       render: (_, u) => u.department?.name ?? "—",
     },
-    {
+    sortableColumn<ManagedUser>({
       title: "Trạng thái",
       dataIndex: "activated",
       key: "activated",
@@ -296,7 +391,7 @@ export default function AdminUsersPage() {
           labelMap={ACTIVE_LABEL}
         />
       ),
-    },
+    }),
     actionsColumn<ManagedUser>((_, user) => (
       <TableRowActions>
         <EditButton onClick={() => openEdit(user)} />
@@ -334,18 +429,10 @@ export default function AdminUsersPage() {
         `${r.requestedDepartment.name} (${r.requestedDepartment.code})`,
     },
     actionsColumn<DepartmentChangeRequest>((_, req) => (
-      <TableRowActions>
-        <Button
-          size="small"
-          type="primary"
-          onClick={() => void handleApprove(req)}
-        >
-          Duyệt
-        </Button>
-        <DeleteButton onClick={() => void handleReject(req)}>
-          Từ chối
-        </DeleteButton>
-      </TableRowActions>
+      <ApproveRejectActions
+        onApprove={() => void handleApprove(req)}
+        onReject={() => void handleReject(req)}
+      />
     )),
   ]);
 
@@ -368,21 +455,7 @@ export default function AdminUsersPage() {
             </Button>
           ) : null
         }
-      >
-        {tab === "users" ? (
-          <SearchForm
-            onReset={() => {
-              setSearch("");
-            }}
-          >
-            <SearchInput
-              value={search}
-              onChange={setSearch}
-              placeholder="Tìm theo tên, email, phòng ban…"
-            />
-          </SearchForm>
-        ) : null}
-      </PageHeader>
+      />
 
       <PageContent>
         <TabBar
@@ -393,66 +466,108 @@ export default function AdminUsersPage() {
         />
 
         {tab === "users" ? (
-          error ? (
-            <ErrorPage
-              description={getApiErrorMessage(error, "Không tải được user")}
-              extra={
-                <RetryButton
-                  onRetry={() => void refetch()}
-                  loading={isLoading}
+          <>
+            <div style={{ marginBottom: 16 }}>
+              <SearchForm onReset={resetUserFilters}>
+                <SearchInput
+                  value={search}
+                  onChange={(value) => {
+                    setSearch(value);
+                    resetPage();
+                  }}
+                  placeholder="Tìm theo tên, email, phòng ban…"
                 />
-              }
-            />
-          ) : (
-            <DataTable
-              rowKey="id"
-              columns={userColumns}
-              data={filteredUsers}
-              loading={isLoading}
-              scroll={{ x: true }}
-              emptyText={
-                search.trim() ? (
-                  <NoSearchResult onReset={() => setSearch("")} />
-                ) : (
-                  <NoData description="Chưa có user" />
-                )
-              }
-              toolbarExtra={
-                <RefreshButton
-                  loading={isLoading}
-                  onClick={() => void refetch()}
+                <StatusFilter<UserActiveFilter>
+                  value={statusFilter}
+                  onChange={(value) => {
+                    setStatusFilter(value);
+                    resetPage();
+                  }}
+                  options={USER_STATUS_OPTIONS}
+                  allLabel="Tất cả trạng thái"
                 />
-              }
-            />
-          )
-        ) : pendingError ? (
-          <ErrorPage
-            description={getApiErrorMessage(
-              pendingError,
-              "Không tải được yêu cầu",
+              </SearchForm>
+            </div>
+            {error ? (
+              <FetchError
+                error={error}
+                fallback="Không tải được user"
+                onRetry={() => void refetch()}
+                loading={isLoading}
+              />
+            ) : (
+              <DataTable
+                rowKey="id"
+                columns={userColumns}
+                data={usersPage.items}
+                loading={isLoading}
+                scroll={{ x: true }}
+                emptyText={
+                  hasFilters ? (
+                    <NoSearchResult onReset={resetUserFilters} />
+                  ) : (
+                    <NoData description="Chưa có user" />
+                  )
+                }
+                serverSide
+                total={usersPage.totalElements}
+                page={query.page}
+                pageSize={query.pageSize}
+                sort={query.sort}
+                onQueryChange={setQuery}
+                toolbarExtra={
+                  <RefreshButton
+                    loading={isLoading}
+                    onClick={() => void refetch()}
+                  />
+                }
+              />
             )}
-            extra={
-              <RetryButton
+          </>
+        ) : (
+          <>
+            <div style={{ marginBottom: 16 }}>
+              <SearchForm onReset={() => setRequestSearch("")}>
+                <SearchInput
+                  value={requestSearch}
+                  onChange={setRequestSearch}
+                  placeholder="Tìm theo user, email, phòng ban…"
+                />
+              </SearchForm>
+            </div>
+            {pendingError ? (
+              <FetchError
+                error={pendingError}
+                fallback="Không tải được yêu cầu"
                 onRetry={() => void refetchPending()}
                 loading={pendingLoading}
               />
-            }
-          />
-        ) : (
-          <DataTable
-            rowKey="id"
-            columns={requestColumns}
-            data={pendingRequests}
-            loading={pendingLoading}
-            scroll={{ x: true }}
-            emptyText={<NoData description="Không có yêu cầu chờ duyệt" />}
-            toolbarExtra={
-              <RefreshButton
+            ) : (
+              <DataTable
+                key={requestSearch}
+                rowKey="id"
+                columns={requestColumns}
+                data={displayRequests}
                 loading={pendingLoading}
-                onClick={() => void refetchPending()}
+                scroll={{ x: true }}
+                onRow={requestOnRow}
+                rowClassName={requestRowClassName}
+                emptyText={
+                  requestSearch.trim() ? (
+                    <NoSearchResult onReset={() => setRequestSearch("")} />
+                  ) : (
+                    <NoData description="Không có yêu cầu chờ duyệt" />
+                  )
+                }
+                toolbarExtra={
+                  <RefreshButton
+                    loading={pendingLoading}
+                    onClick={() => void refetchPending()}
+                  />
+                }
               />
-            }
-          />
+            )}
+          </>
         )}
       </PageContent>
 

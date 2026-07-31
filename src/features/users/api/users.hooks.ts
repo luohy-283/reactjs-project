@@ -1,103 +1,45 @@
-import { useCallback, useEffect, useState } from "react";
 import {
   getDepartmentChangeRequests,
   getUsers,
+  getUsersPage,
 } from "@/features/users/api/users.service";
+import type { GetUsersOptions } from "@/features/users/api/users.service";
 import type {
   DepartmentChangeRequest,
   ManagedUser,
 } from "@/features/users/api/users.types";
-import { isAbortError } from "@/lib/api-error";
+import type { PagedResult } from "@/lib/pagination";
+import { useAsyncFetch } from "@/lib/useAsyncFetch";
 
 export function useUsers() {
-  const [data, setData] = useState<ManagedUser[]>([]);
-  const [error, setError] = useState<unknown>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  return useAsyncFetch((signal) => getUsers(signal), [], {
+    initialData: [] as ManagedUser[],
+  });
+}
 
-  const refetch = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      setData(await getUsers());
-    } catch (err) {
-      setError(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+const EMPTY_USERS_PAGE: PagedResult<ManagedUser> = {
+  items: [],
+  page: 0,
+  size: 10,
+  totalElements: 0,
+  totalPages: 0,
+};
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    void (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const users = await getUsers(controller.signal);
-        if (!controller.signal.aborted) {
-          setData(users);
-        }
-      } catch (err) {
-        if (!controller.signal.aborted && !isAbortError(err)) {
-          setError(err);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => controller.abort();
-  }, []);
-
-  return { data, error, isLoading, refetch };
+export function useUsersPage(
+  options: Omit<GetUsersOptions, "signal">,
+  enabled = true,
+) {
+  return useAsyncFetch(
+    (signal) => getUsersPage({ ...options, signal }),
+    [options.page, options.size, options.sort, options.q, options.activated],
+    { initialData: EMPTY_USERS_PAGE, enabled },
+  );
 }
 
 export function usePendingDepartmentChanges() {
-  const [data, setData] = useState<DepartmentChangeRequest[]>([]);
-  const [error, setError] = useState<unknown>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const refetch = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      setData(await getDepartmentChangeRequests("PENDING"));
-    } catch (err) {
-      setError(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    void (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const items = await getDepartmentChangeRequests(
-          "PENDING",
-          controller.signal,
-        );
-        if (!controller.signal.aborted) {
-          setData(items);
-        }
-      } catch (err) {
-        if (!controller.signal.aborted && !isAbortError(err)) {
-          setError(err);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => controller.abort();
-  }, []);
-
-  return { data, error, isLoading, refetch };
+  return useAsyncFetch(
+    (signal) => getDepartmentChangeRequests("PENDING", signal),
+    [],
+    { initialData: [] as DepartmentChangeRequest[] },
+  );
 }

@@ -7,42 +7,25 @@ import {
   TimePicker,
   Input,
   Space,
+  Typography,
 } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { CreateDialog } from "@/components/ui/dialog/CreateDialog";
-import { DataTable } from "@/components/ui/table/DataTable";
 import { ErrorMessage } from "@/components/ui/error/ErrorMessage";
-import { ErrorPage } from "@/components/ui/error/ErrorPage";
+import { FetchError } from "@/components/ui/error/FetchError";
 import { PageContent } from "@/components/ui/page/PageContent";
 import { PageHeader } from "@/components/ui/page/PageHeader";
 import { PageLayout } from "@/components/ui/page/PageLayout";
 import { RefreshButton } from "@/components/ui/toolbar/RefreshButton";
-import { RetryButton } from "@/components/ui/error/RetryButton";
 import { SearchForm } from "@/components/ui/search/SearchForm";
 import { SearchInput } from "@/components/ui/search/SearchInput";
-import { NoData } from "@/components/ui/empty/NoData";
-import { NoSearchResult } from "@/components/ui/empty/NoSearchResult";
-import { defineColumns } from "@/components/ui/table/columnDefs";
 import { useToast } from "@/components/ui/feedback/useFeedback";
+import { RoomDayTimeline } from "@/app/components/RoomDayTimeline";
 import { createBooking } from "@/features/bookings/api/bookings.service";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useRoomSchedule } from "@/app/hooks/use-room-schedule";
 import { estimateBookingAmount, formatVnd } from "@/lib/money";
-import { Typography } from "antd";
-
-interface RoomScheduleRow {
-  key: number;
-  roomName: string;
-  capacity: number;
-  bookingLines: string[];
-}
-
-function formatTimeRange(startTime: string, endTime: string): string {
-  return `${dayjs(startTime).format("HH:mm")} - ${dayjs(endTime).format("HH:mm")}`;
-}
-
-const TABLE_SCROLL_X = 640;
 
 /** App-layer route: composes auth + rooms + bookings (no cross-feature imports). */
 export default function DashboardRoute() {
@@ -66,61 +49,26 @@ export default function DashboardRoute() {
   const watchedStart = Form.useWatch("startTime", form);
   const watchedEnd = Form.useWatch("endTime", form);
 
-  const scheduleRows: RoomScheduleRow[] = useMemo(
-    () =>
-      rooms.map((room) => ({
-        key: room.id,
-        roomName: room.name,
-        capacity: room.capacity,
-        bookingLines: bookings
-          .filter((booking) => booking.roomId === room.id)
-          .map((booking) => {
-            const statusHint =
-              booking.status === "PENDING" ? " (chờ duyệt)" : "";
-            return `${formatTimeRange(booking.startTime, booking.endTime)} — ${booking.title}${statusHint}`;
-          }),
-      })),
-    [rooms, bookings],
-  );
-
-  const filteredRows = useMemo(() => {
+  const filteredRooms = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return scheduleRows;
-    return scheduleRows.filter((row) => {
-      const haystack = [row.roomName, String(row.capacity), ...row.bookingLines]
+    if (!q) return rooms;
+    return rooms.filter((room) => {
+      const roomBookings = bookings.filter((b) => b.roomId === room.id);
+      const haystack = [
+        room.name,
+        String(room.capacity),
+        ...roomBookings.map((b) => `${b.title} ${b.userLogin ?? ""}`),
+      ]
         .join(" ")
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [scheduleRows, search]);
+  }, [rooms, bookings, search]);
 
-  const columns = defineColumns<RoomScheduleRow>([
-    { title: "Phòng", dataIndex: "roomName", key: "roomName", width: 180 },
-    {
-      title: "Sức chứa",
-      dataIndex: "capacity",
-      key: "capacity",
-      width: 100,
-      align: "center",
-    },
-    {
-      title: "Lịch đã đặt",
-      key: "bookings",
-      onCell: () => ({
-        style: { wordBreak: "break-word", whiteSpace: "normal" },
-      }),
-      render: (_, row) =>
-        row.bookingLines.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {row.bookingLines.map((line) => (
-              <span key={line}>{line}</span>
-            ))}
-          </div>
-        ) : (
-          <span style={{ color: "rgba(0, 0, 0, 0.45)" }}>Trống cả ngày</span>
-        ),
-    },
-  ]);
+  const filteredBookings = useMemo(() => {
+    const ids = new Set(filteredRooms.map((r) => r.id));
+    return bookings.filter((b) => ids.has(b.roomId));
+  }, [bookings, filteredRooms]);
 
   const combineDateTime = (time: Dayjs): Dayjs =>
     selectedDate
@@ -192,9 +140,25 @@ export default function DashboardRoute() {
     }
   };
 
-  const openBookingModal = () => {
+  const openBookingModal = (prefill?: {
+    roomId: number;
+    startHour: number;
+    startMinute: number;
+  }) => {
     setBookingError("");
     form.resetFields();
+    if (prefill) {
+      const start = dayjs()
+        .hour(prefill.startHour)
+        .minute(prefill.startMinute)
+        .second(0);
+      const end = start.add(1, "hour");
+      form.setFieldsValue({
+        roomId: prefill.roomId,
+        startTime: start,
+        endTime: end,
+      });
+    }
     setModalOpen(true);
   };
 
@@ -208,9 +172,12 @@ export default function DashboardRoute() {
       <PageHeader
         title="Lịch phòng họp"
         extra={
-          <Button type="primary" onClick={openBookingModal}>
-            Đặt phòng
-          </Button>
+          <Space>
+            <RefreshButton loading={isLoading} onClick={() => void refetch()} />
+            <Button type="primary" onClick={() => openBookingModal()}>
+              Đặt phòng
+            </Button>
+          </Space>
         }
       >
         <SearchForm onReset={resetFilters}>
@@ -225,50 +192,30 @@ export default function DashboardRoute() {
               allowClear={false}
             />
           </Space>
-          <Space direction="vertical" size={4}>
-            <span>Tìm kiếm</span>
-            <SearchInput
-              value={search}
-              onChange={setSearch}
-              placeholder="Tìm theo phòng, lịch đặt…"
-            />
-          </Space>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Tìm theo phòng, lịch đặt…"
+          />
         </SearchForm>
       </PageHeader>
 
       <PageContent>
         {error ? (
-          <ErrorPage
-            description={
-              (error as Error).message || "Không tải được lịch phòng"
-            }
-            extra={
-              <RetryButton
-                onRetry={() => void refetch()}
-                loading={isLoading}
-              />
-            }
+          <FetchError
+            error={error}
+            fallback="Không tải được lịch phòng"
+            onRetry={() => void refetch()}
+            loading={isLoading}
           />
         ) : (
-        <DataTable
-          key={search}
-          className="room-schedule-table"
-          rowKey="key"
-          columns={columns}
-          data={filteredRows}
-          loading={isLoading}
-          scroll={{ x: TABLE_SCROLL_X }}
-          emptyText={
-            search.trim() ? (
-              <NoSearchResult onReset={() => setSearch("")} />
-            ) : (
-              <NoData description="Không có phòng họp" />
-            )
-          }
-          toolbarExtra={
-            <RefreshButton loading={isLoading} onClick={() => void refetch()} />
-          }
-        />
+          <RoomDayTimeline
+            date={dateStr}
+            rooms={filteredRooms}
+            bookings={filteredBookings}
+            loading={isLoading}
+            onEmptySlotClick={(slot) => openBookingModal(slot)}
+          />
         )}
       </PageContent>
 
@@ -280,10 +227,7 @@ export default function DashboardRoute() {
         confirmLoading={submitting}
         okText="Đặt phòng"
       >
-        <ErrorMessage
-          message={bookingError}
-          style={{ marginBottom: 16 }}
-        />
+        <ErrorMessage message={bookingError} style={{ marginBottom: 16 }} />
 
         <Form form={form} layout="vertical" onFinish={handleBooking}>
           <Form.Item
@@ -335,12 +279,11 @@ export default function DashboardRoute() {
               { required: true, message: "Vui lòng chọn giờ kết thúc" },
               ({ getFieldValue }) => ({
                 validator: (_, value: Dayjs | undefined) => {
-                  const startTime: Dayjs | undefined = getFieldValue("startTime");
+                  const startTime: Dayjs | undefined =
+                    getFieldValue("startTime");
                   if (!value || !startTime) return Promise.resolve();
-
                   const startDateTime = combineDateTime(startTime);
                   const endDateTime = combineDateTime(value);
-
                   if (!endDateTime.isAfter(startDateTime)) {
                     return Promise.reject(
                       new Error("Giờ kết thúc phải lớn hơn giờ bắt đầu"),
@@ -369,9 +312,8 @@ export default function DashboardRoute() {
 
           {estimatedFee != null ? (
             <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-              Ước tính phí: <strong>{formatVnd(estimatedFee)}</strong>
-              {" "}
-              (làm tròn lên theo khối 30 phút, tối thiểu 1 khối)
+              Ước tính phí: <strong>{formatVnd(estimatedFee)}</strong> (làm
+              tròn lên theo khối 30 phút, tối thiểu 1 khối)
               {user?.role !== "ADMIN" ? " — tính sau khi admin duyệt" : null}
             </Typography.Paragraph>
           ) : null}

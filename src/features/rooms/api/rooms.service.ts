@@ -25,6 +25,10 @@ interface BackendRoom {
 }
 
 export interface GetRoomsOptions extends PageParams {
+  /** Text search: name, capacity, locked department name/code */
+  q?: string;
+  /** Filter by isActive; omit for all (admin) */
+  active?: boolean;
   signal?: AbortSignal;
 }
 
@@ -46,25 +50,26 @@ function isMissingAdminRoute(error: unknown): error is AxiosError {
   return error.response?.status === 404;
 }
 
-function buildPageParams(options?: PageParams) {
-  if (!options?.page && !options?.size && !options?.sort) return undefined;
-  return {
-    page: options.page,
-    size: options.size,
-    sort: options.sort,
-  };
+function buildQueryParams(options: Omit<GetRoomsOptions, "signal">) {
+  const params: Record<string, string | number | boolean> = {};
+  if (options.q?.trim()) params.q = options.q.trim();
+  if (options.active !== undefined) params.active = options.active;
+  if (options.page != null) params.page = options.page;
+  if (options.size != null) params.size = options.size;
+  if (options.sort) params.sort = options.sort;
+  return Object.keys(params).length > 0 ? params : undefined;
 }
 
 /** Paginated list — Admin rooms table. */
 export async function getRoomsPage(
   options: GetRoomsOptions = {},
 ): Promise<PagedResult<Room>> {
-  const { signal, ...pageParams } = options;
+  const { signal, ...query } = options;
   try {
     const { data } = await apiClient.get<
       BackendRoom[] | BackendRoom | SpringPageResponse<BackendRoom>
     >("/rooms", {
-      params: buildPageParams(pageParams),
+      params: buildQueryParams(query),
       signal,
     });
     return toPagedResult(data, toRoom);

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Layout } from "antd";
+import { Layout, Space } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { NotificationBell } from "@/app/components/NotificationBell";
 import { Topbar } from "@/components/layouts/Topbar";
 import { Sidebar } from "@/components/layouts/Sidebar";
 import { AppMenu } from "@/components/layouts/Menu";
@@ -16,6 +17,8 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const [isMobileNav, setIsMobileNav] = useState(false);
 
   const menuItems = defineMenuItems([
     { key: "/dashboard", label: "Dashboard" },
@@ -37,26 +40,46 @@ export default function AppLayout() {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Topbar
+        showMenuToggle={isMobileNav}
+        menuCollapsed={siderCollapsed}
+        onMenuToggle={() => setSiderCollapsed((prev) => !prev)}
         extra={
-          <UserMenu
-            userName={user?.fullName}
-            role={user?.role}
-            departmentName={user?.department?.name}
-            onLogout={handleLogout}
-            onOpenProfile={() => setProfileOpen(true)}
-            onOpenInvoices={() => navigate("/my-invoices")}
-          />
+          <Space size="middle">
+            <NotificationBell />
+            <UserMenu
+              userName={user?.fullName}
+              role={user?.role}
+              departmentName={user?.department?.name}
+              onLogout={handleLogout}
+              onOpenProfile={() => setProfileOpen(true)}
+              onOpenInvoices={() => navigate("/my-invoices")}
+            />
+          </Space>
         }
       />
-      <Layout>
-        <Sidebar>
+      <Layout style={{ alignItems: "flex-start" }}>
+        <Sidebar
+          collapsed={siderCollapsed}
+          onCollapse={setSiderCollapsed}
+          onBreakpoint={(broken) => {
+            setIsMobileNav(broken);
+            if (!broken) {
+              setSiderCollapsed(false);
+            }
+          }}
+        >
           <AppMenu
             selectedKeys={[location.pathname]}
             items={menuItems}
-            onClick={({ key }) => navigate(key)}
+            onClick={({ key }) => {
+              navigate(key);
+              if (isMobileNav) {
+                setSiderCollapsed(true);
+              }
+            }}
           />
         </Sidebar>
-        <Layout>
+        <Layout style={{ flex: 1, minWidth: 0 }}>
           <Content style={{ margin: 24, minHeight: 280 }}>
             <Outlet />
           </Content>

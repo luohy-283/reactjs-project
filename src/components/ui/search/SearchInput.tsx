@@ -7,7 +7,10 @@ export type SearchInputProps = Omit<
 > & {
   value: string;
   onChange: (value: string) => void;
-  /** Default: 320 */
+  /**
+   * Explicit width. When omitted, grows in the filter row
+   * (flex 1, min 280px, max 640px) so long placeholders stay visible.
+   */
   width?: number | string;
 };
 
@@ -16,7 +19,7 @@ export function SearchInput({
   value,
   onChange,
   placeholder = "Tìm kiếm…",
-  width = 320,
+  width,
   style,
   ...inputProps
 }: SearchInputProps) {
@@ -27,7 +30,13 @@ export function SearchInput({
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       onSearch={(next) => onChange(next)}
-      style={{ width, maxWidth: "100%", ...style }}
+      style={{
+        flex: width == null ? "1 1 420px" : undefined,
+        width: width ?? "100%",
+        minWidth: 280,
+        maxWidth: width ?? 450,
+        ...style,
+      }}
       {...inputProps}
     />
   );

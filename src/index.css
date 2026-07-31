@@ -10,3 +10,44 @@ body {
   table-layout: fixed;
   width: 100%;
 }
+
+/* Notification deep-link highlight — soft fill, rounded ends, fades out */
+.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell,
+.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell,
+.ant-table-tbody > tr.table-row-from-notification > td.ant-table-column-sort,
+.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-column-sort,
+.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell-fix,
+.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell-fix,
+.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell-fix-start,
+.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell-fix-start,
+.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell-fix-end,
+.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell-fix-end {
+  background: #fff7e6 !important;
+  transition: background-color 0.45s ease;
+}
+
+.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.ant-table-tbody
+  > tr.table-row-from-notification
+  > td.ant-table-cell-fix-right:last-child,
+.ant-table-tbody
+  > tr.table-row-from-notification
+  > td.ant-table-cell:last-child:not(.ant-table-cell-fix-left) {
+  border-radius: 0 8px 8px 0;
+}
+
+.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell,
+.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell,
+.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-column-sort,
+.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-column-sort,
+.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell-fix,
+.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell-fix,
+.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell-fix-start,
+.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell-fix-start,
+.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell-fix-end,
+.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell-fix-end {
+  background: #ffffff !important;
+}

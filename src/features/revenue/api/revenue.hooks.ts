@@ -1,41 +1,37 @@
-import { useCallback, useEffect, useState } from "react";
-import { getMonthlyRevenue } from "@/features/revenue/api/revenue.service";
-import type { RevenueReport } from "@/features/revenue/api/revenue.types";
-import { isAbortError } from "@/lib/api-error";
+import {
+  getMonthlyRevenue,
+  getRevenueByRoomPage,
+  type GetRevenueByRoomOptions,
+} from "@/features/revenue/api/revenue.service";
+import type {
+  RevenueByRoom,
+  RevenueReport,
+} from "@/features/revenue/api/revenue.types";
+import type { PagedResult } from "@/lib/pagination";
+import { useAsyncFetch } from "@/lib/useAsyncFetch";
 
 export function useMonthlyRevenue(yearMonth: string) {
-  const [data, setData] = useState<RevenueReport | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  return useAsyncFetch(
+    (signal) => getMonthlyRevenue(yearMonth, signal),
+    [yearMonth],
+    { initialData: null as RevenueReport | null },
+  );
+}
 
-  const refetch = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      setData(await getMonthlyRevenue(yearMonth));
-    } catch (err) {
-      setError(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [yearMonth]);
+const EMPTY_BY_ROOM_PAGE: PagedResult<RevenueByRoom> = {
+  items: [],
+  page: 0,
+  size: 10,
+  totalElements: 0,
+  totalPages: 0,
+};
 
-  useEffect(() => {
-    const controller = new AbortController();
-    void (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const report = await getMonthlyRevenue(yearMonth, controller.signal);
-        if (!controller.signal.aborted) setData(report);
-      } catch (err) {
-        if (!controller.signal.aborted && !isAbortError(err)) setError(err);
-      } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
-      }
-    })();
-    return () => controller.abort();
-  }, [yearMonth]);
-
-  return { data, error, isLoading, refetch };
+export function useRevenueByRoomPage(
+  options: Omit<GetRevenueByRoomOptions, "signal">,
+) {
+  return useAsyncFetch(
+    (signal) => getRevenueByRoomPage({ ...options, signal }),
+    [options.yearMonth, options.page, options.size, options.sort, options.q],
+    { initialData: EMPTY_BY_ROOM_PAGE },
+  );
 }

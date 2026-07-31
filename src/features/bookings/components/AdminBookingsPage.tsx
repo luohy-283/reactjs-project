@@ -1,16 +1,16 @@
-import { useMemo, useState } from "react";
-import { Button, Badge } from "antd";
-import dayjs from "dayjs";
+import { useEffect, useMemo, useState } from "react";
+import { Badge } from "antd";
+import { useLocation } from "react-router";
 import { ConfirmPopconfirm } from "@/components/ui/dialog/ConfirmPopconfirm";
 import { DataTable } from "@/components/ui/table/DataTable";
 import { DeleteButton } from "@/components/ui/button/DeleteButton";
-import { ErrorPage } from "@/components/ui/error/ErrorPage";
+import { FetchError } from "@/components/ui/error/FetchError";
 import { PageContent } from "@/components/ui/page/PageContent";
 import { PageHeader } from "@/components/ui/page/PageHeader";
 import { PageLayout } from "@/components/ui/page/PageLayout";
-import { RetryButton } from "@/components/ui/error/RetryButton";
 import { SearchForm } from "@/components/ui/search/SearchForm";
 import { SearchInput } from "@/components/ui/search/SearchInput";
+import { StatusFilter } from "@/components/ui/search/StatusFilter";
 import { NoData } from "@/components/ui/empty/NoData";
 import { NoSearchResult } from "@/components/ui/empty/NoSearchResult";
 import { RefreshButton } from "@/components/ui/toolbar/RefreshButton";
@@ -18,86 +18,161 @@ import { StatusBadge } from "@/components/ui/status/StatusBadge";
 import { TabBar } from "@/components/ui/tabs/TabBar";
 import { defineTabItems } from "@/components/ui/tabs/TabItem";
 import { TableRowActions } from "@/components/ui/table/TableRowActions";
-import { actionsColumn, defineColumns } from "@/components/ui/table/columnDefs";
+import { ApproveRejectActions } from "@/components/ui/table/ApproveRejectActions";
+import {
+  actionsColumn,
+  defineColumns,
+  sortableColumn,
+} from "@/components/ui/table/columnDefs";
 import { useToast } from "@/components/ui/feedback/useFeedback";
 import {
   approveBooking,
   cancelBooking,
+  getBooking,
   rejectBooking,
 } from "@/features/bookings/api/bookings.service";
-import { useBookings } from "@/features/bookings/api/bookings.hooks";
+import { useBookingsPage } from "@/features/bookings/api/bookings.hooks";
 import type { Booking, BookingStatus } from "@/features/bookings/api/bookings.types";
-import { getApiErrorMessage } from "@/lib/api-error";
+import { isAbortError } from "@/lib/api-error";
+import { formatDateTimeRange } from "@/lib/datetime";
+import { parseNotificationFlash } from "@/lib/notificationNav";
+import { useServerTableQuery } from "@/lib/useServerTableQuery";
+import { useTableRowHighlight } from "@/lib/useTableRowHighlight";
+import { useUrlTab } from "@/lib/useUrlTab";
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
   PENDING: "Chờ duyệt",
   APPROVED: "Đã duyệt",
   CANCELLED: "Đã hủy",
+  EXPIRED: "Hết hạn",
 };
 
 const STATUS_COLOR: Record<BookingStatus, string> = {
   PENDING: "gold",
   APPROVED: "green",
   CANCELLED: "default",
+  EXPIRED: "orange",
 };
 
-function formatRange(startTime: string, endTime: string): string {
-  return `${dayjs(startTime).format("DD/MM/YYYY HH:mm")} – ${dayjs(endTime).format("HH:mm")}`;
+const BOOKING_STATUS_OPTIONS = [
+  { value: "PENDING" as const, label: "Chờ duyệt" },
+  { value: "APPROVED" as const, label: "Đã duyệt" },
+  { value: "CANCELLED" as const, label: "Đã hủy" },
+  { value: "EXPIRED" as const, label: "Hết hạn" },
+];
+
+type BookingTab = "pending" | "upcoming" | "all";
+
+function parseBookingTab(raw: string | null): BookingTab {
+  if (raw === "upcoming" || raw === "all") return raw;
+  return "pending";
 }
 
-function matchesBooking(booking: Booking, q: string): boolean {
-  const haystack = [
-    booking.title,
-    booking.roomName ?? `Phòng #${booking.roomId}`,
-    booking.userLogin ?? `User #${booking.userId}`,
-    STATUS_LABEL[booking.status],
-    formatRange(booking.startTime, booking.endTime),
-  ]
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(q);
-}
+const BOOKING_HIGHLIGHT_TABS = ["pending"] as const;
 
 export default function AdminBookingsPage() {
   const toast = useToast();
-  const { data: bookings, error, isLoading, refetch } = useBookings();
+  const location = useLocation();
+  const { tab, setTab, searchParams, setSearchParams } = useUrlTab({
+    defaultTab: "pending",
+    parse: parseBookingTab,
+    highlightTabs: BOOKING_HIGHLIGHT_TABS,
+  });
+  const { query, setQuery, pageParams, resetPage, resetQuery } =
+    useServerTableQuery("startTime,asc");
   const [actingId, setActingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<BookingStatus | "ALL">(
+    "ALL",
+  );
+  const [pinnedBooking, setPinnedBooking] = useState<Booking | null>(null);
+  const [highlightReady, setHighlightReady] = useState(true);
 
-  const pending = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return bookings
-      .filter((b) => b.status === "PENDING")
-      .filter((b) => !q || matchesBooking(b, q))
-      .sort(
-        (a, b) =>
-          dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf(),
-      );
-  }, [bookings, search]);
+  const searchQ = search.trim();
+  const hasTextSearch = Boolean(searchQ);
+  const highlightRaw = searchParams.get("highlight");
+  const highlightId =
+    highlightRaw && /^\d+$/.test(highlightRaw) ? Number(highlightRaw) : null;
 
-  const upcomingApproved = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return bookings
-      .filter(
-        (b) =>
-          b.status === "APPROVED" && dayjs(b.startTime).isAfter(dayjs()),
-      )
-      .filter((b) => !q || matchesBooking(b, q))
-      .sort(
-        (a, b) =>
-          dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf(),
-      );
-  }, [bookings, search]);
+  const pageOpts = {
+    ...pageParams,
+    sort:
+      pageParams.sort ??
+      (tab === "all" ? "startTime,desc" : "startTime,asc"),
+    ...(tab === "pending" ? { status: "PENDING" as const } : {}),
+    ...(tab === "upcoming" ? { upcoming: true as const } : {}),
+    ...(tab === "all" && statusFilter !== "ALL"
+      ? { status: statusFilter }
+      : {}),
+    ...(searchQ ? { q: searchQ } : {}),
+  };
 
-  const history = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return [...bookings]
-      .filter((b) => !q || matchesBooking(b, q))
-      .sort(
-        (a, b) =>
-          dayjs(b.startTime).valueOf() - dayjs(a.startTime).valueOf(),
-      );
-  }, [bookings, search]);
+  const { data: pageResult, error, isLoading, refetch } =
+    useBookingsPage(pageOpts);
+  const { data: pendingMeta } = useBookingsPage({
+    page: 0,
+    size: 1,
+    status: "PENDING",
+    sort: "startTime,asc",
+  });
+  const { data: upcomingMeta } = useBookingsPage({
+    page: 0,
+    size: 1,
+    upcoming: true,
+    sort: "startTime,asc",
+  });
+
+  useEffect(() => {
+    if (highlightId == null || tab !== "pending") {
+      setPinnedBooking(null);
+      setHighlightReady(true);
+      return;
+    }
+    if (isLoading) {
+      setHighlightReady(false);
+      return;
+    }
+    if (pageResult.items.some((b) => b.id === highlightId)) {
+      setPinnedBooking(null);
+      setHighlightReady(true);
+      return;
+    }
+    setHighlightReady(false);
+    const controller = new AbortController();
+    void getBooking(highlightId, controller.signal)
+      .then((booking) => {
+        setPinnedBooking(booking.status === "PENDING" ? booking : null);
+      })
+      .catch((err) => {
+        if (!isAbortError(err)) setPinnedBooking(null);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setHighlightReady(true);
+      });
+    return () => controller.abort();
+  }, [highlightId, tab, isLoading, pageResult.items]);
+
+  const tableRows = useMemo(() => {
+    if (
+      pinnedBooking &&
+      !pageResult.items.some((b) => b.id === pinnedBooking.id)
+    ) {
+      return [pinnedBooking, ...pageResult.items];
+    }
+    return pageResult.items;
+  }, [pageResult.items, pinnedBooking]);
+
+  const flashKey = parseNotificationFlash(location.state);
+
+  const { onRow, rowClassName } = useTableRowHighlight({
+    searchParams,
+    setSearchParams,
+    ready: tab === "pending" && !isLoading && highlightReady,
+    rowIds: tableRows.map((b) => b.id),
+    missingMessage:
+      "Yêu cầu đặt phòng không còn trong danh sách chờ duyệt (có thể đã được xử lý).",
+    flashKey,
+  });
 
   const handleApprove = async (booking: Booking) => {
     setActingId(booking.id);
@@ -139,12 +214,12 @@ export default function AdminBookingsPage() {
   };
 
   const baseColumns = defineColumns<Booking>([
-    {
+    sortableColumn<Booking>({
       title: "Tiêu đề",
       dataIndex: "title",
       key: "title",
       ellipsis: true,
-    },
+    }),
     {
       title: "Phòng",
       key: "room",
@@ -157,13 +232,14 @@ export default function AdminBookingsPage() {
       width: 140,
       render: (_, row) => row.userLogin ?? `User #${row.userId}`,
     },
-    {
+    sortableColumn<Booking>({
       title: "Thời gian",
-      key: "time",
+      dataIndex: "startTime",
+      key: "startTime",
       width: 220,
-      render: (_, row) => formatRange(row.startTime, row.endTime),
-    },
-    {
+      render: (_, row) => formatDateTimeRange(row.startTime, row.endTime),
+    }),
+    sortableColumn<Booking>({
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
@@ -175,40 +251,26 @@ export default function AdminBookingsPage() {
           labelMap={STATUS_LABEL}
         />
       ),
-    },
+    }),
   ]);
 
   const pendingColumns = defineColumns<Booking>([
     ...baseColumns.filter((col) => col.key !== "status"),
     actionsColumn<Booking>(
       (_, booking) => (
-        <TableRowActions>
-          <ConfirmPopconfirm
-            title="Duyệt yêu cầu này?"
-            description="Lịch sẽ chuyển sang Đã duyệt."
-            onConfirm={() => handleApprove(booking)}
-            okText="Duyệt"
-          >
-            <Button
-              type="primary"
-              size="small"
-              loading={actingId === booking.id}
-            >
-              Duyệt
-            </Button>
-          </ConfirmPopconfirm>
-          <ConfirmPopconfirm
-            title="Từ chối yêu cầu này?"
-            description="Lịch sẽ bị hủy."
-            onConfirm={() => handleReject(booking)}
-            okText="Từ chối"
-            okButtonProps={{ danger: true }}
-          >
-            <DeleteButton loading={actingId === booking.id}>
-              Từ chối
-            </DeleteButton>
-          </ConfirmPopconfirm>
-        </TableRowActions>
+        <ApproveRejectActions
+          loading={actingId === booking.id}
+          onApprove={() => void handleApprove(booking)}
+          onReject={() => void handleReject(booking)}
+          approveConfirm={{
+            title: "Duyệt yêu cầu này?",
+            description: "Lịch sẽ chuyển sang Đã duyệt.",
+          }}
+          rejectConfirm={{
+            title: "Từ chối yêu cầu này?",
+            description: "Lịch sẽ bị hủy.",
+          }}
+        />
       ),
       { width: 200, fixed: "right" },
     ),
@@ -237,118 +299,132 @@ export default function AdminBookingsPage() {
     ),
   ]);
 
-  const resetSearch = () => setSearch("");
-  const searchEmpty = Boolean(search.trim()) ? (
-    <NoSearchResult onReset={resetSearch} />
+  const resetFilters = () => {
+    setSearch("");
+    setStatusFilter("ALL");
+    resetPage();
+  };
+  const hasFilters =
+    hasTextSearch || (tab === "all" && statusFilter !== "ALL");
+  const searchEmpty = hasFilters ? (
+    <NoSearchResult onReset={resetFilters} />
   ) : null;
   const refreshExtra = (
     <RefreshButton loading={isLoading} onClick={() => void refetch()} />
   );
 
+  const pendingCount = pendingMeta.totalElements;
+  const upcomingCount = upcomingMeta.totalElements;
+
+  const tabItems = defineTabItems([
+    {
+      key: "pending",
+      label: (
+        <Badge count={pendingCount} offset={[10, 0]} size="small">
+          Chờ duyệt
+        </Badge>
+      ),
+    },
+    {
+      key: "upcoming",
+      label: (
+        <Badge
+          count={upcomingCount}
+          offset={[10, 0]}
+          size="small"
+          color="blue"
+        >
+          Đã duyệt (chưa diễn ra)
+        </Badge>
+      ),
+    },
+    { key: "all", label: "Lịch sử" },
+  ]);
+
+  const activeColumns =
+    tab === "pending"
+      ? pendingColumns
+      : tab === "upcoming"
+        ? upcomingColumns
+        : baseColumns;
+
+  const emptyDefault =
+    tab === "pending"
+      ? "Không có yêu cầu chờ duyệt"
+      : tab === "upcoming"
+        ? "Không có lịch đã duyệt sắp tới"
+        : "Chưa có lịch đặt nào";
+
+  const onTabChange = (key: string) => {
+    setTab(key);
+    resetQuery(key === "all" ? "startTime,desc" : "startTime,asc");
+  };
+
   return (
     <PageLayout>
-      <PageHeader title="Quản lý đặt phòng">
-        <SearchForm onReset={() => setSearch("")}>
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Tìm theo tiêu đề, phòng, người đặt, trạng thái…"
-          />
-        </SearchForm>
-      </PageHeader>
+      <PageHeader title="Quản lý đặt phòng" />
 
       <PageContent>
         {error ? (
-          <ErrorPage
-            description={getApiErrorMessage(
-              error,
-              "Không tải được lịch đặt",
-            )}
-            extra={
-              <RetryButton
-                onRetry={() => void refetch()}
-                loading={isLoading}
-              />
-            }
+          <FetchError
+            error={error}
+            fallback="Không tải được lịch đặt"
+            onRetry={() => void refetch()}
+            loading={isLoading}
           />
         ) : (
-          <TabBar
-            items={defineTabItems([
-              {
-                key: "pending",
-                label: (
-                  <Badge count={pending.length} offset={[10, 0]} size="small">
-                    Chờ duyệt
-                  </Badge>
-                ),
-                children: (
-                  <DataTable
-                    key={`pending-${search}`}
-                    rowKey="id"
-                    columns={pendingColumns}
-                    data={pending}
-                    loading={isLoading}
-                    emptyText={
-                      searchEmpty ?? (
-                        <NoData description="Không có yêu cầu chờ duyệt" />
-                      )
-                    }
-                    scroll={{ x: 900 }}
-                    toolbarExtra={refreshExtra}
+          <>
+            <TabBar
+              activeKey={tab}
+              onChange={onTabChange}
+              items={tabItems}
+              style={{ marginBottom: 16 }}
+            />
+
+            <div style={{ marginBottom: 16 }}>
+              <SearchForm onReset={resetFilters}>
+                <SearchInput
+                  value={search}
+                  onChange={(value) => {
+                    setSearch(value);
+                    resetPage();
+                  }}
+                  placeholder="Tìm theo tiêu đề, phòng, người đặt…"
+                />
+                {tab === "all" ? (
+                  <StatusFilter<BookingStatus>
+                    value={statusFilter}
+                    onChange={(value) => {
+                      setStatusFilter(value);
+                      resetPage();
+                    }}
+                    options={BOOKING_STATUS_OPTIONS}
+                    allLabel="Tất cả trạng thái"
                   />
-                ),
-              },
-              {
-                key: "upcoming",
-                label: (
-                  <Badge
-                    count={upcomingApproved.length}
-                    offset={[10, 0]}
-                    size="small"
-                    color="blue"
-                  >
-                    Đã duyệt (chưa diễn ra)
-                  </Badge>
-                ),
-                children: (
-                  <DataTable
-                    key={`upcoming-${search}`}
-                    rowKey="id"
-                    columns={upcomingColumns}
-                    data={upcomingApproved}
-                    loading={isLoading}
-                    emptyText={
-                      searchEmpty ?? (
-                        <NoData description="Không có lịch đã duyệt sắp tới" />
-                      )
-                    }
-                    scroll={{ x: 900 }}
-                    toolbarExtra={refreshExtra}
-                  />
-                ),
-              },
-              {
-                key: "all",
-                label: "Lịch sử",
-                children: (
-                  <DataTable
-                    key={`history-${search}`}
-                    rowKey="id"
-                    columns={baseColumns}
-                    data={history}
-                    loading={isLoading}
-                    emptyText={
-                      searchEmpty ?? (
-                        <NoData description="Chưa có lịch đặt nào" />
-                      )
-                    }
-                    scroll={{ x: 900 }}
-                    toolbarExtra={refreshExtra}
-                  />
-                ),
-              },
-            ])}
-          />
+                ) : null}
+              </SearchForm>
+            </div>
+
+            <DataTable
+              rowKey="id"
+              columns={activeColumns}
+              data={tableRows}
+              loading={isLoading}
+              emptyText={
+                searchEmpty ?? <NoData description={emptyDefault} />
+              }
+              scroll={{ x: 900 }}
+              serverSide
+              total={pageResult.totalElements}
+              page={query.page}
+              pageSize={query.pageSize}
+              sort={query.sort}
+              onQueryChange={setQuery}
+              onRow={tab === "pending" ? onRow : undefined}
+              rowClassName={tab === "pending" ? rowClassName : undefined}
+              toolbarExtra={refreshExtra}
+            />
+          </>
         )}
       </PageContent>
     </PageLayout>

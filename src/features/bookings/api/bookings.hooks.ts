@@ -1,49 +1,38 @@
-import { useCallback, useEffect, useState } from "react";
-import { getBookings } from "@/features/bookings/api/bookings.service";
-import { isAbortError } from "@/lib/api-error";
+import { getBookings, getBookingsPage } from "@/features/bookings/api/bookings.service";
+import type { GetBookingsOptions } from "@/features/bookings/api/bookings.service";
 import type { Booking } from "@/features/bookings/api/bookings.types";
+import type { PagedResult } from "@/lib/pagination";
+import { useAsyncFetch } from "@/lib/useAsyncFetch";
 
 export function useBookings() {
-  const [data, setData] = useState<Booking[]>([]);
-  const [error, setError] = useState<unknown>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  return useAsyncFetch((signal) => getBookings(undefined, signal), [], {
+    initialData: [] as Booking[],
+  });
+}
 
-  const refetch = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      setData(await getBookings());
-    } catch (err) {
-      setError(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+const EMPTY_PAGE: PagedResult<Booking> = {
+  items: [],
+  page: 0,
+  size: 10,
+  totalElements: 0,
+  totalPages: 0,
+};
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    void (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const bookings = await getBookings(undefined, controller.signal);
-        if (!controller.signal.aborted) {
-          setData(bookings);
-        }
-      } catch (err) {
-        if (!controller.signal.aborted && !isAbortError(err)) {
-          setError(err);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => controller.abort();
-  }, []);
-
-  return { data, error, isLoading, refetch };
+export function useBookingsPage(
+  options: Omit<GetBookingsOptions, "signal">,
+  enabled = true,
+) {
+  return useAsyncFetch(
+    (signal) => getBookingsPage({ ...options, signal }),
+    [
+      options.page,
+      options.size,
+      options.sort,
+      options.status,
+      options.date,
+      options.q,
+      options.upcoming,
+    ],
+    { initialData: EMPTY_PAGE, enabled },
+  );
 }
