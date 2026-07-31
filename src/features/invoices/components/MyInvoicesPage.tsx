@@ -30,7 +30,7 @@ import { useServerTableQuery } from "@/lib/useServerTableQuery";
 export default function MyInvoicesPage() {
   const [search, setSearch] = useState("");
   const { query, setQuery, pageParams, resetPage } =
-    useServerTableQuery("startTime,desc");
+    useServerTableQuery();
   const q = search.trim() || undefined;
   const pageOpts = { ...pageParams, q };
   const { data: invoicesPage, error, isLoading, refetch } =

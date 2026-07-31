@@ -62,7 +62,7 @@ export default function AdminRoomsPage() {
     "ALL",
   );
   const { query, setQuery, pageParams, resetPage } =
-    useServerTableQuery("name,asc");
+    useServerTableQuery();
   const q = search.trim() || undefined;
   const active =
     statusFilter === "ACTIVE"

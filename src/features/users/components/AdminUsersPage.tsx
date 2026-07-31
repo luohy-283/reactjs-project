@@ -88,7 +88,7 @@ export default function AdminUsersPage() {
     highlightTabs: USERS_HIGHLIGHT_TABS,
   });
   const { query, setQuery, pageParams, resetPage } =
-    useServerTableQuery("id,asc");
+    useServerTableQuery();
   const {
     data: pendingRequests,
     error: pendingError,

@@ -21,7 +21,7 @@ export interface GetMyInvoicesOptions extends PageParams {
 export async function getMyInvoicesPage(
   options: GetMyInvoicesOptions = {},
 ): Promise<PagedResult<Booking>> {
-  const { signal, page = 0, size = 10, sort = "startTime,desc", q } = options;
+  const { signal, page = 0, size = 10, sort, q } = options;
   try {
     const { data } = await apiClient.get<
       BackendBookingDto[] | SpringPageResponse<BackendBookingDto>
@@ -29,7 +29,7 @@ export async function getMyInvoicesPage(
       params: {
         page,
         size,
-        sort,
+        ...(sort ? { sort } : {}),
         ...(q?.trim() ? { q: q.trim() } : {}),
       },
       signal,

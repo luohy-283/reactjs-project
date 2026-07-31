@@ -33,7 +33,7 @@ export default function AdminRevenuePage() {
   const [month, setMonth] = useState<Dayjs>(dayjs());
   const [search, setSearch] = useState("");
   const { query, setQuery, pageParams, resetPage } =
-    useServerTableQuery("amount,desc");
+    useServerTableQuery();
   const { exporting, runExport } = useAuthenticatedExport();
   const yearMonth = month.format("YYYY-MM");
   const q = search.trim() || undefined;

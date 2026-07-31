@@ -131,7 +131,7 @@ export interface GetUsersOptions extends PageParams {
 export async function getUsersPage(
   options: GetUsersOptions = {},
 ): Promise<PagedResult<ManagedUser>> {
-  const { signal, page = 0, size = 10, sort = "id,asc", q, activated } = options;
+  const { signal, page = 0, size = 10, sort, q, activated } = options;
   try {
     const { data, headers } = await apiClient.get<BackendAdminUser[]>(
       "/admin/users",
@@ -139,7 +139,7 @@ export async function getUsersPage(
         params: {
           page,
           size,
-          sort,
+          ...(sort ? { sort } : {}),
           ...(q?.trim() ? { q: q.trim() } : {}),
           ...(activated !== undefined ? { activated } : {}),
         },

@@ -79,26 +79,34 @@ export default function AdminBookingsPage() {
     highlightTabs: BOOKING_HIGHLIGHT_TABS,
   });
   const { query, setQuery, pageParams, resetPage, resetQuery } =
-    useServerTableQuery("startTime,asc");
+    useServerTableQuery();
   const [actingId, setActingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "ALL">(
     "ALL",
   );
-  const [pinnedBooking, setPinnedBooking] = useState<Booking | null>(null);
-  const [highlightReady, setHighlightReady] = useState(true);
+  /** Resolved deep-link pin: only set from fetch callbacks, reset during render. */
+  const [pinState, setPinState] = useState<{
+    id: number;
+    booking: Booking | null;
+  } | null>(null);
 
   const searchQ = search.trim();
   const hasTextSearch = Boolean(searchQ);
   const highlightRaw = searchParams.get("highlight");
   const highlightId =
     highlightRaw && /^\d+$/.test(highlightRaw) ? Number(highlightRaw) : null;
+  const pinResolveKey = tab === "pending" ? highlightId : null;
+
+  // Reset pin when highlight/tab context changes (React “adjust state while rendering”).
+  const [prevPinResolveKey, setPrevPinResolveKey] = useState(pinResolveKey);
+  if (pinResolveKey !== prevPinResolveKey) {
+    setPrevPinResolveKey(pinResolveKey);
+    setPinState(null);
+  }
 
   const pageOpts = {
     ...pageParams,
-    sort:
-      pageParams.sort ??
-      (tab === "all" ? "startTime,desc" : "startTime,asc"),
     ...(tab === "pending" ? { status: "PENDING" as const } : {}),
     ...(tab === "upcoming" ? { upcoming: true as const } : {}),
     ...(tab === "all" && statusFilter !== "ALL"
@@ -113,44 +121,51 @@ export default function AdminBookingsPage() {
     page: 0,
     size: 1,
     status: "PENDING",
-    sort: "startTime,asc",
   });
   const { data: upcomingMeta } = useBookingsPage({
     page: 0,
     size: 1,
     upcoming: true,
-    sort: "startTime,asc",
   });
 
+  const highlightOnPage =
+    pinResolveKey != null &&
+    pageResult.items.some((b) => b.id === pinResolveKey);
+
+  const pinnedBooking =
+    pinState &&
+    pinResolveKey === pinState.id &&
+    !highlightOnPage
+      ? pinState.booking
+      : null;
+
+  const highlightReady =
+    pinResolveKey == null ||
+    highlightOnPage ||
+    pinState?.id === pinResolveKey;
+
   useEffect(() => {
-    if (highlightId == null || tab !== "pending") {
-      setPinnedBooking(null);
-      setHighlightReady(true);
-      return;
-    }
-    if (isLoading) {
-      setHighlightReady(false);
-      return;
-    }
-    if (pageResult.items.some((b) => b.id === highlightId)) {
-      setPinnedBooking(null);
-      setHighlightReady(true);
-      return;
-    }
-    setHighlightReady(false);
+    if (pinResolveKey == null || isLoading || highlightOnPage) return;
+    if (pinState?.id === pinResolveKey) return;
+
     const controller = new AbortController();
-    void getBooking(highlightId, controller.signal)
+    const id = pinResolveKey;
+    void getBooking(id, controller.signal)
       .then((booking) => {
-        setPinnedBooking(booking.status === "PENDING" ? booking : null);
+        if (!controller.signal.aborted) {
+          setPinState({
+            id,
+            booking: booking.status === "PENDING" ? booking : null,
+          });
+        }
       })
       .catch((err) => {
-        if (!isAbortError(err)) setPinnedBooking(null);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setHighlightReady(true);
+        if (!controller.signal.aborted && !isAbortError(err)) {
+          setPinState({ id, booking: null });
+        }
       });
     return () => controller.abort();
-  }, [highlightId, tab, isLoading, pageResult.items]);
+  }, [pinResolveKey, isLoading, highlightOnPage, pinState?.id]);
 
   const tableRows = useMemo(() => {
     if (
@@ -405,7 +420,7 @@ export default function AdminBookingsPage() {
               </SearchForm>
             </div>
 
-            <DataTable
+            <DataTable<Booking>
               rowKey="id"
               columns={activeColumns}
               data={tableRows}

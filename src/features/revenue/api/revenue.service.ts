@@ -119,7 +119,7 @@ export async function getRevenueByRoomPage(
     signal,
     page = 0,
     size = 10,
-    sort = "amount,desc",
+    sort,
     q,
   } = options;
   try {
@@ -131,7 +131,7 @@ export async function getRevenueByRoomPage(
         yearMonth,
         page,
         size,
-        sort,
+        ...(sort ? { sort } : {}),
         ...(q?.trim() ? { q: q.trim() } : {}),
       },
       signal,
