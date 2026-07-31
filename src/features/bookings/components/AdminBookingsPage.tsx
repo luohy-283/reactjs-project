@@ -372,7 +372,7 @@ export default function AdminBookingsPage() {
 
   const onTabChange = (key: string) => {
     setTab(key);
-    resetQuery(key === "all" ? "startTime,desc" : "startTime,asc");
+    resetQuery();
   };
 
   return (
