@@ -50,7 +50,12 @@ export function UserMenu({
     <Dropdown menu={{ items }} placement="bottomRight" trigger={["click"]}>
       <Button
         type="text"
-        style={{ color: "#fff", display: "flex", alignItems: "center", gap: 8 }}
+        style={{
+          color: "#fff",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+        }}
       >
         <Avatar size="small" icon={<UserOutlined />} />
         <span>{userName}</span>

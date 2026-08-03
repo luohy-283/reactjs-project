@@ -14,3 +14,11 @@ export function vndTooltipItems(name = "Doanh thu") {
     },
   ];
 }
+
+/** G2 theme for plots — does not follow Ant Design ConfigProvider automatically. */
+export function plotTheme(isDark: boolean) {
+  return {
+    type: isDark ? ("classicDark" as const) : ("classic" as const),
+    view: { viewFill: "transparent" },
+  };
+}

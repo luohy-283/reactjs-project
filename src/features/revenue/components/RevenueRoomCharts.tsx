@@ -3,9 +3,11 @@ import { Column, Pie } from "@ant-design/plots";
 import { NoData } from "@/components/ui/empty/NoData";
 import type { RevenueByRoom } from "@/features/revenue/api/revenue.types";
 import {
+  plotTheme,
   vndAxisLabel,
   vndTooltipItems,
 } from "@/features/revenue/lib/chartVnd";
+import { useIsDarkMode } from "@/lib/useIsDarkMode";
 
 /** Top slices on pie; remainder grouped as "Khác". */
 export const PIE_TOP_ROOMS = 8;
@@ -38,6 +40,8 @@ export function RevenueRoomCharts({
   loading: boolean;
   roomsWithRevenue: RevenueByRoom[];
 }) {
+  const isDark = useIsDarkMode();
+  const chartTheme = plotTheme(isDark);
   const pieData = toPieData(roomsWithRevenue);
   const columnData = roomsWithRevenue
     .slice(0, COLUMN_TOP_ROOMS)
@@ -52,6 +56,8 @@ export function RevenueRoomCharts({
             <NoData description="Chưa có dữ liệu theo phòng" />
           ) : (
             <Pie
+              key={isDark ? "pie-dark" : "pie-light"}
+              theme={chartTheme}
               data={pieData}
               angleField="amount"
               colorField="room"
@@ -86,6 +92,8 @@ export function RevenueRoomCharts({
             <NoData description="Chưa có dữ liệu theo phòng" />
           ) : (
             <Column
+              key={isDark ? "col-dark" : "col-light"}
+              theme={chartTheme}
               data={columnData}
               xField="room"
               yField="amount"

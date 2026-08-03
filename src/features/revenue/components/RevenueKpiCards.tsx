@@ -1,4 +1,4 @@
-import { Card, Col, Row, Statistic, Typography } from "antd";
+import { Card, Col, Row, Statistic, Typography, theme } from "antd";
 import type { ReactNode } from "react";
 import type { RevenuePeriod, RevenueReport } from "@/features/revenue/api/revenue.types";
 import { formatVnd } from "@/lib/money";
@@ -44,10 +44,14 @@ function formatDeltaLabel(delta: number | null, previousMonth: string): string {
   return `${sign}${formatPercentVi(delta)}% so với ${ref}`;
 }
 
-function deltaColor(delta: number | null, kind: DeltaKind): string {
-  if (delta == null || delta === 0) return "rgba(0,0,0,0.45)";
+function deltaColor(
+  delta: number | null,
+  kind: DeltaKind,
+  colors: { secondary: string; success: string; error: string },
+): string {
+  if (delta == null || delta === 0) return colors.secondary;
   const isGood = kind === "higherBetter" ? delta > 0 : delta < 0;
-  return isGood ? "#389e0d" : "#cf1322";
+  return isGood ? colors.success : colors.error;
 }
 
 function KpiDelta({
@@ -61,9 +65,19 @@ function KpiDelta({
   previousMonth: string;
   kind: DeltaKind;
 }) {
+  const { token } = theme.useToken();
   const delta = percentDelta(current, previous);
   return (
-    <Typography.Text style={{ color: deltaColor(delta, kind), fontSize: 13 }}>
+    <Typography.Text
+      style={{
+        color: deltaColor(delta, kind, {
+          secondary: token.colorTextSecondary,
+          success: token.colorSuccess,
+          error: token.colorError,
+        }),
+        fontSize: 13,
+      }}
+    >
       {formatDeltaLabel(delta, previousMonth)}
     </Typography.Text>
   );

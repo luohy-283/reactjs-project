@@ -51,7 +51,7 @@ const STATUS_COLOR: Record<BookingStatus, string> = {
   PENDING: "gold",
   APPROVED: "green",
   CANCELLED: "default",
-  EXPIRED: "orange",
+  EXPIRED: "volcano",
 };
 
 const BOOKING_STATUS_OPTIONS = [

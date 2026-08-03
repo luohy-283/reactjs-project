@@ -1,4 +1,4 @@
-import { Badge, Button, Dropdown, Empty, List, Typography } from "antd";
+import { Badge, Button, Dropdown, Empty, List, Typography, theme } from "antd";
 import { BellOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useLocation, useNavigate } from "react-router";
@@ -34,6 +34,7 @@ function pathForNotification(
 
 /** App-shell notification bell — polls every 15s while authenticated. */
 export function NotificationBell() {
+  const { token } = theme.useToken();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,10 +61,9 @@ export function NotificationBell() {
         maxHeight: 420,
         overflow: "auto",
         padding: 12,
-        background: "#fff",
+        background: token.colorBgElevated,
         borderRadius: 8,
-        boxShadow:
-          "0 6px 16px 0 rgba(0,0,0,0.08), 0 3px 6px -4px rgba(0,0,0,0.12), 0 9px 28px 8px rgba(0,0,0,0.05)",
+        boxShadow: token.boxShadowSecondary,
       }}
     >
       <div
@@ -94,7 +94,7 @@ export function NotificationBell() {
             <List.Item
               style={{
                 cursor: "pointer",
-                background: n.read ? "#fff" : "#e6f4ff",
+                background: n.read ? "transparent" : token.colorPrimaryBg,
                 padding: "8px 8px",
                 borderRadius: 6,
                 marginBottom: 4,
@@ -129,15 +129,19 @@ export function NotificationBell() {
       trigger={["click"]}
       placement="bottomRight"
     >
-      <Button
-        type="text"
-        style={{ color: "#fff" }}
-        icon={
-          <Badge count={unreadCount} size="small" overflowCount={99}>
-            <BellOutlined style={{ fontSize: 18, color: "#fff" }} />
-          </Badge>
-        }
-      />
+      <Badge count={unreadCount} size="small" overflowCount={99} offset={[-4, 4]}>
+        <Button
+          type="text"
+          aria-label="Thông báo"
+          icon={<BellOutlined style={{ fontSize: 18 }} />}
+          style={{
+            color: "#fff",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        />
+      </Badge>
     </Dropdown>
   );
 }
