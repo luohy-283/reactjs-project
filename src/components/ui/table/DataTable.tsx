@@ -7,7 +7,6 @@ import type {
   TableProps,
 } from "antd/es/table";
 import type { SorterResult } from "antd/es/table/interface";
-import { HEADER_HEIGHT } from "@/components/layouts/Topbar";
 import { LOADING_TIP } from "@/components/ui/loading/LoadingSpinner";
 import { NoData } from "@/components/ui/empty/NoData";
 import { TableSkeleton } from "@/components/ui/table/TableSkeleton";
@@ -20,8 +19,8 @@ import {
   type TableQuery,
 } from "@/lib/pagination";
 
-/** Sticky under the app Topbar; releases when the table scrolls out of view. */
-const DEFAULT_STICKY: TableProps["sticky"] = { offsetHeader: HEADER_HEIGHT };
+/** Sticky to the content scrollport (Topbar is outside it); releases when table leaves view. */
+const DEFAULT_STICKY: TableProps["sticky"] = { offsetHeader: 0 };
 
 export type { TableQuery };
 

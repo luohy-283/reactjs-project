@@ -1,6 +1,5 @@
 import {
   getDepartmentChangeRequests,
-  getUsers,
   getUsersPage,
 } from "@/features/users/api/users.service";
 import type { GetUsersOptions } from "@/features/users/api/users.service";
@@ -10,12 +9,6 @@ import type {
 } from "@/features/users/api/users.types";
 import type { PagedResult } from "@/lib/pagination";
 import { useAsyncFetch } from "@/lib/useAsyncFetch";
-
-export function useUsers() {
-  return useAsyncFetch((signal) => getUsers(signal), [], {
-    initialData: [] as ManagedUser[],
-  });
-}
 
 const EMPTY_USERS_PAGE: PagedResult<ManagedUser> = {
   items: [],

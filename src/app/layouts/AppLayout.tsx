@@ -41,7 +41,7 @@ export default function AppLayout() {
   };
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout style={{ height: "100vh", overflow: "hidden" }}>
       <Topbar
         showMenuToggle={isMobileNav}
         menuCollapsed={siderCollapsed}
@@ -61,7 +61,7 @@ export default function AppLayout() {
           </Space>
         }
       />
-      <Layout style={{ alignItems: "flex-start" }}>
+      <Layout style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <Sidebar
           collapsed={siderCollapsed}
           onCollapse={setSiderCollapsed}
@@ -83,7 +83,7 @@ export default function AppLayout() {
             }}
           />
         </Sidebar>
-        <Layout style={{ flex: 1, minWidth: 0 }}>
+        <Layout style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: "auto" }}>
           <Content style={{ margin: 24, minHeight: 280 }}>
             <Outlet />
           </Content>

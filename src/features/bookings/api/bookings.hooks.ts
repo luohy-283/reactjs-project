@@ -1,14 +1,8 @@
-import { getBookings, getBookingsPage } from "@/features/bookings/api/bookings.service";
+import { getBookingsPage } from "@/features/bookings/api/bookings.service";
 import type { GetBookingsOptions } from "@/features/bookings/api/bookings.service";
 import type { Booking } from "@/features/bookings/api/bookings.types";
 import type { PagedResult } from "@/lib/pagination";
 import { useAsyncFetch } from "@/lib/useAsyncFetch";
-
-export function useBookings() {
-  return useAsyncFetch((signal) => getBookings(undefined, signal), [], {
-    initialData: [] as Booking[],
-  });
-}
 
 const EMPTY_PAGE: PagedResult<Booking> = {
   items: [],

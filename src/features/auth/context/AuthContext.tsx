@@ -23,14 +23,35 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 function readStoredUser(): User | null {
   const stored = localStorage.getItem(AUTH_USER_KEY);
-  return stored ? (JSON.parse(stored) as User) : null;
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as User;
+  } catch {
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    return null;
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem(AUTH_TOKEN_KEY),
-  );
-  const [user, setUser] = useState<User | null>(() => readStoredUser());
+  const [token, setToken] = useState<string | null>(() => {
+    const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+    const storedUser = readStoredUser();
+    // Corrupt/missing user with a leftover token → clear session.
+    if (storedToken && !storedUser) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      return null;
+    }
+    return storedToken;
+  });
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = readStoredUser();
+    if (!localStorage.getItem(AUTH_TOKEN_KEY)) {
+      if (storedUser) localStorage.removeItem(AUTH_USER_KEY);
+      return null;
+    }
+    return storedUser;
+  });
 
   const logout = useCallback(() => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
@@ -56,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       token,
-      isAuthenticated: Boolean(token),
+      isAuthenticated: Boolean(token && user),
       login,
       logout,
       setUser: updateStoredUser,

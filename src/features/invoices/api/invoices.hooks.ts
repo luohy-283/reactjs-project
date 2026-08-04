@@ -1,17 +1,10 @@
 import {
-  getMyInvoices,
   getMyInvoicesPage,
   type GetMyInvoicesOptions,
 } from "@/features/invoices/api/invoices.service";
 import type { Booking } from "@/features/bookings/api/bookings.types";
 import type { PagedResult } from "@/lib/pagination";
 import { useAsyncFetch } from "@/lib/useAsyncFetch";
-
-export function useMyInvoices() {
-  return useAsyncFetch((signal) => getMyInvoices(signal), [], {
-    initialData: [] as Booking[],
-  });
-}
 
 const EMPTY_INVOICES_PAGE: PagedResult<Booking> = {
   items: [],

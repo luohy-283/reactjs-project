@@ -2,9 +2,14 @@ import { Badge, Button, Dropdown, Empty, List, Typography, theme } from "antd";
 import { BellOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useLocation, useNavigate } from "react-router";
+import { ErrorMessage } from "@/components/ui/error/ErrorMessage";
+import { RetryButton } from "@/components/ui/error/RetryButton";
+import { useToast } from "@/components/ui/feedback/useFeedback";
+import { LoadingSpinner } from "@/components/ui/loading/LoadingSpinner";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useNotifications } from "@/features/notifications/api/notifications.hooks";
 import type { AppNotification } from "@/features/notifications/api/notifications.types";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { withNotificationFlash } from "@/lib/notificationNav";
 
 function pathForNotification(
@@ -32,27 +37,115 @@ function pathForNotification(
   return role === "ADMIN" ? "/admin/bookings" : "/dashboard";
 }
 
-/** App-shell notification bell — polls every 15s while authenticated. */
+/** App-shell notification bell — polls while authenticated (interval in useNotifications). */
 export function NotificationBell() {
   const { token } = theme.useToken();
+  const toast = useToast();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, unreadCount, markRead, markAllRead } = useNotifications(
-    Boolean(isAuthenticated),
-  );
+  const {
+    items,
+    unreadCount,
+    error,
+    isLoading,
+    marking,
+    refresh,
+    markRead,
+    markAllRead,
+  } = useNotifications(Boolean(isAuthenticated));
+
+  const onMarkAllRead = async () => {
+    try {
+      await markAllRead();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Không đánh dấu đã đọc được"));
+    }
+  };
 
   const onItemClick = async (n: AppNotification) => {
+    if (marking) return;
+
     if (!n.read) {
       try {
         await markRead(n.id);
-      } catch {
-        /* ignore — still navigate */
+      } catch (err) {
+        toast.warning(
+          getApiErrorMessage(err, "Không đánh dấu đã đọc được thông báo"),
+        );
       }
     }
     const path = pathForNotification(n, user?.role);
     navigate(path, { state: withNotificationFlash(location.state) });
   };
+
+  const listBody = (() => {
+    if (isLoading && items.length === 0) {
+      return (
+        <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+          <LoadingSpinner size="small" />
+        </div>
+      );
+    }
+
+    if (error && items.length === 0) {
+      return (
+        <ErrorMessage
+          message={getApiErrorMessage(error, "Không tải được thông báo")}
+          action={
+            <RetryButton
+              size="small"
+              type="default"
+              onRetry={refresh}
+              loading={isLoading}
+            />
+          }
+        />
+      );
+    }
+
+    if (items.length === 0) {
+      return (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có thông báo" />
+      );
+    }
+
+    return (
+      <List
+        size="small"
+        dataSource={items}
+        renderItem={(n) => (
+          <List.Item
+            style={{
+              cursor: marking ? "default" : "pointer",
+              opacity: marking ? 0.6 : 1,
+              background: n.read ? "transparent" : token.colorPrimaryBg,
+              padding: "8px 8px",
+              borderRadius: 6,
+              marginBottom: 4,
+            }}
+            onClick={() => void onItemClick(n)}
+          >
+            <List.Item.Meta
+              title={
+                <Typography.Text strong={!n.read}>{n.title}</Typography.Text>
+              }
+              description={
+                <>
+                  <div>{n.message}</div>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {n.createdDate
+                      ? dayjs(n.createdDate).format("DD/MM/YYYY HH:mm")
+                      : ""}
+                  </Typography.Text>
+                </>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    );
+  })();
 
   const dropdown = (
     <div
@@ -78,48 +171,28 @@ export function NotificationBell() {
         <Button
           type="link"
           size="small"
-          disabled={unreadCount === 0}
-          onClick={() => void markAllRead()}
+          disabled={unreadCount === 0 || marking}
+          loading={marking}
+          onClick={() => void onMarkAllRead()}
         >
           Đọc tất cả
         </Button>
       </div>
-      {items.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có thông báo" />
-      ) : (
-        <List
-          size="small"
-          dataSource={items}
-          renderItem={(n) => (
-            <List.Item
-              style={{
-                cursor: "pointer",
-                background: n.read ? "transparent" : token.colorPrimaryBg,
-                padding: "8px 8px",
-                borderRadius: 6,
-                marginBottom: 4,
-              }}
-              onClick={() => void onItemClick(n)}
-            >
-              <List.Item.Meta
-                title={
-                  <Typography.Text strong={!n.read}>{n.title}</Typography.Text>
-                }
-                description={
-                  <>
-                    <div>{n.message}</div>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {n.createdDate
-                        ? dayjs(n.createdDate).format("DD/MM/YYYY HH:mm")
-                        : ""}
-                    </Typography.Text>
-                  </>
-                }
-              />
-            </List.Item>
-          )}
+      {error && items.length > 0 ? (
+        <ErrorMessage
+          message={getApiErrorMessage(error, "Không tải được thông báo")}
+          action={
+            <RetryButton
+              size="small"
+              type="default"
+              onRetry={refresh}
+              loading={isLoading}
+            />
+          }
+          style={{ marginBottom: 8 }}
         />
-      )}
+      ) : null}
+      {listBody}
     </div>
   );
 

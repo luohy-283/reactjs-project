@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DatePicker, Space } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
@@ -27,16 +27,23 @@ import { RevenueRoomCharts } from "@/features/revenue/components/RevenueRoomChar
 import { RevenueTrendArea } from "@/features/revenue/components/RevenueTrendArea";
 import { formatVnd } from "@/lib/money";
 import { useAuthenticatedExport } from "@/lib/useAuthenticatedExport";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 
 export default function AdminRevenuePage() {
   const [month, setMonth] = useState<Dayjs>(dayjs());
   const [search, setSearch] = useState("");
+  const debouncedQ = useDebouncedValue(search.trim(), 300);
   const { query, setQuery, pageParams, resetPage } =
     useServerTableQuery();
+
+  useEffect(() => {
+    resetPage();
+  }, [debouncedQ, resetPage]);
+
   const { exporting, runExport } = useAuthenticatedExport();
   const yearMonth = month.format("YYYY-MM");
-  const q = search.trim() || undefined;
+  const q = debouncedQ || undefined;
   const {
     data,
     error,
@@ -162,10 +169,7 @@ export default function AdminRevenuePage() {
               <SearchForm onReset={resetSearch}>
                 <SearchInput
                   value={search}
-                  onChange={(value) => {
-                    setSearch(value);
-                    resetPage();
-                  }}
+                  onChange={setSearch}
                   placeholder="Tìm theo tên phòng…"
                 />
               </SearchForm>

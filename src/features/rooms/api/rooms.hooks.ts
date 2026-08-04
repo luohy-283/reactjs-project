@@ -1,14 +1,8 @@
-import { getRooms, getRoomsPage } from "@/features/rooms/api/rooms.service";
+import { getRoomsPage } from "@/features/rooms/api/rooms.service";
 import type { GetRoomsOptions } from "@/features/rooms/api/rooms.service";
 import type { Room } from "@/features/rooms/api/rooms.types";
 import type { PagedResult } from "@/lib/pagination";
 import { useAsyncFetch } from "@/lib/useAsyncFetch";
-
-export function useRooms() {
-  return useAsyncFetch((signal) => getRooms(signal), [], {
-    initialData: [] as Room[],
-  });
-}
 
 const EMPTY_PAGE: PagedResult<Room> = {
   items: [],

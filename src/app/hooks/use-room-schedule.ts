@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getBookings } from "@/features/bookings/api/bookings.service";
 import { getRooms } from "@/features/rooms/api/rooms.service";
 import { isAbortError } from "@/lib/api-error";
@@ -11,52 +11,35 @@ export function useRoomSchedule(date: string) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const controllerRef = useRef<AbortController | null>(null);
 
-  const refetch = useCallback(async () => {
+  const runFetch = useCallback(async () => {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
     setIsLoading(true);
     setError(null);
     try {
       const [roomsData, bookingsData] = await Promise.all([
-        getRooms(),
-        getBookings(date),
+        getRooms(controller.signal),
+        getBookings(date, controller.signal),
       ]);
-      setRooms(roomsData.filter((room) => room.isActive));
-      setBookings(bookingsData);
+      if (!controller.signal.aborted) {
+        setRooms(roomsData.filter((room) => room.isActive));
+        setBookings(bookingsData);
+      }
     } catch (err) {
-      setError(err);
+      if (!controller.signal.aborted && !isAbortError(err)) setError(err);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) setIsLoading(false);
     }
   }, [date]);
 
   useEffect(() => {
-    const controller = new AbortController();
+    void runFetch();
+    return () => controllerRef.current?.abort();
+  }, [runFetch]);
 
-    void (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [roomsData, bookingsData] = await Promise.all([
-          getRooms(controller.signal),
-          getBookings(date, controller.signal),
-        ]);
-        if (!controller.signal.aborted) {
-          setRooms(roomsData.filter((room) => room.isActive));
-          setBookings(bookingsData);
-        }
-      } catch (err) {
-        if (!controller.signal.aborted && !isAbortError(err)) {
-          setError(err);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => controller.abort();
-  }, [date]);
-
-  return { rooms, bookings, error, isLoading, refetch };
+  return { rooms, bookings, error, isLoading, refetch: runFetch };
 }

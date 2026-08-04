@@ -33,9 +33,10 @@ import {
 } from "@/features/bookings/api/bookings.service";
 import { useBookingsPage } from "@/features/bookings/api/bookings.hooks";
 import type { Booking, BookingStatus } from "@/features/bookings/api/bookings.types";
-import { isAbortError } from "@/lib/api-error";
+import { getApiErrorMessage, isAbortError } from "@/lib/api-error";
 import { formatDateTimeRange } from "@/lib/datetime";
 import { parseNotificationFlash } from "@/lib/notificationNav";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 import { useTableRowHighlight } from "@/lib/useTableRowHighlight";
 import { useUrlTab } from "@/lib/useUrlTab";
@@ -82,6 +83,7 @@ export default function AdminBookingsPage() {
     useServerTableQuery();
   const [actingId, setActingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const debouncedQ = useDebouncedValue(search.trim(), 300);
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "ALL">(
     "ALL",
   );
@@ -91,12 +93,16 @@ export default function AdminBookingsPage() {
     booking: Booking | null;
   } | null>(null);
 
-  const searchQ = search.trim();
+  const searchQ = debouncedQ;
   const hasTextSearch = Boolean(searchQ);
   const highlightRaw = searchParams.get("highlight");
   const highlightId =
     highlightRaw && /^\d+$/.test(highlightRaw) ? Number(highlightRaw) : null;
   const pinResolveKey = tab === "pending" ? highlightId : null;
+
+  useEffect(() => {
+    resetPage();
+  }, [debouncedQ, resetPage]);
 
   // Reset pin when highlight/tab context changes (React “adjust state while rendering”).
   const [prevPinResolveKey, setPrevPinResolveKey] = useState(pinResolveKey);
@@ -196,7 +202,7 @@ export default function AdminBookingsPage() {
       toast.success("Đã duyệt yêu cầu đặt phòng");
       await refetch();
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(getApiErrorMessage(err, "Thao tác thất bại"));
     } finally {
       setActingId(null);
     }
@@ -209,7 +215,7 @@ export default function AdminBookingsPage() {
       toast.success("Đã từ chối yêu cầu đặt phòng");
       await refetch();
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(getApiErrorMessage(err, "Thao tác thất bại"));
     } finally {
       setActingId(null);
     }
@@ -222,7 +228,7 @@ export default function AdminBookingsPage() {
       toast.success("Đã hủy lịch đặt phòng");
       await refetch();
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(getApiErrorMessage(err, "Thao tác thất bại"));
     } finally {
       setActingId(null);
     }
@@ -400,10 +406,7 @@ export default function AdminBookingsPage() {
               <SearchForm onReset={resetFilters}>
                 <SearchInput
                   value={search}
-                  onChange={(value) => {
-                    setSearch(value);
-                    resetPage();
-                  }}
+                  onChange={setSearch}
                   placeholder="Tìm theo tiêu đề, phòng, người đặt…"
                 />
                 {tab === "all" ? (

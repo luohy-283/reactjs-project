@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getNotifications,
   getUnreadNotificationCount,
@@ -8,84 +8,109 @@ import {
 import type { AppNotification } from "@/features/notifications/api/notifications.types";
 import { isAbortError } from "@/lib/api-error";
 
-const POLL_MS = 15_000;
+const POLL_MS = 300_000;
 
 export function useNotifications(enabled: boolean) {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [error, setError] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(enabled);
+  const [marking, setMarking] = useState(false);
+  const controllerRef = useRef<AbortController | null>(null);
+  const mutationInFlightRef = useRef(false);
 
-  const refresh = useCallback(async (signal?: AbortSignal) => {
-    const [page, count] = await Promise.all([
-      getNotifications(signal),
-      getUnreadNotificationCount(signal),
-    ]);
-    if (signal?.aborted) return;
-    setItems(page.items);
-    setUnreadCount(count);
+  const runRefresh = useCallback(async (opts?: { showLoading?: boolean }) => {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    if (opts?.showLoading) {
+      setIsLoading(true);
+      setError(null);
+    }
+    try {
+      const [page, count] = await Promise.all([
+        getNotifications(controller.signal),
+        getUnreadNotificationCount(controller.signal),
+      ]);
+      if (
+        !controller.signal.aborted &&
+        !mutationInFlightRef.current
+      ) {
+        setItems(page.items);
+        setUnreadCount(count);
+      }
+    } catch (err) {
+      if (!controller.signal.aborted && !isAbortError(err)) setError(err);
+    } finally {
+      if (opts?.showLoading && !controller.signal.aborted) setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     if (!enabled) {
+      controllerRef.current?.abort();
       setIsLoading(false);
       return;
     }
 
-    let cancelled = false;
-    const controller = new AbortController();
-
-    const load = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        await refresh(controller.signal);
-      } catch (err) {
-        if (!cancelled && !isAbortError(err)) setError(err);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
-
-    void load();
+    void runRefresh({ showLoading: true });
     const timer = window.setInterval(() => {
-      void refresh().catch((err) => {
-        if (!isAbortError(err)) setError(err);
-      });
+      void runRefresh();
     }, POLL_MS);
 
     return () => {
-      cancelled = true;
-      controller.abort();
+      controllerRef.current?.abort();
       window.clearInterval(timer);
     };
-  }, [enabled, refresh]);
+  }, [enabled, runRefresh]);
 
   const markRead = useCallback(async (id: number) => {
-    const wasUnread = items.some((n) => n.id === id && !n.read);
-    const updated = await markNotificationRead(id);
-    setItems((prev) => prev.map((n) => (n.id === id ? updated : n)));
-    if (wasUnread) setUnreadCount((c) => Math.max(0, c - 1));
-  }, [items]);
+    if (mutationInFlightRef.current) return;
+
+    mutationInFlightRef.current = true;
+    setMarking(true);
+    try {
+      const wasUnread = items.some((n) => n.id === id && !n.read);
+      const updated = await markNotificationRead(id);
+      setItems((prev) => prev.map((n) => (n.id === id ? updated : n)));
+      if (wasUnread) setUnreadCount((c) => Math.max(0, c - 1));
+      await runRefresh();
+    } finally {
+      mutationInFlightRef.current = false;
+      setMarking(false);
+    }
+  }, [items, runRefresh]);
 
   const markAllRead = useCallback(async () => {
-    await markAllNotificationsRead();
-    setItems((prev) =>
-      prev.map((n) => ({
-        ...n,
-        read: true,
-        readDate: n.readDate ?? new Date().toISOString(),
-      })),
-    );
-    setUnreadCount(0);
-  }, []);
+    if (mutationInFlightRef.current) return;
+
+    mutationInFlightRef.current = true;
+    setMarking(true);
+    try {
+      await markAllNotificationsRead();
+      setItems((prev) =>
+        prev.map((n) => ({
+          ...n,
+          read: true,
+          readDate: n.readDate ?? new Date().toISOString(),
+        })),
+      );
+      setUnreadCount(0);
+      await runRefresh();
+    } finally {
+      mutationInFlightRef.current = false;
+      setMarking(false);
+    }
+  }, [runRefresh]);
 
   return {
     items,
     unreadCount,
     error,
     isLoading,
-    refresh: () => refresh(),
+    marking,
+    refresh: () => runRefresh({ showLoading: true }),
     markRead,
     markAllRead,
   };

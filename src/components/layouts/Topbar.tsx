@@ -17,7 +17,7 @@ export type TopbarProps = {
   onMenuToggle?: () => void;
 };
 
-/** App shell header — brand left, actions right. Stays fixed while content scrolls. */
+/** App shell header — brand left, actions right. Outside the content scroll area. */
 export function Topbar({
   brand = "Hệ thống Đặt phòng họp",
   extra,
@@ -28,8 +28,6 @@ export function Topbar({
   return (
     <Header
       style={{
-        position: "sticky",
-        top: 0,
         zIndex: 100,
         width: "100%",
         height: HEADER_HEIGHT,

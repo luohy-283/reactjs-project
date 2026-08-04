@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Form, Input, InputNumber, Select } from "antd";
 import { ConfirmDialog } from "@/components/ui/dialog/ConfirmDialog";
 import { CreateDialog } from "@/components/ui/dialog/CreateDialog";
@@ -27,6 +27,7 @@ import { useRoomsPage } from "@/features/rooms/api/rooms.hooks";
 import type { Room } from "@/features/rooms/api/rooms.types";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatVnd } from "@/lib/money";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 
 type RoomActiveFilter = "ACTIVE" | "INACTIVE";
@@ -58,12 +59,18 @@ export default function AdminRoomsPage() {
   const appModal = useAppModal();
   const { data: departments } = useDepartments();
   const [search, setSearch] = useState("");
+  const debouncedQ = useDebouncedValue(search.trim(), 300);
   const [statusFilter, setStatusFilter] = useState<RoomActiveFilter | "ALL">(
     "ALL",
   );
   const { query, setQuery, pageParams, resetPage } =
     useServerTableQuery();
-  const q = search.trim() || undefined;
+
+  useEffect(() => {
+    resetPage();
+  }, [debouncedQ, resetPage]);
+
+  const q = debouncedQ || undefined;
   const active =
     statusFilter === "ACTIVE"
       ? true
@@ -129,6 +136,13 @@ export default function AdminRoomsPage() {
       }
       closeFormModal();
       await refetch();
+    } catch (err) {
+      toast.error(
+        getApiErrorMessage(
+          err,
+          editingRoom ? "Không cập nhật được phòng" : "Không thêm được phòng",
+        ),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -313,10 +327,7 @@ export default function AdminRoomsPage() {
         <SearchForm onReset={resetFilters}>
           <SearchInput
             value={search}
-            onChange={(value) => {
-              setSearch(value);
-              resetPage();
-            }}
+            onChange={setSearch}
             placeholder="Tìm theo tên, sức chứa, phòng ban…"
           />
           <StatusFilter<RoomActiveFilter>

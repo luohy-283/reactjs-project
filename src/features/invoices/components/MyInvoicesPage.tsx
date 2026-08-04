@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Descriptions, Space } from "antd";
 import { DataTable } from "@/components/ui/table/DataTable";
@@ -25,13 +25,20 @@ import type { Booking } from "@/features/bookings/api/bookings.types";
 import { formatDateTimeRange } from "@/lib/datetime";
 import { billableHours, durationHours, formatVnd } from "@/lib/money";
 import { useAuthenticatedExport } from "@/lib/useAuthenticatedExport";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 
 export default function MyInvoicesPage() {
   const [search, setSearch] = useState("");
+  const debouncedQ = useDebouncedValue(search.trim(), 300);
   const { query, setQuery, pageParams, resetPage } =
     useServerTableQuery();
-  const q = search.trim() || undefined;
+
+  useEffect(() => {
+    resetPage();
+  }, [debouncedQ, resetPage]);
+
+  const q = debouncedQ || undefined;
   const pageOpts = { ...pageParams, q };
   const { data: invoicesPage, error, isLoading, refetch } =
     useMyInvoicesPage(pageOpts);
@@ -92,10 +99,7 @@ export default function MyInvoicesPage() {
         <SearchForm onReset={resetSearch}>
           <SearchInput
             value={search}
-            onChange={(value) => {
-              setSearch(value);
-              resetPage();
-            }}
+            onChange={setSearch}
             placeholder="Tìm theo phòng, tiêu đề…"
           />
         </SearchForm>

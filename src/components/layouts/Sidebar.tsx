@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Layout } from "antd";
-import { HEADER_HEIGHT } from "@/components/layouts/Topbar";
 
 const { Sider } = Layout;
 
@@ -15,7 +14,7 @@ export type SidebarProps = {
   onBreakpoint?: (broken: boolean) => void;
 };
 
-/** Ant Design Sider — sticky under the topbar so menu stays visible while scrolling. */
+/** Ant Design Sider — fills shell height under Topbar; menu scrolls inside if needed. */
 export function Sidebar({
   children,
   width = 220,
@@ -36,9 +35,7 @@ export function Sidebar({
       onCollapse={(next) => onCollapse?.(next)}
       onBreakpoint={(broken) => onBreakpoint?.(broken)}
       style={{
-        position: "sticky",
-        top: HEADER_HEIGHT,
-        height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+        height: "100%",
         overflow: "auto",
         zIndex: 90,
       }}

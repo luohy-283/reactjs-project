@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Form, Input, Select } from "antd";
 import { useLocation } from "react-router";
 import { ConfirmDialog } from "@/components/ui/dialog/ConfirmDialog";
@@ -44,6 +44,7 @@ import type {
 import type { UserRole } from "@/features/auth/api/auth.types";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { parseNotificationFlash } from "@/lib/notificationNav";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 import { useTableRowHighlight } from "@/lib/useTableRowHighlight";
 import { useUrlTab } from "@/lib/useUrlTab";
@@ -96,14 +97,20 @@ export default function AdminUsersPage() {
     refetch: refetchPending,
   } = usePendingDepartmentChanges();
   const [search, setSearch] = useState("");
+  const debouncedQ = useDebouncedValue(search.trim(), 300);
   const [statusFilter, setStatusFilter] = useState<UserActiveFilter | "ALL">(
     "ALL",
   );
   const [requestSearch, setRequestSearch] = useState("");
-  const hasFilters = Boolean(search.trim()) || statusFilter !== "ALL";
+
+  useEffect(() => {
+    resetPage();
+  }, [debouncedQ, resetPage]);
+
+  const hasFilters = Boolean(debouncedQ) || statusFilter !== "ALL";
   const pageOpts = {
     ...pageParams,
-    ...(search.trim() ? { q: search.trim() } : {}),
+    ...(debouncedQ ? { q: debouncedQ } : {}),
     ...(statusFilter === "ACTIVE"
       ? { activated: true as const }
       : statusFilter === "INACTIVE"
@@ -124,6 +131,7 @@ export default function AdminUsersPage() {
     null,
   );
   const [actionLoading, setActionLoading] = useState(false);
+  const [actingRequestId, setActingRequestId] = useState<number | null>(null);
   const [form] = Form.useForm<UserFormValues>();
 
   const { data: departments } = useDepartments(modalOpen);
@@ -230,22 +238,28 @@ export default function AdminUsersPage() {
   };
 
   const handleApprove = async (req: DepartmentChangeRequest) => {
+    setActingRequestId(req.id);
     try {
       await approveDepartmentChange(req.id);
       toast.success("Đã duyệt đổi phòng ban");
       await Promise.all([refetchPending(), refetch()]);
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Duyệt thất bại"));
+    } finally {
+      setActingRequestId(null);
     }
   };
 
   const handleReject = async (req: DepartmentChangeRequest) => {
+    setActingRequestId(req.id);
     try {
       await rejectDepartmentChange(req.id);
       toast.success("Đã từ chối yêu cầu");
       await refetchPending();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Từ chối thất bại"));
+    } finally {
+      setActingRequestId(null);
     }
   };
 
@@ -430,6 +444,7 @@ export default function AdminUsersPage() {
     },
     actionsColumn<DepartmentChangeRequest>((_, req) => (
       <ApproveRejectActions
+        loading={actingRequestId === req.id}
         onApprove={() => void handleApprove(req)}
         onReject={() => void handleReject(req)}
       />
@@ -471,10 +486,7 @@ export default function AdminUsersPage() {
               <SearchForm onReset={resetUserFilters}>
                 <SearchInput
                   value={search}
-                  onChange={(value) => {
-                    setSearch(value);
-                    resetPage();
-                  }}
+                  onChange={setSearch}
                   placeholder="Tìm theo tên, email, phòng ban…"
                 />
                 <StatusFilter<UserActiveFilter>

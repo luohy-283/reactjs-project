@@ -25,8 +25,9 @@ export interface GetBookingsOptions extends PageParams {
 
 function isMissingAdminRoute(error: unknown): error is AxiosError {
   if (!isAxiosError(error)) return false;
-  const status = error.response?.status;
-  return status === 404 || status === 500;
+  // Only fall back when the /api/admin/bookings route does not exist.
+  // Do not swallow 500s (or other business errors) as "missing route".
+  return error.response?.status === 404;
 }
 
 function buildQueryParams(options: GetBookingsOptions) {
@@ -62,12 +63,12 @@ export async function getBookingsPage(
   }
 }
 
-/** Full list — BE returns all (optional date filter); UI tables paginate client-side. */
+/** Full list for schedule — request a large size (same bound as getRooms). */
 export async function getBookings(
   date?: string,
   signal?: AbortSignal,
 ): Promise<Booking[]> {
-  const result = await getBookingsPage({ date, signal });
+  const result = await getBookingsPage({ date, signal, page: 0, size: 200 });
   return result.items;
 }
 
