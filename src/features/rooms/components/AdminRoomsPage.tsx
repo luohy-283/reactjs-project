@@ -21,12 +21,12 @@ import { RefreshButton } from "@/components/ui/toolbar/RefreshButton";
 import { TableRowActions } from "@/components/ui/table/TableRowActions";
 import { actionsColumn, defineColumns, sortableColumn } from "@/components/ui/table/columnDefs";
 import { useAppModal, useToast } from "@/components/ui/feedback/useFeedback";
-import { useDepartments } from "@/features/departments/api/departments.hooks";
 import { createRoom, updateRoom } from "@/features/rooms/api/rooms.service";
 import { useRoomsPage } from "@/features/rooms/api/rooms.hooks";
 import type { Room } from "@/features/rooms/api/rooms.types";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatVnd } from "@/lib/money";
+import type { Department } from "@/lib/types/department";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 
@@ -37,6 +37,11 @@ type RoomFormValues = {
   capacity: number;
   lockedDepartmentId?: number | null;
   pricePerHour: number;
+};
+
+export type AdminRoomsPageProps = {
+  departments: Department[];
+  departmentsLoading?: boolean;
 };
 
 const ROOM_STATUS_OPTIONS = [
@@ -54,10 +59,11 @@ const ROOM_ACTIVE_COLOR: Record<string, string> = {
   false: "default",
 };
 
-export default function AdminRoomsPage() {
+export default function AdminRoomsPage({
+  departments,
+}: AdminRoomsPageProps) {
   const toast = useToast();
   const appModal = useAppModal();
-  const { data: departments } = useDepartments();
   const [search, setSearch] = useState("");
   const debouncedQ = useDebouncedValue(search.trim(), 300);
   const [statusFilter, setStatusFilter] = useState<RoomActiveFilter | "ALL">(

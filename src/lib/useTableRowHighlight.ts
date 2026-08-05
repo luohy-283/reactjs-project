@@ -31,19 +31,29 @@ export function useTableRowHighlight({
 }: Options) {
   const toast = useToast();
   const toastRef = useRef(toast);
-  toastRef.current = toast;
   const missingRef = useRef(missingMessage);
-  missingRef.current = missingMessage;
 
   const raw = searchParams.get("highlight");
   const highlightId = raw && /^\d+$/.test(raw) ? Number(raw) : null;
   const [activeId, setActiveId] = useState<number | null>(null);
   const [fading, setFading] = useState(false);
   const activeIdRef = useRef(activeId);
-  activeIdRef.current = activeId;
   const fadingRef = useRef(fading);
-  fadingRef.current = fading;
   const fadeTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
+  useEffect(() => {
+    missingRef.current = missingMessage;
+  }, [missingMessage]);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+  useEffect(() => {
+    fadingRef.current = fading;
+  }, [fading]);
+
   const rowIdsKey = rowIds.join(",");
   const idSet = useMemo(
     () => new Set(rowIdsKey ? rowIdsKey.split(",").map(Number) : []),
@@ -93,17 +103,18 @@ export function useTableRowHighlight({
 
     if (!idSet.has(highlightId)) {
       toastRef.current.warning(missingRef.current);
-      clearHighlight(true);
+      // Defer setState out of the synchronous effect body (react-hooks/set-state-in-effect).
+      queueMicrotask(() => clearHighlight(true));
       return;
     }
 
-    if (fadeTimerRef.current != null) {
-      window.clearTimeout(fadeTimerRef.current);
-      fadeTimerRef.current = null;
-    }
-    setFading(false);
-    setActiveId(highlightId);
     const frame = window.requestAnimationFrame(() => {
+      if (fadeTimerRef.current != null) {
+        window.clearTimeout(fadeTimerRef.current);
+        fadeTimerRef.current = null;
+      }
+      setFading(false);
+      setActiveId(highlightId);
       const row =
         document.querySelector<HTMLElement>(
           `.ant-table-tbody > tr.ant-table-row[data-row-key="${highlightId}"]`,

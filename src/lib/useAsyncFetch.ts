@@ -29,8 +29,13 @@ export function useAsyncFetch<T>(
   const [error, setError] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(enabled);
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
   const controllerRef = useRef<AbortController | null>(null);
+
+  // Keep latest fetcher without listing it in runFetch deps (avoids fetch loops).
+  // Do not assign ref.current during render — eslint-plugin-react-hooks / React 19 forbid it.
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
 
   const runFetch = useCallback(async () => {
     controllerRef.current?.abort();
@@ -52,15 +57,27 @@ export function useAsyncFetch<T>(
   useEffect(() => {
     if (!enabled) {
       controllerRef.current?.abort();
-      setIsLoading(false);
       return;
     }
 
-    void runFetch();
-    return () => controllerRef.current?.abort();
+    // Defer so loading/data setState is not synchronous in the effect body
+    // (eslint-plugin-react-hooks `set-state-in-effect`).
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void runFetch();
+    });
+    return () => {
+      cancelled = true;
+      controllerRef.current?.abort();
+    };
     // Caller supplies the dependency list for when to re-fetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, runFetch, ...deps]);
 
-  return { data, error, isLoading, refetch: runFetch };
+  return {
+    data,
+    error,
+    isLoading: enabled && isLoading,
+    refetch: runFetch,
+  };
 }

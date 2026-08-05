@@ -10,8 +10,8 @@ import {
 import {
   mapBackendBooking,
   type BackendBookingDto,
-} from "@/features/bookings/api/mapBackendBooking";
-import type { Booking, BookingStatus, CreateBookingPayload } from "@/features/bookings/api/bookings.types";
+} from "@/lib/mapBackendBooking";
+import type { Booking, BookingStatus, CreateBookingPayload } from "@/lib/types/booking";
 
 export interface GetBookingsOptions extends PageParams {
   date?: string;

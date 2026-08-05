@@ -1,4 +1,4 @@
-import type { Booking, BookingStatus } from "@/features/bookings/api/bookings.types";
+import type { Booking, BookingStatus } from "@/lib/types/booking";
 
 /** Shape returned by booking / invoice REST endpoints (flat or nested). */
 export interface BackendBookingDto {

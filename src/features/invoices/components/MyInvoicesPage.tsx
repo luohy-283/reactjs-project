@@ -21,7 +21,7 @@ import {
   sortableColumn,
 } from "@/components/ui/table/columnDefs";
 import { useMyInvoicesPage } from "@/features/invoices/api/invoices.hooks";
-import type { Booking } from "@/features/bookings/api/bookings.types";
+import type { Booking } from "@/lib/types/booking";
 import { formatDateTimeRange } from "@/lib/datetime";
 import { billableHours, durationHours, formatVnd } from "@/lib/money";
 import { useAuthenticatedExport } from "@/lib/useAuthenticatedExport";

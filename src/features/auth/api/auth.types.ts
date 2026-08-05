@@ -1,18 +1,10 @@
-export type UserRole = "ADMIN" | "USER";
+import type { Department } from "@/lib/types/department";
+import type { User, UserRole } from "@/lib/types/user";
 
-export interface DepartmentSummary {
-  id: number;
-  code: string;
-  name: string;
-}
+export type { User, UserRole, Department };
 
-export interface User {
-  id: number;
-  email: string;
-  fullName: string;
-  role: UserRole;
-  department?: DepartmentSummary | null;
-}
+/** @deprecated Prefer `Department` from `@/lib/types/department`. */
+export type DepartmentSummary = Department;
 
 export interface LoginRequest {
   email: string;
@@ -38,6 +30,6 @@ export interface LoginApiResponse {
   email?: string;
   fullName?: string;
   role?: string;
-  department?: DepartmentSummary | null;
+  department?: Department | null;
   user?: User;
 }

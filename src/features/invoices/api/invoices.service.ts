@@ -9,8 +9,8 @@ import {
 import {
   mapBackendBooking,
   type BackendBookingDto,
-} from "@/features/bookings/api/mapBackendBooking";
-import type { Booking } from "@/features/bookings/api/bookings.types";
+} from "@/lib/mapBackendBooking";
+import type { Booking } from "@/lib/types/booking";
 
 export interface GetMyInvoicesOptions extends PageParams {
   /** Search title / room name */

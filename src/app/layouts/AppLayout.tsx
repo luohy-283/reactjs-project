@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Layout, Space } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { useDepartments } from "@/features/departments/api/departments.hooks";
 import { NotificationBell } from "@/app/components/NotificationBell";
 import { useThemeMode } from "@/app/theme/useThemeMode";
 import { Topbar } from "@/components/layouts/Topbar";
@@ -22,6 +23,7 @@ export default function AppLayout() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [isMobileNav, setIsMobileNav] = useState(false);
+  const { data: departments } = useDepartments(profileOpen);
 
   const menuItems = defineMenuItems([
     { key: "/dashboard", label: "Dashboard" },
@@ -93,6 +95,7 @@ export default function AppLayout() {
       <ProfileDialog
         open={profileOpen}
         user={user}
+        departments={departments}
         onClose={() => setProfileOpen(false)}
         onUpdated={setUser}
       />

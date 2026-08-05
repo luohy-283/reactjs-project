@@ -25,7 +25,6 @@ import { TabBar } from "@/components/ui/tabs/TabBar";
 import { defineTabItems } from "@/components/ui/tabs/TabItem";
 import { actionsColumn, defineColumns, sortableColumn } from "@/components/ui/table/columnDefs";
 import { useToast } from "@/components/ui/feedback/useFeedback";
-import { useDepartments } from "@/features/departments/api/departments.hooks";
 import {
   usePendingDepartmentChanges,
   useUsersPage,
@@ -41,9 +40,10 @@ import type {
   DepartmentChangeRequest,
   ManagedUser,
 } from "@/features/users/api/users.types";
-import type { UserRole } from "@/features/auth/api/auth.types";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { parseNotificationFlash } from "@/lib/notificationNav";
+import type { Department } from "@/lib/types/department";
+import type { UserRole } from "@/lib/types/user";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 import { useTableRowHighlight } from "@/lib/useTableRowHighlight";
@@ -59,6 +59,11 @@ type UserFormValues = {
 
 type UserActiveFilter = "ACTIVE" | "INACTIVE";
 type UsersTab = "users" | "requests";
+
+export type AdminUsersPageProps = {
+  departments: Department[];
+  departmentsLoading?: boolean;
+};
 
 function parseUsersTab(raw: string | null): UsersTab {
   return raw === "requests" ? "requests" : "users";
@@ -80,7 +85,9 @@ const ACTIVE_COLOR: Record<string, string> = {
   false: "default",
 };
 
-export default function AdminUsersPage() {
+export default function AdminUsersPage({
+  departments,
+}: AdminUsersPageProps) {
   const toast = useToast();
   const location = useLocation();
   const { tab, setTab, searchParams, setSearchParams } = useUrlTab({
@@ -133,8 +140,6 @@ export default function AdminUsersPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actingRequestId, setActingRequestId] = useState<number | null>(null);
   const [form] = Form.useForm<UserFormValues>();
-
-  const { data: departments } = useDepartments(modalOpen);
 
   const openCreate = () => {
     setEditing(null);

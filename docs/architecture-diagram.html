@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>book-metting-room — Architecture map</title>
+  <style>
+    :root {
+      --ink: #1a2332;
+      --ink-soft: #3d4a5c;
+      --muted: #6b7a8f;
+      --line: #c5d0de;
+      --line-strong: #8fa3bc;
+      --paper: #f3f6fa;
+      --panel: #ffffff;
+      --panel-2: #e8eef6;
+      --accent: #0d7377;
+      --accent-soft: #d4eef0;
+      --accent-deep: #095456;
+      --warn: #b45309;
+      --warn-soft: #fef3c7;
+      --admin: #1e3a5f;
+      --admin-soft: #dbe7f5;
+      --ok: #166534;
+      --ok-soft: #dcfce7;
+      --shadow: 0 1px 0 rgba(26, 35, 50, 0.06), 0 8px 24px rgba(26, 35, 50, 0.06);
+      --radius: 6px;
+      --font: "Segoe UI", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+      --mono: "Cascadia Code", "Consolas", "Segoe UI Mono", ui-monospace, monospace;
+      --measure: 68ch;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #e8eef6;
+        --ink-soft: #b7c4d6;
+        --muted: #8a9bb0;
+        --line: #2a384c;
+        --line-strong: #4a5f7a;
+        --paper: #0f1621;
+        --panel: #172233;
+        --panel-2: #1c2a3d;
+        --accent: #3dbdbf;
+        --accent-soft: #163a3c;
+        --accent-deep: #7ad4d6;
+        --warn: #fbbf24;
+        --warn-soft: #3d2e12;
+        --admin: #93c5fd;
+        --admin-soft: #1a2f4a;
+        --ok: #86efac;
+        --ok-soft: #143528;
+        --shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.35);
+      }
+    }
+
+    :root[data-theme="light"] {
+      --ink: #1a2332;
+      --ink-soft: #3d4a5c;
+      --muted: #6b7a8f;
+      --line: #c5d0de;
+      --line-strong: #8fa3bc;
+      --paper: #f3f6fa;
+      --panel: #ffffff;
+      --panel-2: #e8eef6;
+      --accent: #0d7377;
+      --accent-soft: #d4eef0;
+      --accent-deep: #095456;
+      --warn: #b45309;
+      --warn-soft: #fef3c7;
+      --admin: #1e3a5f;
+      --admin-soft: #dbe7f5;
+      --ok: #166534;
+      --ok-soft: #dcfce7;
+      --shadow: 0 1px 0 rgba(26, 35, 50, 0.06), 0 8px 24px rgba(26, 35, 50, 0.06);
+    }
+
+    :root[data-theme="dark"] {
+      --ink: #e8eef6;
+      --ink-soft: #b7c4d6;
+      --muted: #8a9bb0;
+      --line: #2a384c;
+      --line-strong: #4a5f7a;
+      --paper: #0f1621;
+      --panel: #172233;
+      --panel-2: #1c2a3d;
+      --accent: #3dbdbf;
+      --accent-soft: #163a3c;
+      --accent-deep: #7ad4d6;
+      --warn: #fbbf24;
+      --warn-soft: #3d2e12;
+      --admin: #93c5fd;
+      --admin-soft: #1a2f4a;
+      --ok: #86efac;
+      --ok-soft: #143528;
+      --shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 0% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 55%),
+        linear-gradient(180deg, var(--paper), var(--paper));
+      line-height: 1.45;
+      min-height: 100dvh;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      * { transition: none !important; animation: none !important; }
+    }
+
+    .shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    header.hero {
+      display: grid;
+      gap: 0.75rem;
+      padding: 1.25rem 1.35rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 650;
+      margin: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 2.4vw, 1.95rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+      max-width: 22ch;
+    }
+
+    .lede {
+      margin: 0;
+      color: var(--ink-soft);
+      max-width: var(--measure);
+      font-size: 0.98rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .chip {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 0.22rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--ink-soft);
+    }
+
+    .theme-btn {
+      font: inherit;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      padding: 0.35rem;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .tab {
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border: 1px solid transparent;
+      border-radius: calc(var(--radius) - 2px);
+      background: transparent;
+      color: var(--ink-soft);
+      cursor: pointer;
+    }
+    .tab[aria-selected="true"] {
+      background: var(--panel);
+      color: var(--accent-deep);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .tab:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .panel {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .panel.active { display: flex; }
+
+    .panel-intro {
+      margin: 0;
+      color: var(--ink-soft);
+      max-width: var(--measure);
+      font-size: 0.92rem;
+    }
+
+    .canvas-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .layer-stack {
+      min-width: 920px;
+      padding: 1.25rem;
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .band {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+      padding: 0.85rem 1rem;
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .band-h {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .band-title {
+      margin: 0;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .band-path {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+    }
+
+    .nodes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .node {
+      background: var(--panel);
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .node small {
+      display: block;
+      font-weight: 500;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+    .node.accent {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .node.admin {
+      border-color: var(--admin);
+      background: var(--admin-soft);
+      color: var(--admin);
+    }
+
+    .flow-arrow {
+      text-align: center;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      padding: 0.1rem 0;
+    }
+
+    .import-rule {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.85rem 1rem;
+      background: var(--panel);
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    .import-rule strong { color: var(--accent-deep); }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0.9rem 1rem;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 0.55rem;
+    }
+    .card h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+    }
+    .card p {
+      margin: 0;
+      font-size: 0.86rem;
+      color: var(--ink-soft);
+    }
+    .meta {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .route-table, .api-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .route-table th, .route-table td,
+    .api-table th, .api-table td {
+      text-align: left;
+      padding: 0.55rem 0.65rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    .route-table th, .api-table th {
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--panel-2);
+    }
+    .path {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--accent-deep);
+      white-space: nowrap;
+    }
+    .pill {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+    }
+    .pill.guest { background: var(--warn-soft); color: var(--warn); }
+    .pill.auth { background: var(--ok-soft); color: var(--ok); }
+    .pill.admin { background: var(--admin-soft); color: var(--admin); }
+    .pill.compose { background: var(--accent-soft); color: var(--accent-deep); }
+
+    .seq {
+      display: grid;
+      gap: 0;
+      padding: 0.5rem 0;
+    }
+    .seq-step {
+      display: grid;
+      grid-template-columns: 2.2rem 1fr;
+      gap: 0.75rem;
+      position: relative;
+      padding-bottom: 1rem;
+    }
+    .seq-step:last-child { padding-bottom: 0; }
+    .seq-step::before {
+      content: "";
+      position: absolute;
+      left: 0.95rem;
+      top: 1.4rem;
+      bottom: 0;
+      width: 2px;
+      background: var(--line);
+    }
+    .seq-step:last-child::before { display: none; }
+    .seq-num {
+      width: 1.9rem;
+      height: 1.9rem;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--accent-soft);
+      color: var(--accent-deep);
+      border: 1px solid var(--accent);
+      z-index: 1;
+    }
+    .seq-body h4 {
+      margin: 0.15rem 0 0.25rem;
+      font-size: 0.95rem;
+    }
+    .seq-body p {
+      margin: 0;
+      font-size: 0.86rem;
+      color: var(--ink-soft);
+    }
+    .seq-body code {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      background: var(--panel-2);
+      padding: 0.05rem 0.3rem;
+      border-radius: 3px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .swatch {
+      width: 0.85rem;
+      height: 0.85rem;
+      border-radius: 2px;
+      border: 1px solid var(--line-strong);
+    }
+
+    footer.note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      max-width: var(--measure);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <p class="eyebrow">Meeting room booking · SPA map</p>
+      <div class="toolbar">
+        <h1>book-metting-room architecture</h1>
+        <button type="button" class="theme-btn" id="themeToggle" aria-pressed="false">
+          Theme: system
+        </button>
+      </div>
+      <p class="lede">
+        Bản đồ toàn bộ frontend React: lớp import, route + guard, 8 feature,
+        auth/JWT, pattern tải dữ liệu, và nhóm API JHipster. Dùng tab để
+        đọc từng mặt cắt — không chỉ F6.boundaries.
+      </p>
+      <div class="chips" aria-label="Stack">
+        <span class="chip">React 19</span>
+        <span class="chip">TypeScript 6</span>
+        <span class="chip">Vite 8</span>
+        <span class="chip">React Router 8</span>
+        <span class="chip">Ant Design 6</span>
+        <span class="chip">Axios</span>
+        <span class="chip">@ant-design/plots</span>
+        <span class="chip">no Query / Zustand / RHF</span>
+      </div>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Architecture views">
+      <button class="tab" role="tab" id="tab-layers" aria-controls="panel-layers" aria-selected="true">Layers</button>
+      <button class="tab" role="tab" id="tab-routes" aria-controls="panel-routes" aria-selected="false">Routes</button>
+      <button class="tab" role="tab" id="tab-features" aria-controls="panel-features" aria-selected="false">Features</button>
+      <button class="tab" role="tab" id="tab-auth" aria-controls="panel-auth" aria-selected="false">Auth</button>
+      <button class="tab" role="tab" id="tab-data" aria-controls="panel-data" aria-selected="false">Data</button>
+      <button class="tab" role="tab" id="tab-api" aria-controls="panel-api" aria-selected="false">API</button>
+    </div>
+
+    <!-- LAYERS -->
+    <section class="panel active" id="panel-layers" role="tabpanel" aria-labelledby="tab-layers">
+      <p class="panel-intro">
+        Bulletproof Profile A: import chỉ đi lên
+        <strong>lib ← features ← app</strong>.
+        Features không import feature khác; UI/layouts không import features.
+      </p>
+      <div class="canvas-wrap" tabindex="0" aria-label="Layer stack diagram">
+        <div class="layer-stack">
+          <div class="band">
+            <div class="band-h">
+              <p class="band-title">Bootstrap</p>
+              <span class="band-path">src/main.tsx</span>
+            </div>
+            <div class="nodes">
+              <div class="node">StrictMode</div>
+              <div class="node">api-client side-effect</div>
+              <div class="node accent">App</div>
+            </div>
+          </div>
+          <div class="flow-arrow" aria-hidden="true">↓</div>
+          <div class="band">
+            <div class="band-h">
+              <p class="band-title">Provider stack</p>
+              <span class="band-path">src/app/provider.tsx</span>
+            </div>
+            <div class="nodes">
+              <div class="node">ThemeProvider</div>
+              <div class="node">ConfigProvider vi_VN</div>
+              <div class="node">Ant App</div>
+              <div class="node accent">AuthProvider</div>
+              <div class="node">BrowserRouter</div>
+            </div>
+          </div>
+          <div class="flow-arrow" aria-hidden="true">↓</div>
+          <div class="band">
+            <div class="band-h">
+              <p class="band-title">App — compose &amp; shell</p>
+              <span class="band-path">src/app/</span>
+            </div>
+            <div class="nodes">
+              <div class="node accent">router + guards</div>
+              <div class="node accent">AppLayout / ProtectedLayout</div>
+              <div class="node accent">DashboardRoute</div>
+              <div class="node accent">AdminRoomsRoute</div>
+              <div class="node accent">AdminUsersRoute</div>
+              <div class="node">NotificationBell</div>
+              <div class="node">RoomDayTimeline</div>
+              <div class="node">useRoomSchedule</div>
+            </div>
+          </div>
+          <div class="flow-arrow" aria-hidden="true">↓ uses</div>
+          <div class="band">
+            <div class="band-h">
+              <p class="band-title">Features — domain modules</p>
+              <span class="band-path">src/features/*</span>
+            </div>
+            <div class="nodes">
+              <div class="node">auth</div>
+              <div class="node">rooms</div>
+              <div class="node">bookings</div>
+              <div class="node">users</div>
+              <div class="node">departments</div>
+              <div class="node">invoices</div>
+              <div class="node admin">revenue</div>
+              <div class="node">notifications</div>
+            </div>
+          </div>
+          <div class="flow-arrow" aria-hidden="true">↓ uses</div>
+          <div class="band">
+            <div class="band-h">
+              <p class="band-title">Shared UI &amp; chrome</p>
+              <span class="band-path">src/components/</span>
+            </div>
+            <div class="nodes">
+              <div class="node">layouts/ Topbar Sidebar Menu UserMenu</div>
+              <div class="node">ui/page table search dialog feedback…</div>
+            </div>
+          </div>
+          <div class="flow-arrow" aria-hidden="true">↓ uses</div>
+          <div class="band">
+            <div class="band-h">
+              <p class="band-title">Lib — HTTP &amp; helpers</p>
+              <span class="band-path">src/lib/</span>
+            </div>
+            <div class="nodes">
+              <div class="node accent">api-client</div>
+              <div class="node">useAsyncFetch</div>
+              <div class="node">useServerTableQuery</div>
+              <div class="node">mapBackendBooking</div>
+              <div class="node">types/{booking,user,department}</div>
+              <div class="node">auth-storage / auth-events</div>
+              <div class="node">pagination · money · datetime</div>
+            </div>
+          </div>
+          <div class="flow-arrow" aria-hidden="true">↓ HTTP</div>
+          <div class="band">
+            <div class="band-h">
+              <p class="band-title">Backend</p>
+              <span class="band-path">VITE_API_BASE_URL → /api</span>
+            </div>
+            <div class="nodes">
+              <div class="node admin">JHipster JWT monolith</div>
+              <div class="node">PostgreSQL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="import-rule" aria-label="Import direction">
+        <strong>rule</strong>
+        <span>lib ← features ← app &nbsp;·&nbsp; features ↛ features &nbsp;·&nbsp; layouts/ui ↛ features</span>
+      </div>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--accent-soft);border-color:var(--accent)"></i> Compose / shared pipe</span>
+        <span><i class="swatch" style="background:var(--admin-soft);border-color:var(--admin)"></i> Admin-heavy</span>
+      </div>
+    </section>
+
+    <!-- ROUTES -->
+    <section class="panel" id="panel-routes" role="tabpanel" aria-labelledby="tab-routes" hidden>
+      <p class="panel-intro">
+        Router declarative trong <code>src/app/router.tsx</code>.
+        Nút tô <span class="pill compose">compose</span> = app kéo nhiều feature API (tránh cross-import).
+      </p>
+      <div class="canvas-wrap">
+        <table class="route-table">
+          <thead>
+            <tr>
+              <th>Path</th>
+              <th>Guard</th>
+              <th>Element</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="path">/login</td>
+              <td><span class="pill guest">guest</span></td>
+              <td>LoginPage</td>
+              <td>Đã login → /dashboard</td>
+            </tr>
+            <tr>
+              <td class="path">/dashboard</td>
+              <td><span class="pill auth">auth</span></td>
+              <td><span class="pill compose">DashboardRoute</span></td>
+              <td>rooms + bookings schedule</td>
+            </tr>
+            <tr>
+              <td class="path">/my-invoices</td>
+              <td><span class="pill auth">auth</span></td>
+              <td>MyInvoicesPage</td>
+              <td>UserMenu, không sidebar</td>
+            </tr>
+            <tr>
+              <td class="path">/admin/rooms</td>
+              <td><span class="pill admin">ADMIN</span></td>
+              <td><span class="pill compose">AdminRoomsRoute</span> → AdminRoomsPage</td>
+              <td>inject departments</td>
+            </tr>
+            <tr>
+              <td class="path">/admin/bookings</td>
+              <td><span class="pill admin">ADMIN</span></td>
+              <td>AdminBookingsPage</td>
+              <td>?tab= &amp; ?highlight=</td>
+            </tr>
+            <tr>
+              <td class="path">/admin/users</td>
+              <td><span class="pill admin">ADMIN</span></td>
+              <td><span class="pill compose">AdminUsersRoute</span> → AdminUsersPage</td>
+              <td>users + dept requests</td>
+            </tr>
+            <tr>
+              <td class="path">/admin/revenue</td>
+              <td><span class="pill admin">ADMIN</span></td>
+              <td>AdminRevenuePage</td>
+              <td>KPI + charts + by-room table</td>
+            </tr>
+            <tr>
+              <td class="path">*</td>
+              <td>—</td>
+              <td>RootRedirect</td>
+              <td>→ /dashboard hoặc /login</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid-2">
+        <article class="card">
+          <h3>Shell</h3>
+          <p>ProtectedLayout → AppLayout: Topbar + Sidebar + Content Outlet. Chỉ cột content scroll; Topbar cố định ngoài scrollport.</p>
+          <p class="meta">NotificationBell · ThemeToggle · UserMenu · ProfileDialog</p>
+        </article>
+        <article class="card">
+          <h3>Menu theo role</h3>
+          <p>Mọi user: Dashboard. ADMIN thêm rooms / bookings / users / revenue. Invoices qua UserMenu.</p>
+          <p class="meta">RequireRole → NoPermission khi sai role</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="panel" id="panel-features" role="tabpanel" aria-labelledby="tab-features" hidden>
+      <p class="panel-intro">
+        Tám module domain. Mỗi feature giữ <code>api/</code> (service + hooks) và UI;
+        departments / notifications không có page riêng.
+      </p>
+      <div class="grid-2">
+        <article class="card">
+          <h3>auth</h3>
+          <p>LoginPage, AuthContext. Map payload flat/nested → { token, user }. Roles ADMIN | USER.</p>
+          <p class="meta">POST /auth/login</p>
+        </article>
+        <article class="card">
+          <h3>rooms</h3>
+          <p>AdminRoomsPage (nhận departments props). Active, capacity, lockedDepartment, pricePerHour.</p>
+          <p class="meta">GET /rooms · admin writes /admin/rooms</p>
+        </article>
+        <article class="card">
+          <h3>bookings</h3>
+          <p>Admin duyệt: pending / upcoming / all. USER tạo → PENDING. EXPIRED do BE.</p>
+          <p class="meta">amount snapshot · mapBackendBooking</p>
+        </article>
+        <article class="card">
+          <h3>users</h3>
+          <p>AdminUsersPage + ProfileDialog. Đổi phòng ban cần admin approve.</p>
+          <p class="meta">/account · /admin/users · dept-change-requests</p>
+        </article>
+        <article class="card">
+          <h3>departments</h3>
+          <p>Lookup-only. useDepartments chỉ gọi từ app (routes + AppLayout).</p>
+          <p class="meta">GET /departments</p>
+        </article>
+        <article class="card">
+          <h3>invoices</h3>
+          <p>MyInvoicesPage — booking đã duyệt + amount. Server table + CSV export.</p>
+          <p class="meta">GET /account/invoices</p>
+        </article>
+        <article class="card">
+          <h3>revenue</h3>
+          <p>KPI, trend, room charts (@ant-design/plots + plotTheme), bảng by-room phân trang.</p>
+          <p class="meta">GET /admin/revenue · /by-room</p>
+        </article>
+        <article class="card">
+          <h3>notifications</h3>
+          <p>Bell poll 5 phút. Deep-link highlight hàng bảng qua ?highlight=.</p>
+          <p class="meta">useNotifications · useTableRowHighlight</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- AUTH -->
+    <section class="panel" id="panel-auth" role="tabpanel" aria-labelledby="tab-auth" hidden>
+      <p class="panel-intro">Chuỗi đăng nhập, gắn Bearer, và 401 logout qua event — không dùng window.location.</p>
+      <div class="card">
+        <div class="seq" aria-label="Auth sequence">
+          <div class="seq-step">
+            <div class="seq-num">1</div>
+            <div class="seq-body">
+              <h4>Login</h4>
+              <p><code>LoginPage</code> → <code>AuthContext.login</code> → <code>POST /auth/login</code> → lưu <code>token</code> + <code>user</code> localStorage.</p>
+            </div>
+          </div>
+          <div class="seq-step">
+            <div class="seq-num">2</div>
+            <div class="seq-body">
+              <h4>Authenticated</h4>
+              <p><code>isAuthenticated = Boolean(token &amp;&amp; user)</code>. GuestRoute / ProtectedLayout / RequireRole đọc context.</p>
+            </div>
+          </div>
+          <div class="seq-step">
+            <div class="seq-num">3</div>
+            <div class="seq-body">
+              <h4>Request</h4>
+              <p>Interceptor gắn <code>Authorization: Bearer …</code>. Ngrok header khi base URL trực tiếp ngrok.</p>
+            </div>
+          </div>
+          <div class="seq-step">
+            <div class="seq-num">4</div>
+            <div class="seq-body">
+              <h4>401</h4>
+              <p><code>emitAuthLogout()</code> → <code>AuthLogoutListener</code> → <code>logout()</code> + <code>navigate("/login")</code>.</p>
+            </div>
+          </div>
+          <div class="seq-step">
+            <div class="seq-num">5</div>
+            <div class="seq-body">
+              <h4>Profile refresh</h4>
+              <p>Mở ProfileDialog luôn <code>GET /account</code> (+ pending dept) — không tin cache login.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <article class="card">
+          <h3>Seed (docs)</h3>
+          <p class="meta">admin@company.com · user@company.com · password 123456</p>
+        </article>
+        <article class="card">
+          <h3>Theme</h3>
+          <p>ThemeProvider + darkAlgorithm; charts cần <code>plotTheme(isDark)</code> riêng.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- DATA -->
+    <section class="panel" id="panel-data" role="tabpanel" aria-labelledby="tab-data" hidden>
+      <p class="panel-intro">Không TanStack Query. Fetch tay + abort dùng chung; list lớn dùng server-side page/sort/filter.</p>
+      <div class="grid-2">
+        <article class="card">
+          <h3>useAsyncFetch</h3>
+          <p>Effect + refetch chung một AbortController. Ignore abort error. Dùng cho hầu hết feature hooks.</p>
+        </article>
+        <article class="card">
+          <h3>Hand-rolled abort</h3>
+          <p>useRoomSchedule, useNotifications (poll 300s) — cùng kỷ luật abort.</p>
+        </article>
+        <article class="card">
+          <h3>Server tables</h3>
+          <p>DataTable serverSide + useServerTableQuery → Spring page/size/sort (+ q). Rooms, users, bookings, invoices, revenue by-room.</p>
+        </article>
+        <article class="card">
+          <h3>Compose-in-app</h3>
+          <p>DashboardRoute (rooms+bookings), AdminRooms/UsersRoute (departments), AppLayout (departments → Profile).</p>
+        </article>
+        <article class="card">
+          <h3>Bounded fetch-all</h3>
+          <p>getRooms size=200 cho timeline dashboard — có ghi chú bounded.</p>
+        </article>
+        <article class="card">
+          <h3>Search UX</h3>
+          <p>SearchInput + useDebouncedValue(300) → BE q. StatusFilter / TabBar / highlight flash.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- API -->
+    <section class="panel" id="panel-api" role="tabpanel" aria-labelledby="tab-api" hidden>
+      <p class="panel-intro">
+        Base: <code>VITE_API_BASE_URL</code> (default <code>http://localhost:8080/api</code>).
+        Dev proxy: <code>VITE_API_PROXY_TARGET</code> khi dùng ngrok.
+      </p>
+      <div class="canvas-wrap">
+        <table class="api-table">
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th>Endpoints (FE)</th>
+              <th>Who</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Auth</td>
+              <td class="path">POST /auth/login</td>
+              <td>public</td>
+            </tr>
+            <tr>
+              <td>Rooms</td>
+              <td class="path">GET /rooms · POST|PUT|PATCH /admin/rooms</td>
+              <td>shared read · admin write</td>
+            </tr>
+            <tr>
+              <td>Bookings</td>
+              <td class="path">GET|POST /bookings · admin approve/reject/cancel</td>
+              <td>shared · admin actions</td>
+            </tr>
+            <tr>
+              <td>Account</td>
+              <td class="path">GET|PUT /account · dept-change request/pending</td>
+              <td>self</td>
+            </tr>
+            <tr>
+              <td>Admin users</td>
+              <td class="path">/admin/users · dept-change approve/reject</td>
+              <td>ADMIN</td>
+            </tr>
+            <tr>
+              <td>Departments</td>
+              <td class="path">GET /departments</td>
+              <td>shared</td>
+            </tr>
+            <tr>
+              <td>Invoices</td>
+              <td class="path">/account/invoices · /export</td>
+              <td>self</td>
+            </tr>
+            <tr>
+              <td>Revenue</td>
+              <td class="path">/admin/revenue · /by-room · /export</td>
+              <td>ADMIN</td>
+            </tr>
+            <tr>
+              <td>Notifications</td>
+              <td class="path">/notifications · unread-count · read</td>
+              <td>auth</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="panel-intro" style="margin-top:0.5rem">
+        Room visibility do BE: public hoặc locked theo department user — FE không chỉ tin cột ẩn.
+      </p>
+    </section>
+
+    <footer class="note">
+      Nguồn: <code>AGENTS.md</code> + cây <code>src/</code>. Giả định BE JHipster sibling
+      <code>../backend-book-meeting-room</code>. File tự chứa — mở trực tiếp trong trình duyệt.
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var btn = document.getElementById("themeToggle");
+      var mode = "system"; // system | light | dark
+
+      function applyTheme() {
+        if (mode === "system") {
+          root.removeAttribute("data-theme");
+          btn.textContent = "Theme: system";
+          btn.setAttribute("aria-pressed", "false");
+        } else {
+          root.setAttribute("data-theme", mode);
+          btn.textContent = "Theme: " + mode;
+          btn.setAttribute("aria-pressed", "true");
+        }
+      }
+
+      btn.addEventListener("click", function () {
+        mode = mode === "system" ? "light" : mode === "light" ? "dark" : "system";
+        applyTheme();
+      });
+
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+      var panels = {
+        "tab-layers": document.getElementById("panel-layers"),
+        "tab-routes": document.getElementById("panel-routes"),
+        "tab-features": document.getElementById("panel-features"),
+        "tab-auth": document.getElementById("panel-auth"),
+        "tab-data": document.getElementById("panel-data"),
+        "tab-api": document.getElementById("panel-api")
+      };
+
+      function selectTab(id) {
+        tabs.forEach(function (t) {
+          var on = t.id === id;
+          t.setAttribute("aria-selected", on ? "true" : "false");
+          t.tabIndex = on ? 0 : -1;
+        });
+        Object.keys(panels).forEach(function (key) {
+          var p = panels[key];
+          var on = key === id;
+          p.classList.toggle("active", on);
+          p.hidden = !on;
+        });
+      }
+
+      tabs.forEach(function (t) {
+        t.addEventListener("click", function () { selectTab(t.id); });
+        t.addEventListener("keydown", function (e) {
+          var i = tabs.indexOf(t);
+          if (e.key === "ArrowRight") {
+            e.preventDefault();
+            var n = tabs[(i + 1) % tabs.length];
+            n.focus();
+            selectTab(n.id);
+          } else if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            var p = tabs[(i - 1 + tabs.length) % tabs.length];
+            p.focus();
+            selectTab(p.id);
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            tabs[0].focus();
+            selectTab(tabs[0].id);
+          } else if (e.key === "End") {
+            e.preventDefault();
+            tabs[tabs.length - 1].focus();
+            selectTab(tabs[tabs.length - 1].id);
+          }
+        });
+      });
+
+      selectTab("tab-layers");
+    })();
+  </script>
+</body>
+</html>

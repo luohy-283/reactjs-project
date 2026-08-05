@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { Alert, Form, Input, Modal, Select, Typography } from "antd";
-import { useDepartments } from "@/features/departments/api/departments.hooks";
-import type { User, UserRole } from "@/features/auth/api/auth.types";
 import {
   getAccount,
   getMyPendingDepartmentChange,
@@ -13,6 +11,8 @@ import type {
   DepartmentChangeRequest,
 } from "@/features/users/api/users.types";
 import { getApiErrorMessage, isAbortError } from "@/lib/api-error";
+import type { Department } from "@/lib/types/department";
+import type { User, UserRole } from "@/lib/types/user";
 import { useToast } from "@/components/ui/feedback/useFeedback";
 
 type ProfileFormValues = {
@@ -24,6 +24,7 @@ type ProfileFormValues = {
 export type ProfileDialogProps = {
   open: boolean;
   user: User | null;
+  departments: Department[];
   onClose: () => void;
   onUpdated: (next: User) => void;
 };
@@ -48,11 +49,11 @@ function toAuthUser(profile: AccountProfile, fallbackRole?: UserRole): User {
 export function ProfileDialog({
   open,
   user,
+  departments,
   onClose,
   onUpdated,
 }: ProfileDialogProps) {
   const toast = useToast();
-  const { data: departments } = useDepartments(open);
   const [form] = Form.useForm<ProfileFormValues>();
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState<DepartmentChangeRequest | null>(null);

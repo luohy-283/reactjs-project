@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/api-client";
 import { isAbortError, toApiError } from "@/lib/api-error";
-import type { UserRole } from "@/features/auth/api/auth.types";
-import type { Department } from "@/features/departments/api/departments.types";
+import type { Department } from "@/lib/types/department";
+import type { UserRole } from "@/lib/types/user";
 import type {
   AccountProfile,
   CreateUserPayload,

@@ -12,7 +12,7 @@ import type {
   Room,
   UpdateRoomPayload,
 } from "@/features/rooms/api/rooms.types";
-import type { Department } from "@/features/departments/api/departments.types";
+import type { Department } from "@/lib/types/department";
 
 interface BackendRoom {
   id: number;

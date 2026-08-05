@@ -1,5 +1,1 @@
-export interface Department {
-  id: number;
-  code: string;
-  name: string;
-}
+export type { Department } from "@/lib/types/department";

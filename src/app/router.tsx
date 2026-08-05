@@ -5,11 +5,11 @@ import RequireRole from "@/app/components/RequireRole";
 import RootRedirect from "@/app/components/RootRedirect";
 import AuthLogoutListener from "@/app/components/AuthLogoutListener";
 import LoginPage from "@/features/auth/components/LoginPage";
-import AdminRoomsPage from "@/features/rooms/components/AdminRoomsPage";
 import AdminBookingsPage from "@/features/bookings/components/AdminBookingsPage";
-import AdminUsersPage from "@/features/users/components/AdminUsersPage";
 import AdminRevenuePage from "@/features/revenue/components/AdminRevenuePage";
 import MyInvoicesPage from "@/features/invoices/components/MyInvoicesPage";
+import AdminRoomsRoute from "@/app/routes/AdminRoomsRoute";
+import AdminUsersRoute from "@/app/routes/AdminUsersRoute";
 import DashboardRoute from "@/app/routes/DashboardRoute";
 
 export function AppRouter() {
@@ -32,7 +32,7 @@ export function AppRouter() {
             path="/admin/rooms"
             element={
               <RequireRole allowedRoles={["ADMIN"]}>
-                <AdminRoomsPage />
+                <AdminRoomsRoute />
               </RequireRole>
             }
           />
@@ -48,7 +48,7 @@ export function AppRouter() {
             path="/admin/users"
             element={
               <RequireRole allowedRoles={["ADMIN"]}>
-                <AdminUsersPage />
+                <AdminUsersRoute />
               </RequireRole>
             }
           />

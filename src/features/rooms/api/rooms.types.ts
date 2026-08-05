@@ -1,4 +1,4 @@
-import type { Department } from "@/features/departments/api/departments.types";
+import type { Department } from "@/lib/types/department";
 
 export interface Room {
   id: number;

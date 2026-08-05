@@ -1,5 +1,5 @@
-import type { Department } from "@/features/departments/api/departments.types";
-import type { UserRole } from "@/features/auth/api/auth.types";
+import type { Department } from "@/lib/types/department";
+import type { UserRole } from "@/lib/types/user";
 
 export interface ManagedUser {
   id: number;

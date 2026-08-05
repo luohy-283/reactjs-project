@@ -2,7 +2,7 @@ import {
   getMyInvoicesPage,
   type GetMyInvoicesOptions,
 } from "@/features/invoices/api/invoices.service";
-import type { Booking } from "@/features/bookings/api/bookings.types";
+import type { Booking } from "@/lib/types/booking";
 import type { PagedResult } from "@/lib/pagination";
 import { useAsyncFetch } from "@/lib/useAsyncFetch";
 

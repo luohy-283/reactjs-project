@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getBookings } from "@/features/bookings/api/bookings.service";
 import { getRooms } from "@/features/rooms/api/rooms.service";
 import { isAbortError } from "@/lib/api-error";
-import type { Booking } from "@/features/bookings/api/bookings.types";
+import type { Booking } from "@/lib/types/booking";
 import type { Room } from "@/features/rooms/api/rooms.types";
 
 /** Composes rooms + bookings APIs at the app layer (no cross-feature imports). */

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Card, Modal, Tooltip, Typography, theme } from "antd";
 import dayjs from "dayjs";
-import type { Booking } from "@/features/bookings/api/bookings.types";
+import type { Booking } from "@/lib/types/booking";
 import type { Room } from "@/features/rooms/api/rooms.types";
 import { HEADER_HEIGHT } from "@/components/layouts/Topbar";
 import { formatVnd } from "@/lib/money";
