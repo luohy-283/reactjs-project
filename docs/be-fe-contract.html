@@ -1108,6 +1108,7 @@
               <li>Profile: <code>fullName</code>/<code>email</code> update ngay; đổi department qua request + admin duyệt.</li>
               <li><code>amount</code> snapshot trên booking; invoices = booking đã duyệt có amount.</li>
               <li>Admin path ưu tiên <code>/admin/…</code> — BE map cả <code>/api/admin/rooms</code> và <code>/api/admin/bookings</code>. FE fallback path không-admin <strong>chỉ khi HTTP 404</strong> (legacy).</li>
+              <li>Approve/reject/cancel booking và approve/reject dept-change: sau khi đổi status, BE xóa notif PENDING liên quan. <code>@Modifying</code> delete notif phải <code>flushAutomatically = true</code> (cùng <code>clearAutomatically</code>) — nếu chỉ clear PC mà chưa flush, API vẫn 200 + body status mới nhưng DB không đổi → list/badge không giảm.</li>
               <li>Create booking: FE gửi <code>roomId</code> + <code>room: { id }</code>, times = <code>toISOString()</code> UTC — <strong>không</strong> gửi <code>userId</code> (BE lấy từ JWT).</li>
             </ul>
           </div>
@@ -1271,21 +1272,21 @@
           method: "POST", path: "/admin/bookings/{id}/approve", role: "admin", domain: "Bookings",
           query: "—", bodySummary: "—",
           request: "(empty body)",
-          response: 'Booking status → "APPROVED"\n// BE: /api/admin/bookings/{id}/approve. FE fallback CHỈ HTTP 404 → POST /bookings/{id}/approve'
+          response: 'Booking status → "APPROVED"\n// BE: /api/admin/bookings/{id}/approve. FE fallback CHỈ HTTP 404 → POST /bookings/{id}/approve\n// Persist thật trên DB (GET lại không còn PENDING). FE refetch list + badge counts.'
         },
         {
           id: "reject-booking",
           method: "POST", path: "/admin/bookings/{id}/reject", role: "admin", domain: "Bookings",
           query: "—", bodySummary: "—",
           request: "(empty body)",
-          response: 'Booking thường → "CANCELLED"\nNotification type: BOOKING_REJECTED\n// BE: /api/admin/bookings/{id}/reject. FE fallback CHỈ 404 → /bookings/{id}/reject'
+          response: 'Booking thường → "CANCELLED"\nNotification type: BOOKING_REJECTED\n// BE /api/admin/…. FE fallback CHỈ 404 → /bookings/{id}/reject\n// Persist trên DB; FE refetch list + badge counts'
         },
         {
           id: "cancel-booking",
           method: "POST", path: "/admin/bookings/{id}/cancel", role: "admin", domain: "Bookings",
           query: "—", bodySummary: "—",
           request: "(empty body)",
-          response: 'status → "CANCELLED"\n// error.alreadystarted nếu đã bắt đầu\n// BE: /api/admin/bookings/{id}/cancel. FE fallback CHỈ 404 → /bookings/{id}/cancel'
+          response: 'status → "CANCELLED"\n// error.alreadystarted nếu đã bắt đầu\n// BE /api/admin/…. FE fallback CHỈ 404 → /bookings/{id}/cancel\n// Persist trên DB; FE refetch list + badge counts'
         },
         {
           id: "get-users",
@@ -1331,14 +1332,14 @@
           method: "POST", path: "/admin/department-change-requests/{id}/approve", role: "admin", domain: "DeptChange",
           query: "—", bodySummary: "—",
           request: "(empty)",
-          response: 'status → "APPROVED"'
+          response: 'status → "APPROVED"\n// Cập nhật user.department; xóa notif DEPT_CHANGE_PENDING\n// BE @Modifying delete notif: flushAutomatically=true — status phải persist trên DB'
         },
         {
           id: "reject-dept",
           method: "POST", path: "/admin/department-change-requests/{id}/reject", role: "admin", domain: "DeptChange",
           query: "—", bodySummary: "—",
           request: "(empty)",
-          response: 'status → "REJECTED"'
+          response: 'status → "REJECTED"\n// Persist trên DB; list PENDING phải mất record sau refetch'
         },
         {
           id: "get-depts",

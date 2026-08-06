@@ -126,8 +126,16 @@ export default function AdminBookingsPage() {
 
   const { data: pageResult, error, isLoading, refetch } =
     useBookingsPage(pageOpts);
-  const { data: pendingCount } = useBookingsCount({ status: "PENDING" });
-  const { data: upcomingCount } = useBookingsCount({ upcoming: true });
+  const { data: pendingCount, refetch: refetchPendingCount } = useBookingsCount({
+    status: "PENDING",
+  });
+  const { data: upcomingCount, refetch: refetchUpcomingCount } = useBookingsCount(
+    { upcoming: true },
+  );
+
+  const refetchAll = async () => {
+    await Promise.all([refetch(), refetchPendingCount(), refetchUpcomingCount()]);
+  };
 
   const highlightOnPage =
     pinResolveKey != null &&
@@ -195,7 +203,7 @@ export default function AdminBookingsPage() {
     try {
       await approveBooking(booking.id);
       toast.success("Đã duyệt yêu cầu đặt phòng");
-      await refetch();
+      await refetchAll();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Thao tác thất bại"));
     } finally {
@@ -208,7 +216,7 @@ export default function AdminBookingsPage() {
     try {
       await rejectBooking(booking.id);
       toast.success("Đã từ chối yêu cầu đặt phòng");
-      await refetch();
+      await refetchAll();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Thao tác thất bại"));
     } finally {
@@ -221,7 +229,7 @@ export default function AdminBookingsPage() {
     try {
       await cancelBooking(booking.id);
       toast.success("Đã hủy lịch đặt phòng");
-      await refetch();
+      await refetchAll();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Thao tác thất bại"));
     } finally {
@@ -326,7 +334,7 @@ export default function AdminBookingsPage() {
     <NoSearchResult onReset={resetFilters} />
   ) : null;
   const refreshExtra = (
-    <RefreshButton loading={isLoading} onClick={() => void refetch()} />
+    <RefreshButton loading={isLoading} onClick={() => void refetchAll()} />
   );
 
   const tabItems = defineTabItems([
@@ -382,7 +390,7 @@ export default function AdminBookingsPage() {
           <FetchError
             error={error}
             fallback="Không tải được lịch đặt"
-            onRetry={() => void refetch()}
+            onRetry={() => void refetchAll()}
             loading={isLoading}
           />
         ) : (
