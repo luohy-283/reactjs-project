@@ -31,7 +31,10 @@ import {
   getBooking,
   rejectBooking,
 } from "@/features/bookings/api/bookings.service";
-import { useBookingsPage } from "@/features/bookings/api/bookings.hooks";
+import {
+  useBookingsCount,
+  useBookingsPage,
+} from "@/features/bookings/api/bookings.hooks";
 import type { Booking, BookingStatus } from "@/features/bookings/api/bookings.types";
 import { getApiErrorMessage, isAbortError } from "@/lib/api-error";
 import { formatDateTimeRange } from "@/lib/datetime";
@@ -123,16 +126,8 @@ export default function AdminBookingsPage() {
 
   const { data: pageResult, error, isLoading, refetch } =
     useBookingsPage(pageOpts);
-  const { data: pendingMeta } = useBookingsPage({
-    page: 0,
-    size: 1,
-    status: "PENDING",
-  });
-  const { data: upcomingMeta } = useBookingsPage({
-    page: 0,
-    size: 1,
-    upcoming: true,
-  });
+  const { data: pendingCount } = useBookingsCount({ status: "PENDING" });
+  const { data: upcomingCount } = useBookingsCount({ upcoming: true });
 
   const highlightOnPage =
     pinResolveKey != null &&
@@ -333,9 +328,6 @@ export default function AdminBookingsPage() {
   const refreshExtra = (
     <RefreshButton loading={isLoading} onClick={() => void refetch()} />
   );
-
-  const pendingCount = pendingMeta.totalElements;
-  const upcomingCount = upcomingMeta.totalElements;
 
   const tabItems = defineTabItems([
     {

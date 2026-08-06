@@ -20,6 +20,9 @@ export function useRoomSchedule(date: string) {
 
     setIsLoading(true);
     setError(null);
+    // Drop prior-day bookings immediately so the timeline never re-projects
+    // stale events onto the newly selected date while fetch is in flight.
+    setBookings([]);
     try {
       const [roomsData, bookingsData] = await Promise.all([
         getRooms(controller.signal),

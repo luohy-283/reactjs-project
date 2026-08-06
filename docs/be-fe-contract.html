@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BE ↔ FE Contract — book-metting-room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    (function () {
+      try {
+        var f = localStorage.getItem("docs-ui-font") || "be-vietnam";
+        document.documentElement.setAttribute("data-font", f);
+      } catch (e) {
+        document.documentElement.setAttribute("data-font", "be-vietnam");
+      }
+    })();
+  </script>
   <style>
     :root {
       --ink: #14233a;
@@ -29,8 +42,8 @@
       --admin: #c2410c;
       --public: #64748b;
       --mono: "Cascadia Code", "Consolas", "SFMono-Regular", ui-monospace, monospace;
-      --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
-      --display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+      --sans: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
+      --display: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
       --radius: 4px;
       --shadow: 0 1px 0 rgba(20, 35, 58, 0.04), 0 8px 24px rgba(20, 35, 58, 0.06);
       --focus: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent);
@@ -116,6 +129,27 @@
       --shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 10px 28px rgba(0, 0, 0, 0.4);
     }
 
+    html[data-font="be-vietnam"] {
+      --sans: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+      --display: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    }
+    html[data-font="inter"] {
+      --sans: Inter, "Segoe UI", system-ui, sans-serif;
+      --display: Inter, "Segoe UI", system-ui, sans-serif;
+    }
+    html[data-font="source-sans"] {
+      --sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+      --display: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    }
+    html[data-font="noto"] {
+      --sans: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+      --display: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+    }
+    html[data-font="atkinson"] {
+      --sans: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+      --display: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html { scroll-behavior: smooth; }
@@ -176,7 +210,7 @@
       font-family: var(--display);
       font-size: 1.15rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: normal;
       text-wrap: balance;
       margin-bottom: 1rem;
     }
@@ -186,6 +220,28 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 0.5rem;
+    }
+
+    .font-picker {
+      display: grid;
+      gap: 0.25rem;
+      margin: 0 0 0.85rem;
+    }
+    .font-picker-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .font-picker select {
+      width: 100%;
+      font: inherit;
+      font-size: 0.78rem;
+      padding: 0.4rem 0.5rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      color: var(--ink);
+      cursor: pointer;
     }
 
     .icon-btn {
@@ -213,6 +269,44 @@
       margin: 0.9rem 0 0.35rem;
       padding: 0 0.4rem;
     }
+
+    .nav-drop { margin-bottom: 0.35rem; }
+    .nav-drop-toggle {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--ink-soft);
+      font: inherit;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: normal;
+      padding: 0.45rem 0.5rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+    .nav-drop-toggle:hover { background: var(--surface-2); color: var(--ink); }
+    .nav-drop-toggle[aria-expanded="true"] {
+      color: var(--accent);
+      background: var(--accent-dim);
+      border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+    .nav-drop-caret {
+      font-size: 0.65rem;
+      line-height: 1;
+      transition: transform 0.15s ease;
+    }
+    .nav-drop-toggle[aria-expanded="true"] .nav-drop-caret { transform: rotate(180deg); }
+    .nav-drop-panel {
+      border-left: 2px solid var(--line);
+      margin: 0.15rem 0 0.35rem 0.45rem;
+      padding: 0.15rem 0 0.35rem 0.35rem;
+    }
+    .nav-drop-panel[hidden] { display: none !important; }
 
     .nav-btn {
       display: block;
@@ -245,7 +339,7 @@
       font-family: var(--display);
       font-size: clamp(1.45rem, 2.5vw, 1.9rem);
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: normal;
       text-wrap: balance;
       margin-bottom: 0.35rem;
     }
@@ -253,7 +347,7 @@
       font-family: var(--display);
       font-size: 1.25rem;
       margin: 0 0 0.75rem;
-      letter-spacing: -0.015em;
+      letter-spacing: normal;
     }
     h3 {
       font-size: 0.95rem;
@@ -370,7 +464,7 @@
       font-weight: 600;
       font-size: 0.68rem;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: normal;
       background: var(--surface-2);
       position: sticky;
       top: 0;
@@ -624,7 +718,7 @@
       padding: 0.75rem 0.85rem;
       box-shadow: var(--shadow);
     }
-    .meta-card .k { font-size: 0.68rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; }
+    .meta-card .k { font-size: 0.68rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: normal; }
     .meta-card .v { font-family: var(--mono); font-size: 0.82rem; margin-top: 0.25rem; font-weight: 650; }
 
     .hidden-by-filter { display: none !important; }
@@ -700,22 +794,48 @@
           <button type="button" class="icon-btn" id="themeToggle" title="Đổi theme" aria-label="Đổi theme">◐</button>
         </div>
       </div>
+      <label class="font-picker">
+        <span class="font-picker-label">Font</span>
+        <select id="fontSelect" aria-label="Chọn font hiển thị">
+          <option value="be-vietnam">Be Vietnam Pro</option>
+          <option value="inter">Inter</option>
+          <option value="source-sans">Source Sans 3</option>
+          <option value="noto">Noto Sans</option>
+          <option value="atkinson">Atkinson Hyperlegible</option>
+        </select>
+      </label>
       <div class="nav-groups" id="navGroups">
-        <div class="nav-label">Tổng quan</div>
-        <button type="button" class="nav-btn" data-section="overview" aria-current="true">Overview</button>
-        <button type="button" class="nav-btn" data-section="roles">Roles &amp; seed</button>
-        <button type="button" class="nav-btn" data-section="routes">Routes FE</button>
-        <button type="button" class="nav-btn" data-section="enums">Status / enum</button>
-        <button type="button" class="nav-btn" data-section="dto">Domain DTO</button>
-
-        <div class="nav-label">API catalog</div>
-        <button type="button" class="nav-btn" data-section="apis">All endpoints</button>
-        <button type="button" class="nav-btn" data-section="errors">Error keys</button>
-        <button type="button" class="nav-btn" data-section="rules">Business rules</button>
-
-        <div class="nav-label">Flows</div>
-        <button type="button" class="nav-btn" data-section="flows">Interactive flows</button>
-        <button type="button" class="nav-btn" data-section="booking-sm">Booking state machine</button>
+        <div class="nav-drop" data-drop="overview">
+          <button type="button" class="nav-drop-toggle" aria-expanded="true" aria-controls="drop-overview" id="toggle-overview">
+            <span>Tổng quan</span><span class="nav-drop-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="nav-drop-panel" id="drop-overview" role="group" aria-labelledby="toggle-overview">
+            <button type="button" class="nav-btn" data-section="overview" aria-current="true">Overview</button>
+            <button type="button" class="nav-btn" data-section="roles">Roles &amp; seed</button>
+            <button type="button" class="nav-btn" data-section="routes">Routes FE</button>
+            <button type="button" class="nav-btn" data-section="enums">Status / enum</button>
+            <button type="button" class="nav-btn" data-section="dto">Domain DTO</button>
+          </div>
+        </div>
+        <div class="nav-drop" data-drop="apis">
+          <button type="button" class="nav-drop-toggle" aria-expanded="true" aria-controls="drop-apis" id="toggle-apis">
+            <span>API catalog</span><span class="nav-drop-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="nav-drop-panel" id="drop-apis" role="group" aria-labelledby="toggle-apis">
+            <button type="button" class="nav-btn" data-section="apis">All endpoints</button>
+            <button type="button" class="nav-btn" data-section="errors">Error keys</button>
+            <button type="button" class="nav-btn" data-section="rules">Business rules</button>
+          </div>
+        </div>
+        <div class="nav-drop" data-drop="flows">
+          <button type="button" class="nav-drop-toggle" aria-expanded="true" aria-controls="drop-flows" id="toggle-flows">
+            <span>Flows</span><span class="nav-drop-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="nav-drop-panel" id="drop-flows" role="group" aria-labelledby="toggle-flows">
+            <button type="button" class="nav-btn" data-section="flows">Interactive flows</button>
+            <button type="button" class="nav-btn" data-section="booking-sm">Booking state machine</button>
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -745,7 +865,11 @@
             </div>
             <p class="note" style="margin-top:0.85rem">
               <strong>Pagination:</strong> Spring page <code>{ content, number, size, totalElements, totalPages }</code>
-              hoặc bare array. <strong>Ngoại lệ:</strong> <code>GET /admin/users</code> = array + header <code>X-Total-Count</code>.
+              hoặc bare array (hoặc single object). <strong>Ngoại lệ:</strong> <code>GET /admin/users</code> = array + header <code>X-Total-Count</code>.
+              Dept-change list: array hoặc <code>{ content }</code>.
+              Badge booking: <code>page=0&amp;size=1</code> → <code>totalElements</code> (không có <code>/bookings/count</code>).
+              Admin write: BE phục vụ <code>/api/admin/…</code> (rooms + booking approve/reject/cancel).
+              FE vẫn giữ fallback path không-<code>/admin</code> <strong>chỉ khi HTTP 404</strong> (BE cũ).
             </p>
           </div>
         </div>
@@ -802,7 +926,7 @@
                 <tr><td class="path">/dashboard</td><td><span class="role role-auth">Auth</span></td><td>Schedule rooms + bookings</td></tr>
                 <tr><td class="path">/my-invoices</td><td><span class="role role-auth">Auth</span></td><td>Cả ADMIN và USER</td></tr>
                 <tr><td class="path">/admin/rooms</td><td><span class="role role-admin">ADMIN</span></td><td>RequireRole</td></tr>
-                <tr><td class="path">/admin/bookings</td><td><span class="role role-admin">ADMIN</span></td><td>Tabs: chờ duyệt / lịch sử</td></tr>
+                <tr><td class="path">/admin/bookings</td><td><span class="role role-admin">ADMIN</span></td><td>Tabs: Chờ duyệt / Đã duyệt (chưa diễn ra) / Lịch sử</td></tr>
                 <tr><td class="path">/admin/users</td><td><span class="role role-admin">ADMIN</span></td><td>Users + dept-change requests</td></tr>
                 <tr><td class="path">/admin/revenue</td><td><span class="role role-admin">ADMIN</span></td><td>KPI + by-room + export</td></tr>
               </tbody>
@@ -979,11 +1103,12 @@
           <div class="panel-bd">
             <ul style="padding-left:1.15rem;font-size:0.88rem;display:grid;gap:0.55rem">
               <li>Room visibility: public <strong>hoặc</strong> locked đúng department user (không chỉ filter FE).</li>
-              <li>USER book → <code>PENDING</code>; ADMIN approve/reject; <code>EXPIRED</code> do BE khi PENDING quá <code>startTime</code>.</li>
+              <li>USER book → <code>PENDING</code>; ADMIN approve/reject/cancel; <code>EXPIRED</code> do BE khi PENDING quá <code>startTime</code>.</li>
+              <li>Admin bookings UI: 3 tabs — <code>pending</code> / <code>upcoming</code> (<code>upcoming=true</code>) / <code>all</code> (Lịch sử). Badge: <code>page=0&amp;size=1</code> → <code>totalElements</code>.</li>
               <li>Profile: <code>fullName</code>/<code>email</code> update ngay; đổi department qua request + admin duyệt.</li>
               <li><code>amount</code> snapshot trên booking; invoices = booking đã duyệt có amount.</li>
-              <li>Admin path ưu tiên <code>/admin/…</code>; FE có fallback path không-admin nếu 404.</li>
-              <li>Create booking: FE gửi <code>roomId</code> + <code>room: { id }</code> — <strong>không</strong> gửi <code>userId</code> (BE lấy từ JWT).</li>
+              <li>Admin path ưu tiên <code>/admin/…</code> — BE map cả <code>/api/admin/rooms</code> và <code>/api/admin/bookings</code>. FE fallback path không-admin <strong>chỉ khi HTTP 404</strong> (legacy).</li>
+              <li>Create booking: FE gửi <code>roomId</code> + <code>room: { id }</code>, times = <code>toISOString()</code> UTC — <strong>không</strong> gửi <code>userId</code> (BE lấy từ JWT).</li>
             </ul>
           </div>
         </div>
@@ -1057,7 +1182,7 @@
           query: "—",
           bodySummary: "{ email, password }",
           request: '{\n  "email": "user@company.com",\n  "password": "123456"\n}',
-          response: '// flat hoặc nested\n{\n  "accessToken": "<jwt>",\n  "id": 2,\n  "email": "user@company.com",\n  "fullName": "User",\n  "role": "USER",\n  "department": { "id": 1, "code": "IT", "name": "IT" }\n}'
+          response: '// Flat:\n{\n  "accessToken": "<jwt>",\n  "id": 2,\n  "email": "user@company.com",\n  "fullName": "User",\n  "role": "USER",\n  "department": { "id": 1, "code": "IT", "name": "IT" }\n}\n// Nested cũng ok:\n{\n  "token": "<jwt>",\n  "user": { "id": 2, "email": "…", "fullName": "…", "role": "USER", "department": {…} }\n}'
         },
         {
           id: "get-account",
@@ -1101,7 +1226,7 @@
           query: "—",
           bodySummary: "{ name, capacity, isActive, pricePerHour, lockedDepartment }",
           request: '{\n  "name": "Meeting A",\n  "capacity": 10,\n  "isActive": true,\n  "pricePerHour": 100000,\n  "lockedDepartment": null\n}',
-          response: "BackendRoom\n// fallback 404 → POST /rooms"
+          response: "BackendRoom\n// BE: /api/admin/rooms (+ alias /api/rooms). FE fallback CHỈ HTTP 404 → POST /rooms"
         },
         {
           id: "put-room",
@@ -1109,28 +1234,28 @@
           query: "—",
           bodySummary: "{ id, name?, capacity?, isActive?, pricePerHour?, lockedDepartment }",
           request: '{\n  "id": 1,\n  "name": "Meeting A",\n  "capacity": 12,\n  "isActive": true,\n  "pricePerHour": 120000,\n  "lockedDepartment": { "id": 1 }\n}',
-          response: "BackendRoom\n// fallback → PUT /rooms/{id}"
+          response: "BackendRoom\n// BE: /api/admin/rooms/{id}. FE fallback CHỈ HTTP 404 → PUT /rooms/{id}"
         },
         {
           id: "patch-room",
           method: "PATCH", path: "/admin/rooms/{id}", role: "admin", domain: "Rooms",
           query: "—", bodySummary: "{ id, isActive }",
           request: '{\n  "id": 1,\n  "isActive": false\n}',
-          response: "BackendRoom (toggle)\n// error.hasbookings nếu còn lịch"
+          response: "BackendRoom (toggle)\n// BE: /api/admin/rooms/{id}. FE fallback CHỈ HTTP 404 → PATCH /rooms/{id}\n// error.hasbookings nếu còn lịch\n// FE map isActive ?? active ?? true"
         },
         {
           id: "get-bookings",
           method: "GET", path: "/bookings", role: "auth", domain: "Bookings",
           query: "date?, status?, q?, upcoming?, page?, size?, sort?",
           bodySummary: "—",
-          request: "GET /bookings?date=2026-08-06&page=0&size=200\nGET /bookings?status=PENDING\nGET /bookings?upcoming=true",
-          response: "BackendBookingDto[] | Spring page"
+          request: "GET /bookings?date=2026-08-06&page=0&size=200\nGET /bookings?status=PENDING\nGET /bookings?upcoming=true\n  // upcoming = APPROVED && startTime > now (tab Đã duyệt chưa diễn ra)\n// Badge count (không có /bookings/count):\nGET /bookings?status=PENDING&page=0&size=1 → totalElements",
+          response: "BackendBookingDto[] | Spring page | single object"
         },
         {
           id: "get-booking",
           method: "GET", path: "/bookings/{id}", role: "auth", domain: "Bookings",
           query: "—", bodySummary: "—",
-          request: "(no body)",
+          request: "(no body)\n// FE: BOOKING_PENDING → ?tab=pending&highlight=; pin chỉ trên tab pending",
           response: "BackendBookingDto"
         },
         {
@@ -1138,7 +1263,7 @@
           method: "POST", path: "/bookings", role: "auth", domain: "Bookings",
           query: "—",
           bodySummary: "{ title, startTime, endTime, roomId, room:{id} }",
-          request: '{\n  "title": "Sprint planning",\n  "startTime": "2026-08-06T09:00:00",\n  "endTime": "2026-08-06T10:00:00",\n  "roomId": 1,\n  "room": { "id": 1 }\n}\n// KHÔNG gửi userId — BE lấy từ JWT',
+          request: '{\n  "title": "Sprint planning",\n  "startTime": "2026-08-06T02:00:00.000Z",\n  "endTime": "2026-08-06T03:00:00.000Z",\n  "roomId": 1,\n  "room": { "id": 1 }\n}\n// FE Dashboard: toISOString() UTC — KHÔNG gửi userId (JWT)',
           response: '{\n  "id": 42,\n  "title": "Sprint planning",\n  "status": "PENDING",\n  "amount": 100000,\n  "room": { "id": 1, "name": "Meeting A" }\n}'
         },
         {
@@ -1146,21 +1271,21 @@
           method: "POST", path: "/admin/bookings/{id}/approve", role: "admin", domain: "Bookings",
           query: "—", bodySummary: "—",
           request: "(empty body)",
-          response: 'Booking status → "APPROVED"\n// fallback → POST /bookings/{id}/approve'
+          response: 'Booking status → "APPROVED"\n// BE: /api/admin/bookings/{id}/approve. FE fallback CHỈ HTTP 404 → POST /bookings/{id}/approve'
         },
         {
           id: "reject-booking",
           method: "POST", path: "/admin/bookings/{id}/reject", role: "admin", domain: "Bookings",
           query: "—", bodySummary: "—",
           request: "(empty body)",
-          response: 'Booking thường → "CANCELLED"\nNotification type: BOOKING_REJECTED\n// fallback → /bookings/{id}/reject'
+          response: 'Booking thường → "CANCELLED"\nNotification type: BOOKING_REJECTED\n// BE: /api/admin/bookings/{id}/reject. FE fallback CHỈ 404 → /bookings/{id}/reject'
         },
         {
           id: "cancel-booking",
           method: "POST", path: "/admin/bookings/{id}/cancel", role: "admin", domain: "Bookings",
           query: "—", bodySummary: "—",
           request: "(empty body)",
-          response: 'status → "CANCELLED"\n// error.alreadystarted nếu đã bắt đầu'
+          response: 'status → "CANCELLED"\n// error.alreadystarted nếu đã bắt đầu\n// BE: /api/admin/bookings/{id}/cancel. FE fallback CHỈ 404 → /bookings/{id}/cancel'
         },
         {
           id: "get-users",
@@ -1356,18 +1481,18 @@
           title: "ADMIN duyệt booking",
           steps: [
             {
-              title: "GET /bookings?status=PENDING",
-              desc: "Tab chờ duyệt",
-              api: "GET /bookings?status=PENDING",
-              nodes: ["/admin/bookings", "pending list"],
-              sample: "page + sort=startTime,asc"
+              title: "3 tabs admin bookings",
+              desc: "pending / upcoming / all",
+              api: "GET /bookings?status=PENDING · ?upcoming=true",
+              nodes: ["/admin/bookings", "pending", "upcoming", "history"],
+              sample: "pending → status=PENDING\nupcoming → upcoming=true (APPROVED, startTime > now)\nall → Lịch sử\nBadge: page=0&size=1 → totalElements"
             },
             {
-              title: "POST …/approve hoặc …/reject",
-              desc: "Admin path ưu tiên",
-              api: "POST /admin/bookings/{id}/approve|reject",
-              nodes: ["Approve", "APPROVED", "hoặc reject → CANCELLED"],
-              sample: "Empty body. Fallback /bookings/{id}/approve nếu 404."
+              title: "POST …/approve hoặc …/reject hoặc …/cancel",
+              desc: "BE /api/admin/…; FE fallback 404-only (legacy)",
+              api: "POST /admin/bookings/{id}/approve|reject|cancel",
+              nodes: ["Approve", "APPROVED", "reject/cancel → CANCELLED"],
+              sample: "Empty body. Fallback /bookings/{id}/… CHỈ khi HTTP 404."
             },
             {
               title: "User nhận BOOKING_APPROVED / REJECTED",
@@ -1434,7 +1559,7 @@
 
       const SM = {
         PENDING: {
-          text: "PENDING\n\n• USER vừa tạo booking\n• Admin có thể: approve → APPROVED, reject → CANCELLED\n• BE: nếu startTime đã qua mà vẫn PENDING → EXPIRED\n• UI pending tab: status=PENDING"
+          text: "PENDING\n\n• USER vừa tạo booking\n• Admin: approve → APPROVED; reject/cancel → CANCELLED\n• BE: startTime đã qua mà vẫn PENDING → EXPIRED\n• UI: tab pending = status=PENDING; upcoming = APPROVED + future; all = Lịch sử"
         },
         APPROVED: {
           text: "APPROVED\n\n• Hiện trên schedule + invoices\n• Admin có thể cancel → CANCELLED (nếu chưa bắt đầu)\n• error.alreadystarted nếu cancel quá muộn\n• amount snapshot giữ nguyên"
@@ -1583,6 +1708,18 @@
             b.removeAttribute("aria-current");
           }
         });
+        const activeBtn = document.querySelector('.nav-btn[data-section="' + id + '"]');
+        if (activeBtn) {
+          const drop = activeBtn.closest(".nav-drop");
+          if (drop) {
+            const toggle = drop.querySelector(".nav-drop-toggle");
+            const panel = drop.querySelector(".nav-drop-panel");
+            if (toggle && panel) {
+              toggle.setAttribute("aria-expanded", "true");
+              panel.hidden = false;
+            }
+          }
+        }
         announce("Mục " + id);
         const sidebar = document.getElementById("sidebar");
         sidebar.classList.remove("is-open");
@@ -1592,6 +1729,15 @@
 
       navBtns.forEach((btn) => {
         btn.addEventListener("click", () => showSection(btn.getAttribute("data-section")));
+      });
+
+      document.querySelectorAll(".nav-drop-toggle").forEach((toggle) => {
+        toggle.addEventListener("click", () => {
+          const open = toggle.getAttribute("aria-expanded") !== "true";
+          const panel = document.getElementById(toggle.getAttribute("aria-controls"));
+          toggle.setAttribute("aria-expanded", String(open));
+          if (panel) panel.hidden = !open;
+        });
       });
 
       document.getElementById("menuToggle").addEventListener("click", () => {
@@ -1608,6 +1754,18 @@
         const next = cur === "dark" ? "light" : cur === "light" ? "dark" : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
         root.setAttribute("data-theme", next);
         announce("Theme " + next);
+      });
+
+      /* Font (shared with fe-dev-guide via localStorage) */
+      const FONT_KEY = "docs-ui-font";
+      const fontSelect = document.getElementById("fontSelect");
+      const savedFont = document.documentElement.getAttribute("data-font") || "be-vietnam";
+      fontSelect.value = savedFont;
+      fontSelect.addEventListener("change", () => {
+        const next = fontSelect.value;
+        document.documentElement.setAttribute("data-font", next);
+        try { localStorage.setItem(FONT_KEY, next); } catch (e) { /* ignore */ }
+        announce("Font " + fontSelect.options[fontSelect.selectedIndex].text);
       });
 
       /* Flows */

@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FE Dev Guide — book-metting-room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    (function () {
+      try {
+        var f = localStorage.getItem("docs-ui-font") || "be-vietnam";
+        document.documentElement.setAttribute("data-font", f);
+      } catch (e) {
+        document.documentElement.setAttribute("data-font", "be-vietnam");
+      }
+    })();
+  </script>
   <style>
     :root {
       --ink: #1a1f2a;
@@ -23,8 +36,8 @@
       --admin: #8b4513;
       --user: #0e5a6b;
       --mono: "Cascadia Code", Consolas, ui-monospace, monospace;
-      --sans: "Segoe UI", system-ui, sans-serif;
-      --display: Georgia, "Iowan Old Style", Palatino, serif;
+      --sans: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+      --display: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
       --radius: 4px;
       --shadow: 0 1px 0 rgba(26, 31, 42, 0.04), 0 8px 22px rgba(26, 31, 42, 0.07);
       --focus: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent);
@@ -54,6 +67,27 @@
       --ok: #a8c0e8; --ok-bg: rgba(168, 192, 232, 0.14); --err: #e89191; --err-bg: rgba(232, 145, 145, 0.12);
       --admin: #e0a878; --user: #9ec5d8;
       --shadow: 0 1px 0 rgba(0,0,0,.25), 0 10px 28px rgba(0,0,0,.4);
+    }
+
+    html[data-font="be-vietnam"] {
+      --sans: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+      --display: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    }
+    html[data-font="inter"] {
+      --sans: Inter, "Segoe UI", system-ui, sans-serif;
+      --display: Inter, "Segoe UI", system-ui, sans-serif;
+    }
+    html[data-font="source-sans"] {
+      --sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+      --display: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    }
+    html[data-font="noto"] {
+      --sans: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+      --display: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+    }
+    html[data-font="atkinson"] {
+      --sans: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+      --display: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -89,8 +123,15 @@
       position: sticky; top: 0; align-self: start;
       max-height: 100dvh; overflow: auto;
     }
-    .brand { font-family: var(--display); font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; margin-bottom: 0.85rem; }
+    .brand { font-family: var(--display); font-size: 1.2rem; font-weight: 700; letter-spacing: normal; text-wrap: balance; margin-bottom: 0.85rem; }
     .sidebar-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: flex-start; }
+    .font-picker { display: grid; gap: 0.25rem; margin: 0 0 0.85rem; }
+    .font-picker-label { font-size: 0.65rem; text-transform: uppercase; color: var(--ink-soft); }
+    .font-picker select {
+      width: 100%; font: inherit; font-size: 0.78rem; padding: 0.4rem 0.5rem;
+      border: 1px solid var(--line); border-radius: var(--radius);
+      background: var(--surface-2); color: var(--ink); cursor: pointer;
+    }
     .icon-btn {
       width: 2rem; height: 2rem; border-radius: var(--radius); border: 1px solid var(--line);
       background: var(--surface-2); color: var(--ink); cursor: pointer; font: inherit; font-size: 0.85rem;
@@ -101,6 +142,29 @@
       font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em;
       color: var(--ink-soft); margin: 0.85rem 0 0.3rem; padding: 0 0.4rem;
     }
+    .nav-drop { margin-bottom: 0.35rem; }
+    .nav-drop-toggle {
+      display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 0.5rem;
+      background: transparent; border: 1px solid transparent; color: var(--ink-soft);
+      font: inherit; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: normal; padding: 0.45rem 0.5rem; border-radius: var(--radius); cursor: pointer;
+    }
+    .nav-drop-toggle:hover { background: var(--surface-2); color: var(--ink); }
+    .nav-drop-toggle[aria-expanded="true"] {
+      color: var(--accent); background: var(--accent-dim);
+      border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+    .nav-drop-caret {
+      font-size: 0.65rem; line-height: 1; transition: transform 0.15s ease;
+    }
+    .nav-drop-toggle[aria-expanded="true"] .nav-drop-caret { transform: rotate(180deg); }
+    .nav-drop-panel {
+      padding: 0.15rem 0 0.35rem 0.15rem;
+      border-left: 2px solid var(--line);
+      margin: 0.15rem 0 0.35rem 0.45rem;
+      padding-left: 0.35rem;
+    }
+    .nav-drop-panel[hidden] { display: none !important; }
     .nav-btn {
       display: block; width: 100%; text-align: left; background: transparent; border: 1px solid transparent;
       color: var(--ink); font: inherit; font-size: 0.8rem; padding: 0.42rem 0.5rem; border-radius: var(--radius);
@@ -113,8 +177,8 @@
     }
 
     .main { padding: 1.35rem clamp(1rem, 3vw, 2.1rem) 3.5rem; min-width: 0; }
-    h1 { font-family: var(--display); font-size: clamp(1.4rem, 2.4vw, 1.85rem); letter-spacing: -0.02em; text-wrap: balance; margin-bottom: 0.35rem; }
-    h2 { font-family: var(--display); font-size: 1.25rem; margin-bottom: 0.65rem; letter-spacing: -0.015em; }
+    h1 { font-family: var(--display); font-size: clamp(1.4rem, 2.4vw, 1.85rem); letter-spacing: normal; text-wrap: balance; margin-bottom: 0.35rem; }
+    h2 { font-family: var(--display); font-size: 1.25rem; margin-bottom: 0.65rem; letter-spacing: normal; }
     h3 { font-size: 0.95rem; margin: 1rem 0 0.45rem; }
     .lead { color: var(--ink-soft); font-size: 0.9rem; max-width: 68ch; margin-bottom: 1.1rem; }
 
@@ -150,7 +214,7 @@
       background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
       padding: 0.7rem 0.8rem; box-shadow: var(--shadow);
     }
-    .meta-card .k { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }
+    .meta-card .k { font-size: 0.65rem; text-transform: uppercase; letter-spacing: normal; color: var(--ink-soft); }
     .meta-card .v { font-family: var(--mono); font-size: 0.8rem; font-weight: 650; margin-top: 0.2rem; }
 
     .check-list { list-style: none; display: grid; gap: 0.4rem; }
@@ -164,7 +228,7 @@
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.78rem; font-variant-numeric: tabular-nums; }
     th, td { padding: 0.45rem 0.55rem; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
-    th { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); background: var(--surface-2); }
+    th { font-size: 0.66rem; text-transform: uppercase; letter-spacing: normal; color: var(--ink-soft); background: var(--surface-2); }
     code, .mono { font-family: var(--mono); font-size: 0.86em; }
     .path { font-family: var(--mono); font-size: 0.75rem; word-break: break-all; }
     pre {
@@ -326,6 +390,45 @@
     }
     .soundbite .q { font-weight: 650; margin-bottom: 0.25rem; }
     .soundbite .a { color: var(--ink-soft); }
+
+    .badge {
+      display: inline-block; font-family: var(--mono); font-size: 0.65rem; font-weight: 700;
+      padding: 0.12rem 0.38rem; border-radius: 3px;
+    }
+    .badge-get { background: var(--ok-bg); color: var(--ok); }
+    .badge-post { background: var(--accent-dim); color: var(--accent); }
+    .badge-put { background: var(--warn-bg); color: var(--warn); }
+    .badge-patch { background: rgba(107, 78, 160, 0.12); color: #6b4ea0; }
+    .badge-del { background: var(--err-bg); color: var(--err); }
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 0.55rem 0.85rem; align-items: center;
+      margin-bottom: 0.85rem; padding: 0.7rem 0.85rem; background: var(--surface);
+      border: 1px solid var(--line); border-radius: var(--radius);
+    }
+    .toolbar .search {
+      flex: 1 1 160px; min-width: 140px; max-width: 300px; font: inherit; font-size: 0.8rem;
+      padding: 0.38rem 0.55rem; border: 1px solid var(--line); border-radius: var(--radius);
+      background: var(--paper); color: var(--ink);
+    }
+    .seg {
+      display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+    }
+    .seg button {
+      background: var(--surface-2); border: none; color: var(--ink-soft); font: inherit;
+      font-size: 0.74rem; padding: 0.32rem 0.65rem; cursor: pointer;
+    }
+    .seg button[aria-pressed="true"] {
+      background: var(--accent-dim); color: var(--accent); font-weight: 650;
+    }
+    .seg button:not(:last-child) { border-right: 1px solid var(--line); }
+    tr.api-row { cursor: pointer; }
+    tr.api-row:hover td { background: var(--accent-dim); }
+    tr.api-row.is-open td { background: var(--accent-dim); }
+    tr.api-detail td { background: var(--paper); padding: 0.85rem; }
+    tr.api-detail[hidden] { display: none; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+    @media (max-width: 720px) { .detail-grid { grid-template-columns: 1fr; } }
+    .count-chip { font-size: 0.68rem; color: var(--ink-soft); margin-left: auto; }
   </style>
 </head>
 <body>
@@ -341,19 +444,42 @@
           <button type="button" class="icon-btn" id="themeToggle" title="Đổi theme" aria-label="Đổi theme">◐</button>
         </div>
       </div>
+      <label class="font-picker">
+        <span class="font-picker-label">Font</span>
+        <select id="fontSelect" aria-label="Chọn font hiển thị">
+          <option value="be-vietnam">Be Vietnam Pro</option>
+          <option value="inter">Inter</option>
+          <option value="source-sans">Source Sans 3</option>
+          <option value="noto">Noto Sans</option>
+          <option value="atkinson">Atkinson Hyperlegible</option>
+        </select>
+      </label>
       <div class="nav-groups" id="navGroups">
-        <div class="nav-label">Học</div>
-        <button type="button" class="nav-btn" data-section="start" aria-current="true">0. Bắt đầu</button>
-        <button type="button" class="nav-btn" data-section="demo">1. Demo mentor</button>
-        <button type="button" class="nav-btn" data-section="map">2. Bản đồ sản phẩm</button>
-        <button type="button" class="nav-btn" data-section="arch">3. Kiến trúc thư mục</button>
-        <button type="button" class="nav-btn" data-section="auth">4. Auth &amp; shell</button>
-        <button type="button" class="nav-btn" data-section="biz">5. Nghiệp vụ</button>
-        <button type="button" class="nav-btn" data-section="ui">6. UI kit</button>
-        <div class="nav-label">Sâu</div>
-        <button type="button" class="nav-btn" data-section="qa">7. Mentor Q&amp;A</button>
-        <button type="button" class="nav-btn" data-section="gotchas">8. Bẫy AI-gen</button>
-        <button type="button" class="nav-btn" data-section="cheat">9. Cheat sheet</button>
+        <div class="nav-drop" data-drop="hoc">
+          <button type="button" class="nav-drop-toggle" aria-expanded="true" aria-controls="drop-hoc" id="toggle-hoc">
+            <span>Học</span><span class="nav-drop-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="nav-drop-panel" id="drop-hoc" role="group" aria-labelledby="toggle-hoc">
+            <button type="button" class="nav-btn" data-section="start" aria-current="true">0. Bắt đầu</button>
+            <button type="button" class="nav-btn" data-section="demo">1. Demo mentor</button>
+            <button type="button" class="nav-btn" data-section="map">2. Bản đồ sản phẩm</button>
+            <button type="button" class="nav-btn" data-section="arch">3. Kiến trúc thư mục</button>
+            <button type="button" class="nav-btn" data-section="auth">4. Auth &amp; shell</button>
+            <button type="button" class="nav-btn" data-section="api">5. API catalog</button>
+            <button type="button" class="nav-btn" data-section="biz">6. Nghiệp vụ</button>
+            <button type="button" class="nav-btn" data-section="ui">7. UI kit</button>
+          </div>
+        </div>
+        <div class="nav-drop" data-drop="sau">
+          <button type="button" class="nav-drop-toggle" aria-expanded="true" aria-controls="drop-sau" id="toggle-sau">
+            <span>Sâu</span><span class="nav-drop-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="nav-drop-panel" id="drop-sau" role="group" aria-labelledby="toggle-sau">
+            <button type="button" class="nav-btn" data-section="qa">8. Mentor Q&amp;A</button>
+            <button type="button" class="nav-btn" data-section="gotchas">9. Bẫy AI-gen</button>
+            <button type="button" class="nav-btn" data-section="cheat">10. Cheat sheet</button>
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -414,9 +540,10 @@ VITE_API_PROXY_TARGET=https://….ngrok-free.dev</pre>
             <ol style="padding-left:1.2rem;display:grid;gap:0.35rem">
               <li>Demo trước (mục 1) → biết sẽ show gì.</li>
               <li>Bản đồ + kiến trúc (2–3) → định vị file.</li>
-              <li>Auth + nghiệp vụ (4–5) → kể được flow.</li>
-              <li>Q&amp;A + gotchas (7–8) → luyện trả lời sâu.</li>
-              <li>Cheat sheet (9) → quét 2 phút trước vào phòng.</li>
+              <li>Auth + <strong>API catalog (5)</strong> + nghiệp vụ (6) → kể được call nào / khi nào.</li>
+              <li>UI kit (7) → convention component.</li>
+              <li>Q&amp;A + gotchas (8–9) → luyện trả lời sâu.</li>
+              <li>Cheat sheet (10) → quét 2 phút trước vào phòng.</li>
             </ol>
           </div>
         </div>
@@ -524,10 +651,52 @@ VITE_API_PROXY_TARGET=https://….ngrok-free.dev</pre>
         </div>
       </section>
 
-      <!-- 5 BIZ -->
+      <!-- 5 API -->
+      <section class="section" id="sec-api" hidden aria-labelledby="h-api">
+        <h2 id="h-api">5. API catalog (FE gọi gì)</h2>
+        <p class="lead">
+          Toàn bộ endpoint FE đang gọi — kèm file <code>*.service.ts</code>, query/body, sample.
+          Click dòng để xem request/response. Chi tiết contract cho BE cũng nằm ở
+          <a href="./be-fe-contract.html">be-fe-contract.html</a>.
+        </p>
+        <div class="toolbar" role="search">
+          <label class="muted">Role</label>
+          <div class="seg" id="apiRoleFilter" role="group">
+            <button type="button" data-role-filter="all" aria-pressed="true">All</button>
+            <button type="button" data-role-filter="public" aria-pressed="false">Public</button>
+            <button type="button" data-role-filter="auth" aria-pressed="false">Auth</button>
+            <button type="button" data-role-filter="admin" aria-pressed="false">ADMIN</button>
+          </div>
+          <input type="search" id="apiSearch" class="search" placeholder="Tìm path, domain, service…" autocomplete="off" />
+          <span class="count-chip" id="apiVisibleCount"></span>
+        </div>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Path</th>
+                  <th>Role</th>
+                  <th>Domain</th>
+                  <th>Service FE</th>
+                  <th>Query / Body</th>
+                </tr>
+              </thead>
+              <tbody id="apiBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <p class="note">
+          <strong>Nhớ:</strong> Base <code>/api</code> + Bearer (trừ login). Admin write dùng <code>/admin/…</code> (BE map <code>/api/admin/rooms</code> + <code>/api/admin/bookings</code>). FE fallback path không-admin <strong>chỉ khi HTTP 404</strong> (legacy BE).
+          Users list = array + header <code>X-Total-Count</code> (không Spring <code>content</code>).
+        </p>
+      </section>
+
+      <!-- 6 BIZ -->
       <section class="section" id="sec-biz" hidden aria-labelledby="h-biz">
-        <h2 id="h-biz">5. Nghiệp vụ — flow + mở file IDE</h2>
-        <p class="lead">Chọn domain → bước API + path file. Payload đầy đủ nằm ở be-fe-contract.</p>
+        <h2 id="h-biz">6. Nghiệp vụ — flow + mở file IDE</h2>
+        <p class="lead">Chọn domain → bước API + path file. Payload đầy đủ cũng có trong mục <strong>5. API catalog</strong>.</p>
         <div class="flow-picker" id="bizPicker"></div>
         <div class="grid-2">
           <div class="panel">
@@ -550,9 +719,9 @@ VITE_API_PROXY_TARGET=https://….ngrok-free.dev</pre>
         </div>
       </section>
 
-      <!-- 6 UI -->
+      <!-- 7 UI -->
       <section class="section" id="sec-ui" hidden aria-labelledby="h-ui">
-        <h2 id="h-ui">6. UI kit — scenario → component</h2>
+        <h2 id="h-ui">7. UI kit — scenario → component</h2>
         <p class="lead">AGENTS: luôn dùng kit shared, không raw Ant Design <code>message</code>/<code>Modal</code>/<code>Tabs</code> trong page.</p>
         <div class="lookup">
           <label for="uiScenario" class="muted">Tôi cần…</label>
@@ -573,24 +742,24 @@ VITE_API_PROXY_TARGET=https://….ngrok-free.dev</pre>
         </div>
       </section>
 
-      <!-- 7 QA -->
+      <!-- 8 QA -->
       <section class="section" id="sec-qa" hidden aria-labelledby="h-qa">
-        <h2 id="h-qa">7. Mentor deep Q&amp;A (flashcards)</h2>
+        <h2 id="h-qa">8. Mentor deep Q&amp;A (flashcards)</h2>
         <p class="lead">Click câu hỏi để lộ đáp án ngắn + path file. Học thuộc ý, không học thuộc lòng nguyên văn.</p>
         <input type="search" class="flash-search" id="flashSearch" placeholder="Lọc câu hỏi… (abort, EXPIRED, DataTable…)" autocomplete="off" />
         <div id="flashcards"></div>
       </section>
 
-      <!-- 8 GOTCHAS -->
+      <!-- 9 GOTCHAS -->
       <section class="section" id="sec-gotchas" hidden aria-labelledby="h-gotchas">
-        <h2 id="h-gotchas">8. Bẫy AI-gen / gotchas</h2>
+        <h2 id="h-gotchas">9. Bẫy AI-gen / gotchas</h2>
         <p class="lead">Code “chạy được” nhưng mentor hỏi <em>tại sao</em> thì dễ ấp úng — đây là chỗ luyện trước.</p>
         <div id="gotchas"></div>
       </section>
 
-      <!-- 9 CHEAT -->
+      <!-- 10 CHEAT -->
       <section class="section" id="sec-cheat" hidden aria-labelledby="h-cheat">
-        <h2 id="h-cheat">9. Cheat sheet (quét 2 phút)</h2>
+        <h2 id="h-cheat">10. Cheat sheet (quét 2 phút)</h2>
         <div class="panel">
           <div class="panel-hd">Seed <button type="button" class="copy-btn" data-copy="admin@company.com / user@company.com / 123456">Copy</button></div>
           <div class="panel-bd"><code>admin@company.com</code> · <code>user@company.com</code> · password <code>123456</code></div>
@@ -601,6 +770,32 @@ VITE_API_PROXY_TARGET=https://….ngrok-free.dev</pre>
             <span class="pill">PENDING</span> <span class="pill">APPROVED</span>
             <span class="pill">CANCELLED</span> <span class="pill">EXPIRED</span>
             <p class="muted" style="margin-top:0.45rem">Reject → thường CANCELLED (không có REJECTED trên Booking type). Notif vẫn có BOOKING_REJECTED.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hd">Dept-change status</div>
+          <div class="panel-bd">
+            <span class="pill">PENDING</span> <span class="pill">APPROVED</span> <span class="pill">REJECTED</span>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hd">NotificationType (8)</div>
+          <div class="panel-bd">
+            <span class="pill">BOOKING_PENDING</span> <span class="pill">BOOKING_APPROVED</span>
+            <span class="pill">BOOKING_REJECTED</span> <span class="pill">BOOKING_CANCELLED</span>
+            <span class="pill">BOOKING_EXPIRED</span>
+            <span class="pill">DEPT_CHANGE_PENDING</span> <span class="pill">DEPT_CHANGE_APPROVED</span>
+            <span class="pill">DEPT_CHANGE_REJECTED</span>
+            <p class="muted" style="margin-top:0.45rem">DEPT_CHANGE_*: field <code>bookingId</code> = id request để highlight.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hd">Admin bookings tabs</div>
+          <div class="panel-bd" style="font-size:0.8rem">
+            <code>pending</code> → <code>status=PENDING</code> ·
+            <code>upcoming</code> → <code>upcoming=true</code> ·
+            <code>all</code> → Lịch sử<br />
+            Badge count: <code>getBookingsCount</code> = <code>page=0&amp;size=1</code> → <code>totalElements</code> (không có <code>/bookings/count</code>)
           </div>
         </div>
         <div class="panel">
@@ -625,11 +820,12 @@ src/lib/pagination.ts</pre>
           </div>
         </div>
         <div class="panel">
-          <div class="panel-hd">API lite</div>
+          <div class="panel-hd">API — xem mục 5</div>
           <div class="panel-bd" style="font-size:0.8rem">
-            Shared: <code>GET/PUT /account</code>, <code>GET /rooms</code>, <code>GET|POST /bookings</code>, <code>GET /departments</code>, invoices, notifications.<br />
-            Admin: <code>/admin/rooms</code>, approve/reject/cancel, <code>/admin/users</code>, dept-change, <code>/admin/revenue</code>.<br />
-            Chi tiết → <a href="./be-fe-contract.html">be-fe-contract.html</a>
+            Catalog đầy đủ (~33 endpoint) ở <strong>5. API catalog</strong> (lọc role + mở sample).<br />
+            Shared: account, rooms GET, bookings, departments, invoices, notifications.<br />
+            Admin: rooms write, approve/reject/cancel, users, dept-change, revenue.<br />
+            Bản đưa BE: <a href="./be-fe-contract.html">be-fe-contract.html</a>
           </div>
         </div>
       </section>
@@ -655,12 +851,32 @@ src/lib/pagination.ts</pre>
         if (b.getAttribute("data-section") === id) b.setAttribute("aria-current", "true");
         else b.removeAttribute("aria-current");
       });
+      const activeBtn = document.querySelector('.nav-btn[data-section="' + id + '"]');
+      if (activeBtn) {
+        const drop = activeBtn.closest(".nav-drop");
+        if (drop) {
+          const toggle = drop.querySelector(".nav-drop-toggle");
+          const panel = drop.querySelector(".nav-drop-panel");
+          if (toggle && panel) {
+            toggle.setAttribute("aria-expanded", "true");
+            panel.hidden = false;
+          }
+        }
+      }
       document.getElementById("sidebar").classList.remove("is-open");
       document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
       window.scrollTo({ top: 0, behavior: "smooth" });
       announce("Mục " + id);
     }
     navBtns.forEach((btn) => btn.addEventListener("click", () => showSection(btn.getAttribute("data-section"))));
+    document.querySelectorAll(".nav-drop-toggle").forEach((toggle) => {
+      toggle.addEventListener("click", () => {
+        const open = toggle.getAttribute("aria-expanded") !== "true";
+        const panel = document.getElementById(toggle.getAttribute("aria-controls"));
+        toggle.setAttribute("aria-expanded", String(open));
+        if (panel) panel.hidden = !open;
+      });
+    });
     document.getElementById("menuToggle").addEventListener("click", () => {
       const sb = document.getElementById("sidebar");
       const open = !sb.classList.contains("is-open");
@@ -673,6 +889,16 @@ src/lib/pagination.ts</pre>
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       const next = cur === "dark" ? "light" : cur === "light" ? "dark" : (prefersDark ? "light" : "dark");
       root.setAttribute("data-theme", next);
+    });
+
+    const FONT_KEY = "docs-ui-font";
+    const fontSelect = document.getElementById("fontSelect");
+    fontSelect.value = document.documentElement.getAttribute("data-font") || "be-vietnam";
+    fontSelect.addEventListener("change", () => {
+      const next = fontSelect.value;
+      document.documentElement.setAttribute("data-font", next);
+      try { localStorage.setItem(FONT_KEY, next); } catch (e) { /* ignore */ }
+      announce("Font " + fontSelect.options[fontSelect.selectedIndex].text);
     });
 
     /* ---- Subtabs generic ---- */
@@ -709,7 +935,7 @@ src/lib/pagination.ts</pre>
     ];
     const demoAdmin = [
       { t: "Login ADMIN", d: "admin@company.com — sidebar hiện đủ menu admin", ask: "Menu filter role ở đâu?", file: "AppLayout.tsx" },
-      { t: "Duyệt đặt phòng", d: "/admin/bookings — approve/reject; xem history + EXPIRED", ask: "EXPIRED ai set?", file: "BE khi PENDING quá startTime" },
+      { t: "Duyệt đặt phòng", d: "/admin/bookings — 3 tab: Chờ duyệt / Đã duyệt (chưa diễn ra) / Lịch sử; approve/reject/cancel; badge count", ask: "upcoming=true nghĩa gì? Count lấy sao?", file: "AdminBookingsPage · getBookingsCount size=1" },
       { t: "Quản lý phòng", d: "/admin/rooms — q/active, lock dept, price, serverSide table", ask: "Visibility phòng FE hay BE?", file: "BE enforce lockedDepartment" },
       { t: "Users + dept-change", d: "/admin/users — tabs users / requests approve-reject", ask: "DELETE user nghĩa là gì?", file: "deactivate — DELETE /admin/users/{login}" },
       { t: "Doanh thu", d: "/admin/revenue — KPI/charts + by-room table + export", ask: "Charts theo dark mode sao?", file: "useIsDarkMode + plotTheme — không tự theo ConfigProvider" },
@@ -745,7 +971,7 @@ src/lib/pagination.ts</pre>
       { role: "guest", path: "/login", name: "Login", wire: "+------------------+\n|  Logo / form     |\n|  email password  |\n|  [Đăng nhập]     |\n+------------------+", note: "GuestRoute" },
       { role: "user", path: "/dashboard", name: "Dashboard lịch", wire: "+ Topbar ........ +bell avatar\n+------+---------------------+\n| Menu | DatePicker Search   |\n| Dash | [sticky hours]      |\n|      | rooms x timeline     |\n+------+---------------------+", note: "DashboardRoute + RoomDayTimeline" },
       { role: "user", path: "/my-invoices", name: "Hóa đơn của tôi", wire: "PageHeader + SearchForm\nDataTable serverSide (amount)", note: "MyInvoicesPage" },
-      { role: "admin", path: "/admin/bookings", name: "Duyệt đặt phòng", wire: "TabBar: Chờ duyệt | Lịch sử\nSearchForm + DataTable\nApprove / Reject / Cancel", note: "AdminBookingsPage" },
+      { role: "admin", path: "/admin/bookings", name: "Duyệt đặt phòng", wire: "TabBar: Chờ duyệt | Đã duyệt (chưa diễn ra) | Lịch sử\nBadge count · SearchForm + DataTable\nApprove / Reject / Cancel", note: "AdminBookingsPage — pending / upcoming / all" },
       { role: "admin", path: "/admin/rooms", name: "Quản lý phòng", wire: "SearchForm q + active\nDataTable serverSide CRUD", note: "AdminRoomsRoute" },
       { role: "admin", path: "/admin/users", name: "Users + dept requests", wire: "TabBar: Users | Requests\nCRUD users + approve dept", note: "AdminUsersRoute" },
       { role: "admin", path: "/admin/revenue", name: "Doanh thu", wire: "KPI + charts (@ant-design/plots)\nby-room DataTable + export", note: "AdminRevenuePage" },
@@ -847,6 +1073,152 @@ src/lib/pagination.ts</pre>
       paint();
     }
 
+    /* ---- API catalog ---- */
+    const APIS = [
+      { id: "login", method: "POST", path: "/auth/login", role: "public", domain: "Auth", service: "auth.service.ts", query: "—", body: "{ email, password }",
+        request: '{\n  "email": "user@company.com",\n  "password": "123456"\n}',
+        response: 'Flat { accessToken, id, email, fullName, role, department? }\nhoặc nested { token, user }' },
+      { id: "get-account", method: "GET", path: "/account", role: "auth", domain: "Account", service: "users.service.ts", query: "—", body: "—",
+        request: "(no body)", response: "BackendAdminUser / AccountProfile" },
+      { id: "put-account", method: "PUT", path: "/account", role: "auth", domain: "Account", service: "users.service.ts", query: "—", body: "{ fullName, email }",
+        request: '{\n  "fullName": "Nguyen Van A",\n  "email": "user@company.com"\n}', response: "AccountProfile" },
+      { id: "post-dept-change", method: "POST", path: "/account/department-change-requests", role: "auth", domain: "Account", service: "users.service.ts", query: "—", body: "{ requestedDepartmentId }",
+        request: '{\n  "requestedDepartmentId": 3\n}', response: "DepartmentChangeRequest PENDING" },
+      { id: "get-dept-pending", method: "GET", path: "/account/department-change-requests/pending", role: "auth", domain: "Account", service: "users.service.ts", query: "—", body: "—",
+        request: "(no body)", response: "DTO | 204 → null" },
+      { id: "get-rooms", method: "GET", path: "/rooms", role: "auth", domain: "Rooms", service: "rooms.service.ts", query: "q?, active?, page?, size?, sort?", body: "—",
+        request: "GET /rooms?page=0&size=20&sort=name,asc", response: "array | Spring page\nDashboard: size=200" },
+      { id: "post-room", method: "POST", path: "/admin/rooms", role: "admin", domain: "Rooms", service: "rooms.service.ts", query: "—", body: "{ name, capacity, isActive, pricePerHour, lockedDepartment }",
+        request: '{\n  "name": "Meeting A",\n  "capacity": 10,\n  "isActive": true,\n  "pricePerHour": 100000,\n  "lockedDepartment": null\n}',
+        response: "Room\nBE: /api/admin/rooms. FE fallback CHỈ HTTP 404 → POST /rooms" },
+      { id: "put-room", method: "PUT", path: "/admin/rooms/{id}", role: "admin", domain: "Rooms", service: "rooms.service.ts", query: "—", body: "{ id, name?, capacity?, isActive?, pricePerHour?, lockedDepartment }",
+        request: "(full update body)", response: "Room · BE /api/admin/rooms/{id}. FE fallback CHỈ HTTP 404 → PUT /rooms/{id}" },
+      { id: "patch-room", method: "PATCH", path: "/admin/rooms/{id}", role: "admin", domain: "Rooms", service: "rooms.service.ts", query: "—", body: "{ id, isActive }",
+        request: '{\n  "id": 1,\n  "isActive": false\n}', response: "Room · BE /api/admin/rooms/{id}. FE fallback CHỈ HTTP 404 → PATCH /rooms/{id}\nerror.hasbookings nếu còn lịch\nDTO: isActive ?? active ?? true" },
+      { id: "get-bookings", method: "GET", path: "/bookings", role: "auth", domain: "Bookings", service: "bookings.service.ts", query: "date?, status?, q?, upcoming?, page?, size?, sort?", body: "—",
+        request: "GET /bookings?status=PENDING\nGET /bookings?upcoming=true  // APPROVED, startTime > now\nGET /bookings?date=YYYY-MM-DD&page=0&size=200\n// Badge: getBookingsCount = page=0&size=1 → totalElements (không có /bookings/count)", response: "array | Spring page | single object" },
+      { id: "get-booking", method: "GET", path: "/bookings/{id}", role: "auth", domain: "Bookings", service: "bookings.service.ts", query: "—", body: "—",
+        request: "(no body)\n// Dùng khi ?highlight= từ notification flash", response: "BackendBookingDto" },
+      { id: "post-booking", method: "POST", path: "/bookings", role: "auth", domain: "Bookings", service: "bookings.service.ts", query: "—", body: "{ title, startTime, endTime, roomId, room:{id} }",
+        request: '{\n  "title": "Sprint",\n  "startTime": "2026-08-06T02:00:00.000Z",\n  "endTime": "2026-08-06T03:00:00.000Z",\n  "roomId": 1,\n  "room": { "id": 1 }\n}\n// FE gửi toISOString() UTC — KHÔNG gửi userId',
+        response: 'status "PENDING" + amount snapshot' },
+      { id: "approve-booking", method: "POST", path: "/admin/bookings/{id}/approve", role: "admin", domain: "Bookings", service: "bookings.service.ts", query: "—", body: "—",
+        request: "(empty)", response: "APPROVED · BE /api/admin/bookings/{id}/approve. FE fallback CHỈ khi HTTP 404 → /bookings/{id}/approve" },
+      { id: "reject-booking", method: "POST", path: "/admin/bookings/{id}/reject", role: "admin", domain: "Bookings", service: "bookings.service.ts", query: "—", body: "—",
+        request: "(empty)", response: "thường CANCELLED · notif BOOKING_REJECTED\nBE /api/admin/…. FE fallback CHỈ 404 → /bookings/{id}/reject" },
+      { id: "cancel-booking", method: "POST", path: "/admin/bookings/{id}/cancel", role: "admin", domain: "Bookings", service: "bookings.service.ts", query: "—", body: "—",
+        request: "(empty)", response: "CANCELLED · error.alreadystarted\nBE /api/admin/…. FE fallback CHỈ 404 → /bookings/{id}/cancel" },
+      { id: "get-users", method: "GET", path: "/admin/users", role: "admin", domain: "Users", service: "users.service.ts", query: "page, size, sort?, q?, activated?", body: "—",
+        request: "GET /admin/users?page=0&size=20", response: "array + header X-Total-Count" },
+      { id: "post-user", method: "POST", path: "/admin/users", role: "admin", domain: "Users", service: "users.service.ts", query: "—", body: "{ login, email, fullName, password, activated, authorities, department }",
+        request: "ADMIN → authorities ROLE_ADMIN+ROLE_USER", response: "BackendAdminUser" },
+      { id: "put-user", method: "PUT", path: "/admin/users", role: "admin", domain: "Users", service: "users.service.ts", query: "—", body: "{ id, login, email, fullName, activated, authorities, password?, department }",
+        request: "(password optional)", response: "BackendAdminUser" },
+      { id: "del-user", method: "DELETE", path: "/admin/users/{login}", role: "admin", domain: "Users", service: "users.service.ts", query: "—", body: "—",
+        request: "(no body)", response: "void — deactivate" },
+      { id: "get-dept-reqs", method: "GET", path: "/admin/department-change-requests", role: "admin", domain: "DeptChange", service: "users.service.ts", query: "status, page, size, sort", body: "—",
+        request: "?status=PENDING&page=0&size=100&sort=id,desc", response: "array | { content }" },
+      { id: "approve-dept", method: "POST", path: "/admin/department-change-requests/{id}/approve", role: "admin", domain: "DeptChange", service: "users.service.ts", query: "—", body: "—",
+        request: "(empty)", response: "APPROVED" },
+      { id: "reject-dept", method: "POST", path: "/admin/department-change-requests/{id}/reject", role: "admin", domain: "DeptChange", service: "users.service.ts", query: "—", body: "—",
+        request: "(empty)", response: "REJECTED" },
+      { id: "get-depts", method: "GET", path: "/departments", role: "auth", domain: "Departments", service: "departments.service.ts", query: "—", body: "—",
+        request: "(no body)", response: "Department[]" },
+      { id: "get-invoices", method: "GET", path: "/account/invoices", role: "auth", domain: "Invoices", service: "invoices.service.ts", query: "page, size, sort?, q?", body: "—",
+        request: "GET /account/invoices?page=0&size=20", response: "booking page (APPROVED + amount)" },
+      { id: "get-invoice", method: "GET", path: "/account/invoices/{id}", role: "auth", domain: "Invoices", service: "invoices.service.ts", query: "—", body: "—",
+        request: "(no body)", response: "BackendBookingDto" },
+      { id: "export-invoices", method: "GET", path: "/account/invoices/export", role: "auth", domain: "Invoices", service: "useAuthenticatedExport", query: "—", body: "—",
+        request: "Bearer + blob", response: "CSV Blob" },
+      { id: "get-revenue", method: "GET", path: "/admin/revenue", role: "admin", domain: "Revenue", service: "revenue.service.ts", query: "yearMonth", body: "—",
+        request: "?yearMonth=2026-08", response: "RevenueReport KPI + charts" },
+      { id: "get-revenue-room", method: "GET", path: "/admin/revenue/by-room", role: "admin", domain: "Revenue", service: "revenue.service.ts", query: "yearMonth, page, size, sort?, q?", body: "—",
+        request: "paginated by-room", response: "page/array" },
+      { id: "export-revenue", method: "GET", path: "/admin/revenue/export", role: "admin", domain: "Revenue", service: "useAuthenticatedExport", query: "yearMonth", body: "—",
+        request: "?yearMonth=2026-08", response: "CSV Blob" },
+      { id: "get-notif", method: "GET", path: "/notifications", role: "auth", domain: "Notifications", service: "notifications.service.ts", query: "page=0, size=20, sort=createdDate,desc", body: "—",
+        request: "hard-coded page/size/sort từ FE", response: "array | Spring page" },
+      { id: "unread-count", method: "GET", path: "/notifications/unread-count", role: "auth", domain: "Notifications", service: "notifications.service.ts", query: "—", body: "—",
+        request: "(no body)", response: '{ "count": number }' },
+      { id: "read-notif", method: "POST", path: "/notifications/{id}/read", role: "auth", domain: "Notifications", service: "notifications.service.ts", query: "—", body: "—",
+        request: "(empty)", response: "Notification (readDate)" },
+      { id: "read-all", method: "POST", path: "/notifications/read-all", role: "auth", domain: "Notifications", service: "notifications.service.ts", query: "—", body: "—",
+        request: "(empty)", response: "void" },
+    ];
+
+    const apiBody = document.getElementById("apiBody");
+    let apiRole = "all";
+    let apiQ = "";
+    let openApiId = null;
+
+    function methodBadge(m) {
+      const map = { GET: "get", POST: "post", PUT: "put", PATCH: "patch", DELETE: "del" };
+      return '<span class="badge badge-' + (map[m] || "get") + '">' + m + "</span>";
+    }
+    function roleBadge(r) {
+      if (r === "public") return '<span class="role role-auth">Public</span>';
+      if (r === "admin") return '<span class="role role-admin">ADMIN</span>';
+      return '<span class="role role-user">Auth</span>';
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function renderApis() {
+      const list = APIS.filter((a) => {
+        if (apiRole !== "all" && a.role !== apiRole) return false;
+        if (!apiQ) return true;
+        const hay = (a.method + " " + a.path + " " + a.domain + " " + a.service + " " + a.query + " " + a.body).toLowerCase();
+        return hay.includes(apiQ);
+      });
+      document.getElementById("apiVisibleCount").textContent = list.length + " / " + APIS.length;
+      apiBody.innerHTML = list.map((a) => {
+        const open = openApiId === a.id;
+        return '<tr class="api-row' + (open ? " is-open" : "") + '" data-api-id="' + a.id + '" tabindex="0" role="button" aria-expanded="' + open + '">' +
+          "<td>" + methodBadge(a.method) + "</td>" +
+          '<td class="path">' + a.path + "</td>" +
+          "<td>" + roleBadge(a.role) + "</td>" +
+          "<td>" + a.domain + "</td>" +
+          '<td class="path">' + a.service + "</td>" +
+          '<td class="mono">' + escapeHtml(a.query === "—" ? a.body : a.query) + "</td>" +
+          "</tr>" +
+          '<tr class="api-detail" data-detail-for="' + a.id + '"' + (open ? "" : " hidden") + ">" +
+          '<td colspan="6"><div class="detail-grid">' +
+          "<div><div class=\"muted\" style=\"margin-bottom:0.3rem\">Request</div><pre>" + escapeHtml(a.request) + "</pre></div>" +
+          "<div><div class=\"muted\" style=\"margin-bottom:0.3rem\">Response · <code>" + escapeHtml(a.service) + "</code></div><pre>" + escapeHtml(a.response) + "</pre></div>" +
+          "</div></td></tr>";
+      }).join("");
+    }
+    apiBody.addEventListener("click", (e) => {
+      const row = e.target.closest(".api-row");
+      if (!row) return;
+      const id = row.getAttribute("data-api-id");
+      openApiId = openApiId === id ? null : id;
+      renderApis();
+    });
+    apiBody.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const row = e.target.closest(".api-row");
+      if (!row) return;
+      e.preventDefault();
+      const id = row.getAttribute("data-api-id");
+      openApiId = openApiId === id ? null : id;
+      renderApis();
+    });
+    document.querySelectorAll("#apiRoleFilter [data-role-filter]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        apiRole = btn.getAttribute("data-role-filter");
+        document.querySelectorAll("#apiRoleFilter [data-role-filter]").forEach((b) => {
+          b.setAttribute("aria-pressed", String(b === btn));
+        });
+        renderApis();
+      });
+    });
+    document.getElementById("apiSearch").addEventListener("input", (e) => {
+      apiQ = e.target.value.trim().toLowerCase();
+      renderApis();
+    });
+    renderApis();
+
     const authFlows = {
       login: {
         title: "Login → session",
@@ -873,9 +1245,9 @@ src/lib/pagination.ts</pre>
       approve: {
         title: "Admin duyệt",
         steps: [
-          { title: "Tab PENDING", desc: "GET /bookings?status=PENDING", file: "AdminBookingsPage.tsx", sample: "Tabs via TabBar + defineTabItems — không raw antd Tabs." },
-          { title: "approve / reject / cancel", desc: "POST /admin/bookings/{id}/…", file: "bookings.service.ts", sample: "Ưu tiên /admin/…; fallback path không-admin nếu 404.\nReject → status thường CANCELLED." },
-          { title: "EXPIRED", desc: "History badge Hết hạn", file: "booking status maps", sample: "BE set khi PENDING quá startTime.\nFE map gồm EXPIRED." },
+          { title: "3 tabs", desc: "pending / upcoming / all", file: "AdminBookingsPage.tsx", sample: "pending → status=PENDING\nupcoming → upcoming=true (APPROVED, startTime > now)\nall → Lịch sử (+ filter status)\nBadge: getBookingsCount = GET …&page=0&size=1 → totalElements" },
+          { title: "approve / reject / cancel", desc: "POST /admin/bookings/{id}/…", file: "bookings.service.ts", sample: "BE map /api/admin/bookings. FE ưu tiên /admin/…; fallback không-admin CHỈ khi HTTP 404 (legacy).\nReject → status thường CANCELLED." },
+          { title: "Highlight từ notification", desc: "?highlight= + getBooking", file: "parseNotificationFlash · useTableRowHighlight", sample: "BOOKING_PENDING → /admin/bookings?tab=pending&highlight=\nPin + GET /bookings/{id} chỉ khi tab pending (BOOKING_HIGHLIGHT_TABS).\nDEPT_CHANGE_PENDING → /admin/users?tab=requests&highlight=\nDEPT_CHANGE_*: bookingId field = request id." },
         ],
       },
       rooms: {
@@ -950,7 +1322,13 @@ src/lib/pagination.ts</pre>
       { q: "Charts dark mode?", a: "@ant-design/plots không theo ConfigProvider — truyền theme={plotTheme(isDark)} qua useIsDarkMode.", paths: "revenue charts · lib/useIsDarkMode.ts" },
       { q: "Shell scroll / sticky Topbar?", a: "100vh overflow hidden; chỉ content scroll — tránh gap scrollbar Windows nếu sticky window.", paths: "AppLayout.tsx" },
       { q: "Invoices có bảng riêng?", a: "Không — reuse booking APPROVED + amount snapshot từ pricePerHour × duration.", paths: "invoices.service.ts · lib/money.ts" },
-      { q: "Admin path fallback?", a: "Gọi /admin/… trước; nếu 404 thử path không-admin (rooms write, booking actions) — compat BE cũ.", paths: "rooms.service · bookings.service" },
+      { q: "Admin path fallback?", a: "BE phục vụ /api/admin/rooms và /api/admin/bookings (dual map với /api/rooms|/api/bookings). FE gọi /admin/… trước; fallback path không-admin CHỈ khi HTTP 404 (isMissingAdminRoute) — không fallback trên 400/500. Rooms write POST/PUT/PATCH + booking approve/reject/cancel.", paths: "RoomResource · BookingResource · rooms.service.ts · bookings.service.ts" },
+      { q: "Sao không có GET /bookings/count?", a: "getBookingsCount gọi getBookingsPage({ page:0, size:1, …filters }) rồi đọc totalElements — dùng cho badge tab pending/upcoming.", paths: "bookings.service.ts getBookingsCount · AdminBookingsPage" },
+      { q: "Tab upcoming nghĩa gì?", a: "upcoming=true: booking APPROVED và startTime còn ở tương lai (Đã duyệt chưa diễn ra). Tab all = Lịch sử.", paths: "AdminBookingsPage.tsx · bookings query upcoming" },
+      { q: "Notification click highlight row thế nào?", a: "NotificationBell map type → path: BOOKING_PENDING → /admin/bookings?tab=pending&highlight=; APPROVED → /my-invoices; DEPT_CHANGE_PENDING → /admin/users?tab=requests&highlight=. AdminBookingsPage chỉ pin/fetch highlight trên tab pending. DEPT_CHANGE dùng bookingId = request id.", paths: "NotificationBell.tsx · AdminBookingsPage · AdminUsers" },
+      { q: "Room DTO isActive vs active?", a: "toRoom map isActive = isActive ?? active ?? true — BE có thể gửi một trong hai field.", paths: "rooms.service.ts toRoom" },
+      { q: "Pending dept-change 204?", a: "GET …/pending dùng validateStatus 200|204 → null khi không có request pending.", paths: "users.service getMyPendingDepartmentChange" },
+      { q: "List đủ NotificationType?", a: "BOOKING_PENDING|APPROVED|REJECTED|CANCELLED|EXPIRED + DEPT_CHANGE_PENDING|APPROVED|REJECTED (8).", paths: "notifications.types.ts" },
     ];
     const flashEl = document.getElementById("flashcards");
     flashEl.innerHTML = cards.map((c, i) => `
@@ -990,7 +1368,10 @@ src/lib/pagination.ts</pre>
       { tag: "Export", t: "CSV cần Bearer — không window.open URL trần", d: "useAuthenticatedExport / downloadAuthenticatedFile." },
       { tag: "Amount", t: "amount là snapshot", d: "Đổi pricePerHour phòng sau không sửa amount booking cũ — giải thích billing." },
       { tag: "Ngrok", t: "CORS / ERR_NGROK_6024", d: "Đặt VITE_API_BASE_URL=/api + PROXY_TARGET, restart Vite — đừng gọi cross-origin trực tiếp từ browser." },
-      { tag: "TS", t: "ignoreDeprecations 6.0", d: "Cần cho TS 6 + baseUrl paths. Đừng “fix” bằng downgrade — tsc sẽ TS5101." },
+      { tag: "Count", t: "Không invent /bookings/count", d: "Badge tab dùng getBookingsCount → page=0&size=1 + totalElements." },
+      { tag: "Tabs", t: "Admin bookings có 3 tab", d: "pending / upcoming / all — đừng demo chỉ 2 tab Chờ duyệt|Lịch sử." },
+      { tag: "Highlight", t: "?highlight= và ?tab= là thật", d: "Notification deep-link; useUrlTab + useTableRowHighlight — mentor hay hỏi “click bell đi đâu?”." },
+      { tag: "ISO time", t: "startTime/endTime là UTC ISO", d: "Dashboard combineDateTime().toISOString() — không gửi local string thiếu Z." },
     ];
     document.getElementById("gotchas").innerHTML = gotchas.map((g) => `
       <div class="tip"><div class="tag">${g.tag}</div><strong>${g.t}</strong><p class="muted" style="margin-top:0.3rem">${g.d}</p></div>

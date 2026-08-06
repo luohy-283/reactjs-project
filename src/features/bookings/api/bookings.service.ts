@@ -25,8 +25,8 @@ export interface GetBookingsOptions extends PageParams {
 
 function isMissingAdminRoute(error: unknown): error is AxiosError {
   if (!isAxiosError(error)) return false;
-  // Only fall back when the /api/admin/bookings route does not exist.
-  // Do not swallow 500s (or other business errors) as "missing route".
+  // Legacy BE without /api/admin/bookings: fall back only on HTTP 404.
+  // Current BE dual-maps /api/admin/bookings. Do not swallow 400/500.
   return error.response?.status === 404;
 }
 
@@ -61,6 +61,19 @@ export async function getBookingsPage(
     if (isAbortError(error)) throw error;
     throw toApiError(error, "Không tải được lịch đặt");
   }
+}
+
+/** Tab badge totals — BE has no /bookings/count; reuse page API and read totalElements. */
+export type GetBookingsCountOptions = Omit<
+  GetBookingsOptions,
+  "page" | "size" | "sort"
+>;
+
+export async function getBookingsCount(
+  options: GetBookingsCountOptions = {},
+): Promise<number> {
+  const page = await getBookingsPage({ ...options, page: 0, size: 1 });
+  return page.totalElements;
 }
 
 /** Full list for schedule — request a large size (same bound as getRooms). */

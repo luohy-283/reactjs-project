@@ -20,8 +20,10 @@ import { PageLayout } from "@/components/ui/page/PageLayout";
 import { RefreshButton } from "@/components/ui/toolbar/RefreshButton";
 import { SearchForm } from "@/components/ui/search/SearchForm";
 import { SearchInput } from "@/components/ui/search/SearchInput";
+import { NoSearchResult } from "@/components/ui/empty/NoSearchResult";
 import { useToast } from "@/components/ui/feedback/useFeedback";
 import { RoomDayTimeline } from "@/app/components/RoomDayTimeline";
+
 import { createBooking } from "@/features/bookings/api/bookings.service";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useRoomSchedule } from "@/app/hooks/use-room-schedule";
@@ -167,6 +169,12 @@ export default function DashboardRoute() {
     setSearch("");
   };
 
+  const searchMiss =
+    Boolean(search.trim()) &&
+    !isLoading &&
+    rooms.length > 0 &&
+    filteredRooms.length === 0;
+
   return (
     <PageLayout>
       <PageHeader
@@ -208,6 +216,8 @@ export default function DashboardRoute() {
             onRetry={() => void refetch()}
             loading={isLoading}
           />
+        ) : searchMiss ? (
+          <NoSearchResult onReset={() => setSearch("")} />
         ) : (
           <RoomDayTimeline
             date={dateStr}

@@ -1,5 +1,11 @@
-import { getBookingsPage } from "@/features/bookings/api/bookings.service";
-import type { GetBookingsOptions } from "@/features/bookings/api/bookings.service";
+import {
+  getBookingsCount,
+  getBookingsPage,
+} from "@/features/bookings/api/bookings.service";
+import type {
+  GetBookingsCountOptions,
+  GetBookingsOptions,
+} from "@/features/bookings/api/bookings.service";
 import type { Booking } from "@/features/bookings/api/bookings.types";
 import type { PagedResult } from "@/lib/pagination";
 import { useAsyncFetch } from "@/lib/useAsyncFetch";
@@ -28,5 +34,17 @@ export function useBookingsPage(
       options.upcoming,
     ],
     { initialData: EMPTY_PAGE, enabled },
+  );
+}
+
+/** Badge counts only — Network still shows GET /bookings?...&size=1 (no dedicated count route). */
+export function useBookingsCount(
+  options: Omit<GetBookingsCountOptions, "signal">,
+  enabled = true,
+) {
+  return useAsyncFetch(
+    (signal) => getBookingsCount({ ...options, signal }),
+    [options.status, options.date, options.q, options.upcoming],
+    { initialData: 0, enabled },
   );
 }

@@ -45,8 +45,8 @@ function toRoom(room: BackendRoom): Room {
 
 function isMissingAdminRoute(error: unknown): error is AxiosError {
   if (!isAxiosError(error)) return false;
-  // Only fall back when the /api/admin/rooms route does not exist.
-  // Do not swallow 400 business errors (e.g. hasbookings) or 500s.
+  // Legacy BE without /api/admin/rooms: fall back only on HTTP 404.
+  // Current BE dual-maps /api/admin/rooms. Do not swallow 400/500.
   return error.response?.status === 404;
 }
 

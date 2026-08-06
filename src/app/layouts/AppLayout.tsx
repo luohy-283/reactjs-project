@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/layouts/ThemeToggle";
 import { UserMenu } from "@/components/layouts/UserMenu";
 import { ProfileDialog } from "@/features/users/components/ProfileDialog";
 
-const { Content } = Layout;
+const { Content } = Layout; 
 
 export default function AppLayout() {
   const { user, logout, setUser } = useAuth();
