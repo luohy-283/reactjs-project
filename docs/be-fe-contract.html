@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BE ↔ FE Contract — book-metting-room</title>
+  <style>
+    :root {
+      --ink: #14233a;
+      --ink-soft: #3a4d66;
+      --paper: #f4f6f9;
+      --surface: #ffffff;
+      --surface-2: #eef2f7;
+      --line: #c9d3e0;
+      --accent: #1f5f8b;
+      --accent-dim: rgba(31, 95, 139, 0.1);
+      --ok: #2a5f8f;
+      --ok-bg: rgba(42, 95, 143, 0.1);
+      --warn: #9a6b12;
+      --warn-bg: rgba(154, 107, 18, 0.12);
+      --err: #b42318;
+      --err-bg: rgba(180, 35, 24, 0.1);
+      --get: #2a5f8f;
+      --post: #1f5f8b;
+      --put: #9a6b12;
+      --patch: #6b4ea0;
+      --delete: #b42318;
+      --user: #0e7490;
+      --admin: #c2410c;
+      --public: #64748b;
+      --mono: "Cascadia Code", "Consolas", "SFMono-Regular", ui-monospace, monospace;
+      --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+      --radius: 4px;
+      --shadow: 0 1px 0 rgba(20, 35, 58, 0.04), 0 8px 24px rgba(20, 35, 58, 0.06);
+      --focus: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #e8eaef;
+        --ink-soft: #9aa3b5;
+        --paper: #12141a;
+        --surface: #1a1d26;
+        --surface-2: #232833;
+        --line: #343b4a;
+        --accent: #8eb4e8;
+        --accent-dim: rgba(142, 180, 232, 0.14);
+        --ok: #a8c0e8;
+        --ok-bg: rgba(168, 192, 232, 0.14);
+        --warn: #e0b86a;
+        --warn-bg: rgba(224, 184, 106, 0.12);
+        --err: #e89191;
+        --err-bg: rgba(232, 145, 145, 0.12);
+        --get: #a8c0e8;
+        --post: #8eb4e8;
+        --put: #e0b86a;
+        --patch: #b8a4e0;
+        --delete: #e89191;
+        --user: #9ec5d8;
+        --admin: #e0a878;
+        --public: #94a3b8;
+        --shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 10px 28px rgba(0, 0, 0, 0.4);
+      }
+    }
+
+    :root[data-theme="light"] {
+      --ink: #14233a;
+      --ink-soft: #3a4d66;
+      --paper: #f4f6f9;
+      --surface: #ffffff;
+      --surface-2: #eef2f7;
+      --line: #c9d3e0;
+      --accent: #1f5f8b;
+      --accent-dim: rgba(31, 95, 139, 0.1);
+      --ok: #2a5f8f;
+      --ok-bg: rgba(42, 95, 143, 0.1);
+      --warn: #9a6b12;
+      --warn-bg: rgba(154, 107, 18, 0.12);
+      --err: #b42318;
+      --err-bg: rgba(180, 35, 24, 0.1);
+      --get: #2a5f8f;
+      --post: #1f5f8b;
+      --put: #9a6b12;
+      --patch: #6b4ea0;
+      --delete: #b42318;
+      --user: #0e7490;
+      --admin: #c2410c;
+      --public: #64748b;
+      --shadow: 0 1px 0 rgba(20, 35, 58, 0.04), 0 8px 24px rgba(20, 35, 58, 0.06);
+    }
+
+    :root[data-theme="dark"] {
+      --ink: #e8eaef;
+      --ink-soft: #9aa3b5;
+      --paper: #12141a;
+      --surface: #1a1d26;
+      --surface-2: #232833;
+      --line: #343b4a;
+      --accent: #8eb4e8;
+      --accent-dim: rgba(142, 180, 232, 0.14);
+      --ok: #a8c0e8;
+      --ok-bg: rgba(168, 192, 232, 0.14);
+      --warn: #e0b86a;
+      --warn-bg: rgba(224, 184, 106, 0.12);
+      --err: #e89191;
+      --err-bg: rgba(232, 145, 145, 0.12);
+      --get: #a8c0e8;
+      --post: #8eb4e8;
+      --put: #e0b86a;
+      --patch: #b8a4e0;
+      --delete: #e89191;
+      --user: #9ec5d8;
+      --admin: #e0a878;
+      --public: #94a3b8;
+      --shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 10px 28px rgba(0, 0, 0, 0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background:
+        linear-gradient(90deg, transparent 39px, rgba(31, 95, 139, 0.06) 39px, rgba(31, 95, 139, 0.06) 40px, transparent 40px),
+        var(--paper);
+      background-size: 40px 100%, auto;
+      color: var(--ink);
+      line-height: 1.55;
+      min-height: 100dvh;
+    }
+
+    :focus-visible { outline: none; box-shadow: var(--focus); }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100dvh;
+    }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+      }
+      .nav-groups { display: none; }
+      .sidebar.is-open .nav-groups { display: block; }
+    }
+
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+      padding: 1.25rem 1rem 2rem;
+      position: sticky;
+      top: 0;
+      align-self: start;
+      max-height: 100dvh;
+      overflow: auto;
+    }
+
+    .brand {
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+      margin-bottom: 1rem;
+    }
+
+    .sidebar-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .icon-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      width: 2rem;
+      height: 2rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .menu-toggle { display: none; }
+    @media (max-width: 900px) { .menu-toggle { display: inline-flex; align-items: center; justify-content: center; } }
+
+    .nav-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+      margin: 0.9rem 0 0.35rem;
+      padding: 0 0.4rem;
+    }
+
+    .nav-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.82rem;
+      padding: 0.45rem 0.55rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      margin-bottom: 0.12rem;
+    }
+    .nav-btn:hover { background: var(--surface-2); }
+    .nav-btn[aria-current="true"] {
+      background: var(--accent-dim);
+      border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .main {
+      padding: 1.5rem clamp(1rem, 3vw, 2.25rem) 3.5rem;
+      min-width: 0;
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(1.45rem, 2.5vw, 1.9rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+      margin-bottom: 0.35rem;
+    }
+    h2 {
+      font-family: var(--display);
+      font-size: 1.25rem;
+      margin: 0 0 0.75rem;
+      letter-spacing: -0.015em;
+    }
+    h3 {
+      font-size: 0.95rem;
+      margin: 1.25rem 0 0.55rem;
+      color: var(--ink);
+    }
+
+    .lead {
+      color: var(--ink-soft);
+      font-size: 0.9rem;
+      max-width: 68ch;
+      margin-bottom: 1.25rem;
+    }
+
+    .section {
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+    .section.is-active { display: block; }
+    .section[hidden] { display: none !important; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem 0.9rem;
+      align-items: center;
+      margin-bottom: 1.15rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .toolbar label { font-size: 0.75rem; color: var(--ink-soft); }
+
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .seg button {
+      background: var(--surface-2);
+      border: none;
+      color: var(--ink-soft);
+      font: inherit;
+      font-size: 0.76rem;
+      padding: 0.35rem 0.7rem;
+      cursor: pointer;
+    }
+    .seg button[aria-pressed="true"] {
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .seg button:not(:last-child) { border-right: 1px solid var(--line); }
+
+    .search {
+      flex: 1 1 180px;
+      min-width: 140px;
+      max-width: 320px;
+      font: inherit;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.65rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      color: var(--ink);
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    .panel-hd {
+      padding: 0.65rem 0.95rem;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--line);
+      font-size: 0.84rem;
+      font-weight: 650;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .panel-bd { padding: 0.95rem; }
+
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      color: var(--ink-soft);
+      font-weight: 600;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: var(--surface-2);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr.api-row { cursor: pointer; }
+    tr.api-row:hover td { background: var(--accent-dim); }
+    tr.api-row.is-open td { background: var(--accent-dim); }
+    tr.api-detail td {
+      background: var(--paper);
+      padding: 0.85rem 0.95rem;
+      border-bottom: 1px solid var(--line);
+    }
+    tr.api-detail[hidden] { display: none; }
+
+    code, .mono {
+      font-family: var(--mono);
+      font-size: 0.86em;
+    }
+    .path { font-family: var(--mono); font-size: 0.76rem; word-break: break-all; }
+
+    .badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.12rem 0.38rem;
+      border-radius: 3px;
+      letter-spacing: 0.02em;
+    }
+    .badge-get { background: var(--ok-bg); color: var(--get); }
+    .badge-post { background: var(--accent-dim); color: var(--post); }
+    .badge-put { background: var(--warn-bg); color: var(--put); }
+    .badge-patch { background: rgba(107, 78, 160, 0.12); color: var(--patch); }
+    .badge-del { background: var(--err-bg); color: var(--delete); }
+
+    .role {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      letter-spacing: 0.03em;
+    }
+    .role-user { background: rgba(14, 116, 144, 0.12); color: var(--user); }
+    .role-admin { background: rgba(194, 65, 12, 0.12); color: var(--admin); }
+    .role-public { background: rgba(100, 116, 139, 0.15); color: var(--public); }
+    .role-auth { background: var(--accent-dim); color: var(--accent); }
+
+    pre {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      line-height: 1.45;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0.75rem;
+      overflow: auto;
+      max-height: 280px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 720px) { .detail-grid { grid-template-columns: 1fr; } }
+
+    .muted { color: var(--ink-soft); font-size: 0.78rem; }
+    .note {
+      margin-top: 0.85rem;
+      padding: 0.75rem 0.9rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+    }
+    .note strong { color: var(--ink); }
+
+    .pill-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.4rem 0; }
+    .pill {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 0.2rem 0.45rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-2);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .steps { list-style: none; }
+    .step {
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: 0 0.7rem;
+      padding: 0.6rem 0.35rem;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      border-radius: var(--radius);
+    }
+    .step:last-child { border-bottom: none; }
+    .step:hover { background: var(--accent-dim); }
+    .step.active { background: var(--accent-dim); }
+    .step.done .step-num { background: var(--ok); color: #fff; border-color: var(--ok); }
+    .step-num {
+      width: 1.55rem;
+      height: 1.55rem;
+      border-radius: 50%;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      font-size: 0.68rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+    .step.active .step-num {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .step-title { font-size: 0.82rem; font-weight: 650; }
+    .step-desc { font-size: 0.74rem; color: var(--ink-soft); margin-top: 0.12rem; }
+    .step-api { font-family: var(--mono); font-size: 0.68rem; color: var(--accent); margin-top: 0.2rem; }
+
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 650;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+    .btn:hover { filter: brightness(1.06); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.75rem; }
+
+    .state-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius);
+      font-size: 0.78rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid var(--line);
+    }
+    .state-idle { background: var(--surface-2); color: var(--ink-soft); }
+    .state-loading { background: var(--accent-dim); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+    .state-ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+    .state-err { background: var(--err-bg); color: var(--err); border-color: color-mix(in srgb, var(--err) 35%, transparent); }
+
+    .spinner {
+      width: 0.85rem;
+      height: 0.85rem;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .flow-diagram {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.74rem;
+      margin-top: 0.55rem;
+    }
+    .node {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 0.3rem 0.5rem;
+      white-space: nowrap;
+    }
+    .node.hl { border-color: var(--accent); color: var(--accent); font-weight: 650; }
+    .arrow { color: var(--ink-soft); }
+
+    .state-machine {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin: 0.75rem 0;
+    }
+    .sm-node {
+      padding: 0.45rem 0.7rem;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: var(--surface);
+      cursor: pointer;
+    }
+    .sm-node[aria-pressed="true"] {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+    .sm-node.pending { border-color: var(--warn); }
+    .sm-node.approved { border-color: var(--accent); }
+    .sm-node.cancelled { border-color: var(--err); }
+    .sm-node.expired { border-color: var(--public); }
+    .sm-edge { font-size: 0.7rem; color: var(--ink-soft); max-width: 9rem; text-align: center; }
+
+    .copy-btn {
+      font-size: 0.68rem;
+      padding: 0.2rem 0.45rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      cursor: pointer;
+      color: var(--ink-soft);
+      font-family: var(--sans);
+    }
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    .meta-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.65rem;
+      margin-bottom: 1.15rem;
+    }
+    .meta-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0.75rem 0.85rem;
+      box-shadow: var(--shadow);
+    }
+    .meta-card .k { font-size: 0.68rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; }
+    .meta-card .v { font-family: var(--mono); font-size: 0.82rem; margin-top: 0.25rem; font-weight: 650; }
+
+    .hidden-by-filter { display: none !important; }
+
+    .live-region {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); border: 0;
+    }
+
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.72rem;
+      color: var(--ink-soft);
+    }
+
+    .dto-block {
+      margin-bottom: 0.85rem;
+      padding: 0.75rem;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+    .dto-block h4 {
+      font-size: 0.82rem;
+      margin-bottom: 0.35rem;
+      font-family: var(--mono);
+    }
+
+    .flow-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+    .flow-picker button {
+      font: inherit;
+      font-size: 0.78rem;
+      padding: 0.4rem 0.7rem;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: var(--radius);
+      cursor: pointer;
+      color: var(--ink);
+    }
+    .flow-picker button[aria-pressed="true"] {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 650;
+    }
+
+    .count-chip {
+      font-size: 0.68rem;
+      color: var(--ink-soft);
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="live-region" id="live" aria-live="polite"></div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Mục lục contract">
+      <div class="sidebar-top">
+        <div>
+          <div class="brand">BE ↔ FE Contract</div>
+        </div>
+        <div style="display:flex;gap:0.35rem">
+          <button type="button" class="icon-btn menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="navGroups" title="Menu">☰</button>
+          <button type="button" class="icon-btn" id="themeToggle" title="Đổi theme" aria-label="Đổi theme">◐</button>
+        </div>
+      </div>
+      <div class="nav-groups" id="navGroups">
+        <div class="nav-label">Tổng quan</div>
+        <button type="button" class="nav-btn" data-section="overview" aria-current="true">Overview</button>
+        <button type="button" class="nav-btn" data-section="roles">Roles &amp; seed</button>
+        <button type="button" class="nav-btn" data-section="routes">Routes FE</button>
+        <button type="button" class="nav-btn" data-section="enums">Status / enum</button>
+        <button type="button" class="nav-btn" data-section="dto">Domain DTO</button>
+
+        <div class="nav-label">API catalog</div>
+        <button type="button" class="nav-btn" data-section="apis">All endpoints</button>
+        <button type="button" class="nav-btn" data-section="errors">Error keys</button>
+        <button type="button" class="nav-btn" data-section="rules">Business rules</button>
+
+        <div class="nav-label">Flows</div>
+        <button type="button" class="nav-btn" data-section="flows">Interactive flows</button>
+        <button type="button" class="nav-btn" data-section="booking-sm">Booking state machine</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- OVERVIEW -->
+      <section class="section is-active" id="sec-overview" aria-labelledby="h-overview">
+        <h1 id="h-overview">Contract BE cần map từ FE</h1>
+        <p class="lead">
+          Inventory đầy đủ API, role, DTO, enum và luồng nghiệp vụ mà frontend đang expect.
+          Dùng để code backend map đúng — không phải tài liệu BE hiện tại.
+        </p>
+        <div class="meta-strip">
+          <div class="meta-card"><div class="k">Base URL</div><div class="v">/api</div></div>
+          <div class="meta-card"><div class="k">Auth</div><div class="v">Bearer token</div></div>
+          <div class="meta-card"><div class="k">401</div><div class="v">logout → /login</div></div>
+          <div class="meta-card"><div class="k">Endpoints</div><div class="v" id="endpointCount">~38</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-hd">Phân tầng quyền API</div>
+          <div class="panel-bd">
+            <div class="flow-diagram" aria-hidden="true">
+              <span class="node">Public: POST /auth/login</span>
+              <span class="arrow">→</span>
+              <span class="node">Auth shared: account · rooms GET · bookings · depts · invoices · notifications</span>
+              <span class="arrow">→</span>
+              <span class="node hl">ADMIN: rooms write · approve/reject/cancel · users · dept-change · revenue</span>
+            </div>
+            <p class="note" style="margin-top:0.85rem">
+              <strong>Pagination:</strong> Spring page <code>{ content, number, size, totalElements, totalPages }</code>
+              hoặc bare array. <strong>Ngoại lệ:</strong> <code>GET /admin/users</code> = array + header <code>X-Total-Count</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ROLES -->
+      <section class="section" id="sec-roles" aria-labelledby="h-roles" hidden>
+        <h2 id="h-roles">1. Roles &amp; authorities</h2>
+        <div class="panel">
+          <div class="panel-hd">FE role ↔ JHipster authorities</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>FE role</th><th>Authorities (create/update user)</th><th>Login / account map</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="role role-admin">ADMIN</span></td>
+                  <td><code>["ROLE_ADMIN","ROLE_USER"]</code></td>
+                  <td><code>ROLE_ADMIN</code> hoặc <code>ADMIN</code> → <code>ADMIN</code></td>
+                </tr>
+                <tr>
+                  <td><span class="role role-user">USER</span></td>
+                  <td><code>["ROLE_USER"]</code></td>
+                  <td>còn lại / thiếu → <code>USER</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hd">Seed accounts</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Seed</th><th>Email</th><th>Password</th><th>Role</th></tr></thead>
+              <tbody>
+                <tr><td>Admin</td><td><code>admin@company.com</code></td><td><code>123456</code></td><td><span class="role role-admin">ADMIN</span></td></tr>
+                <tr><td>User</td><td><code>user@company.com</code></td><td><code>123456</code></td><td><span class="role role-user">USER</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ROUTES -->
+      <section class="section" id="sec-routes" aria-labelledby="h-routes" hidden>
+        <h2 id="h-routes">2. Routes FE (đối chiếu quyền)</h2>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Path</th><th>Ai vào được</th><th>Ghi chú</th></tr></thead>
+              <tbody>
+                <tr><td class="path">/login</td><td><span class="role role-public">Guest</span></td><td>GuestRoute — đã login → /dashboard</td></tr>
+                <tr><td class="path">/dashboard</td><td><span class="role role-auth">Auth</span></td><td>Schedule rooms + bookings</td></tr>
+                <tr><td class="path">/my-invoices</td><td><span class="role role-auth">Auth</span></td><td>Cả ADMIN và USER</td></tr>
+                <tr><td class="path">/admin/rooms</td><td><span class="role role-admin">ADMIN</span></td><td>RequireRole</td></tr>
+                <tr><td class="path">/admin/bookings</td><td><span class="role role-admin">ADMIN</span></td><td>Tabs: chờ duyệt / lịch sử</td></tr>
+                <tr><td class="path">/admin/users</td><td><span class="role role-admin">ADMIN</span></td><td>Users + dept-change requests</td></tr>
+                <tr><td class="path">/admin/revenue</td><td><span class="role role-admin">ADMIN</span></td><td>KPI + by-room + export</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ENUMS -->
+      <section class="section" id="sec-enums" aria-labelledby="h-enums" hidden>
+        <h2 id="h-enums">3. Status / enum</h2>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Domain</th><th>Values</th><th>Ghi chú cho BE</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>Booking</td>
+                  <td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">CANCELLED</span><span class="pill">EXPIRED</span></div></td>
+                  <td>USER create → PENDING. Past start còn PENDING → BE set EXPIRED. Reject <strong>không</strong> có status REJECTED trên booking (thường → CANCELLED); notification vẫn có <code>BOOKING_REJECTED</code>.</td>
+                </tr>
+                <tr>
+                  <td>Dept change</td>
+                  <td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">REJECTED</span></div></td>
+                  <td>—</td>
+                </tr>
+                <tr>
+                  <td>Room</td>
+                  <td><code>isActive</code> / <code>active</code> boolean</td>
+                  <td>FE: <code>isActive ?? active ?? true</code></td>
+                </tr>
+                <tr>
+                  <td>User</td>
+                  <td><code>activated</code> boolean</td>
+                  <td><code>DELETE /admin/users/{login}</code> = deactivate</td>
+                </tr>
+                <tr>
+                  <td>NotificationType</td>
+                  <td>
+                    <div class="pill-row">
+                      <span class="pill">BOOKING_PENDING</span><span class="pill">BOOKING_APPROVED</span>
+                      <span class="pill">BOOKING_REJECTED</span><span class="pill">BOOKING_CANCELLED</span>
+                      <span class="pill">BOOKING_EXPIRED</span>
+                      <span class="pill">DEPT_CHANGE_PENDING</span><span class="pill">DEPT_CHANGE_APPROVED</span>
+                      <span class="pill">DEPT_CHANGE_REJECTED</span>
+                    </div>
+                  </td>
+                  <td>Với <code>DEPT_CHANGE_*</code>, field <code>bookingId</code> = id request để highlight</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- DTO -->
+      <section class="section" id="sec-dto" aria-labelledby="h-dto" hidden>
+        <h2 id="h-dto">4. Domain DTO (field FE expect)</h2>
+        <div class="dto-block">
+          <h4>Department</h4>
+          <pre>{ id, code, name }</pre>
+        </div>
+        <div class="dto-block">
+          <h4>User (login / AuthContext)</h4>
+          <pre>{ id, email, fullName, role: "ADMIN" | "USER", department?: Department | null }</pre>
+        </div>
+        <div class="dto-block">
+          <h4>BackendAdminUser / AccountProfile</h4>
+          <pre>{ id, login, email, fullName?, activated, authorities?: string[], department?: Department | null }</pre>
+        </div>
+        <div class="dto-block">
+          <h4>Room (BackendRoom → FE Room)</h4>
+          <pre>{ id, name, capacity, isActive? | active?, lockedDepartment?: Department | null, pricePerHour? }
+// visibility BE enforce: public OR locked đúng department user</pre>
+        </div>
+        <div class="dto-block">
+          <h4>Booking (flat và/hoặc nested)</h4>
+          <pre>{
+  id, title, startTime, endTime, status,
+  roomId?, userId?, roomName?, userLogin?, userEmail?, userFullName?,
+  pricePerHour?, amount?,
+  room?: { id, name?, pricePerHour? },
+  user?: { id, login?, email? }
+}
+// amount = snapshot pricePerHour × duration lúc book</pre>
+        </div>
+        <div class="dto-block">
+          <h4>DepartmentChangeRequest</h4>
+          <pre>{ id, userId, userEmail, userFullName, currentDepartment?, requestedDepartment,
+  status, reviewedByLogin?, reviewedDate?, createdDate? }</pre>
+        </div>
+        <div class="dto-block">
+          <h4>Notification</h4>
+          <pre>{ id, type, title, message, bookingId?, readDate?, createdDate?, read? }
+// read = read ?? Boolean(readDate)</pre>
+        </div>
+        <div class="dto-block">
+          <h4>RevenueReport</h4>
+          <pre>{
+  yearMonth, totalAmount, totalBookings, averageAmount, cancelledCount, cancellationRate,
+  previous: { /* same period fields */ },
+  byRoom: [{ roomId, roomName, bookingCount, amount, sharePercent? }],
+  byDay: [{ date, bookingCount, amount }]
+}
+// số có thể number | string — FE Number(...)</pre>
+        </div>
+        <div class="dto-block">
+          <h4>Invoices</h4>
+          <pre>Reuse Booking DTO (APPROVED + amount). Không có invoice status riêng.</pre>
+        </div>
+      </section>
+
+      <!-- APIS -->
+      <section class="section" id="sec-apis" aria-labelledby="h-apis" hidden>
+        <h2 id="h-apis">5. API catalog</h2>
+        <p class="lead">Click một dòng để xem sample request / response. Lọc theo role hoặc tìm path.</p>
+        <div class="toolbar" role="search">
+          <label id="roleFilterLabel">Role</label>
+          <div class="seg" role="group" aria-labelledby="roleFilterLabel">
+            <button type="button" data-role-filter="all" aria-pressed="true">All</button>
+            <button type="button" data-role-filter="public" aria-pressed="false">Public</button>
+            <button type="button" data-role-filter="auth" aria-pressed="false">Auth</button>
+            <button type="button" data-role-filter="admin" aria-pressed="false">ADMIN</button>
+          </div>
+          <label for="apiSearch" class="sr-only" style="position:absolute;clip:rect(0,0,0,0)">Search</label>
+          <input type="search" id="apiSearch" class="search" placeholder="Tìm path, method, domain…" autocomplete="off" />
+          <span class="count-chip" id="apiVisibleCount"></span>
+        </div>
+        <div class="panel">
+          <div class="table-wrap">
+            <table id="apiTable">
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Path</th>
+                  <th>Role</th>
+                  <th>Domain</th>
+                  <th>Query</th>
+                  <th>Body (tóm tắt)</th>
+                </tr>
+              </thead>
+              <tbody id="apiBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <p class="note">
+          <strong>Fallback:</strong> Một số admin write gọi <code>/admin/…</code> trước; nếu 404 FE thử path không-admin (rooms write, booking approve/reject/cancel).
+        </p>
+      </section>
+
+      <!-- ERRORS -->
+      <section class="section" id="sec-errors" aria-labelledby="h-errors" hidden>
+        <h2 id="h-errors">6. Error keys FE đã map</h2>
+        <p class="lead">ProblemDetail-ish: <code>{ title?, detail?, message?, params? }</code></p>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>message key</th><th>Ý nghĩa FE</th></tr></thead>
+              <tbody>
+                <tr><td><code>error.hasbookings</code></td><td>Không deactivate phòng còn lịch PENDING/APPROVED chưa xong</td></tr>
+                <tr><td><code>error.overlap</code></td><td>Overlap booking cùng phòng / khoảng thời gian</td></tr>
+                <tr><td><code>error.alreadystarted</code></td><td>Không cancel lịch đã bắt đầu hoặc đã qua</td></tr>
+                <tr><td><code>error.invalidstatus</code></td><td>Status không hợp lệ cho thao tác</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- RULES -->
+      <section class="section" id="sec-rules" aria-labelledby="h-rules" hidden>
+        <h2 id="h-rules">7. Quy tắc nghiệp vụ BE phải giữ</h2>
+        <div class="panel">
+          <div class="panel-bd">
+            <ul style="padding-left:1.15rem;font-size:0.88rem;display:grid;gap:0.55rem">
+              <li>Room visibility: public <strong>hoặc</strong> locked đúng department user (không chỉ filter FE).</li>
+              <li>USER book → <code>PENDING</code>; ADMIN approve/reject; <code>EXPIRED</code> do BE khi PENDING quá <code>startTime</code>.</li>
+              <li>Profile: <code>fullName</code>/<code>email</code> update ngay; đổi department qua request + admin duyệt.</li>
+              <li><code>amount</code> snapshot trên booking; invoices = booking đã duyệt có amount.</li>
+              <li>Admin path ưu tiên <code>/admin/…</code>; FE có fallback path không-admin nếu 404.</li>
+              <li>Create booking: FE gửi <code>roomId</code> + <code>room: { id }</code> — <strong>không</strong> gửi <code>userId</code> (BE lấy từ JWT).</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- FLOWS -->
+      <section class="section" id="sec-flows" aria-labelledby="h-flows" hidden>
+        <h2 id="h-flows">8. Interactive flows</h2>
+        <p class="lead">Chọn luồng → bước qua từng API. Mô phỏng loading / success (không gọi mạng).</p>
+        <div class="flow-picker" role="tablist" aria-label="Chọn flow">
+          <button type="button" data-flow="login" aria-pressed="true">Login + 401</button>
+          <button type="button" data-flow="book" aria-pressed="false">USER đặt phòng</button>
+          <button type="button" data-flow="approve" aria-pressed="false">ADMIN duyệt</button>
+          <button type="button" data-flow="dept" aria-pressed="false">Đổi department</button>
+          <button type="button" data-flow="revenue" aria-pressed="false">Revenue tháng</button>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-hd">
+              <span id="flowTitle">Login + 401</span>
+              <div class="btn-row" style="margin:0">
+                <button type="button" class="btn-ghost btn" id="flowReset">Reset</button>
+                <button type="button" class="btn" id="flowNext">Next step</button>
+              </div>
+            </div>
+            <div class="panel-bd">
+              <ol class="steps" id="flowSteps"></ol>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-hd">Payload / state</div>
+            <div class="panel-bd">
+              <div class="state-bar state-idle" id="flowState" role="status">Sẵn sàng — chọn bước hoặc bấm Next</div>
+              <div class="flow-diagram" id="flowDiagram" aria-hidden="true"></div>
+              <h3 style="margin-top:0.85rem;font-size:0.78rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.05em">Sample</h3>
+              <pre id="flowSample">Chọn một bước để xem request / response mẫu.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOOKING SM -->
+      <section class="section" id="sec-booking-sm" aria-labelledby="h-sm" hidden>
+        <h2 id="h-sm">9. Booking state machine</h2>
+        <p class="lead">Click một status để xem transition hợp lệ FE đang giả định.</p>
+        <div class="panel">
+          <div class="panel-bd">
+            <div class="state-machine" role="group" aria-label="Booking statuses">
+              <button type="button" class="sm-node pending" data-status="PENDING" aria-pressed="true">PENDING</button>
+              <span class="sm-edge">approve →</span>
+              <button type="button" class="sm-node approved" data-status="APPROVED" aria-pressed="false">APPROVED</button>
+              <span class="sm-edge">reject / cancel →</span>
+              <button type="button" class="sm-node cancelled" data-status="CANCELLED" aria-pressed="false">CANCELLED</button>
+              <span class="sm-edge">PENDING past start →</span>
+              <button type="button" class="sm-node expired" data-status="EXPIRED" aria-pressed="false">EXPIRED</button>
+            </div>
+            <pre id="smDetail"></pre>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const APIS = [
+        {
+          id: "login",
+          method: "POST", path: "/auth/login", role: "public", domain: "Auth",
+          query: "—",
+          bodySummary: "{ email, password }",
+          request: '{\n  "email": "user@company.com",\n  "password": "123456"\n}',
+          response: '// flat hoặc nested\n{\n  "accessToken": "<jwt>",\n  "id": 2,\n  "email": "user@company.com",\n  "fullName": "User",\n  "role": "USER",\n  "department": { "id": 1, "code": "IT", "name": "IT" }\n}'
+        },
+        {
+          id: "get-account",
+          method: "GET", path: "/account", role: "auth", domain: "Account",
+          query: "—", bodySummary: "—",
+          request: "(no body)",
+          response: '{\n  "id": 2,\n  "login": "user@company.com",\n  "email": "user@company.com",\n  "fullName": "User",\n  "activated": true,\n  "authorities": ["ROLE_USER"],\n  "department": { "id": 1, "code": "IT", "name": "IT" }\n}'
+        },
+        {
+          id: "put-account",
+          method: "PUT", path: "/account", role: "auth", domain: "Account",
+          query: "—", bodySummary: "{ fullName, email }",
+          request: '{\n  "fullName": "Nguyen Van A",\n  "email": "user@company.com"\n}',
+          response: "(AccountProfile — same shape as GET /account)"
+        },
+        {
+          id: "post-dept-change",
+          method: "POST", path: "/account/department-change-requests", role: "auth", domain: "Account",
+          query: "—", bodySummary: "{ requestedDepartmentId }",
+          request: '{\n  "requestedDepartmentId": 3\n}',
+          response: '{\n  "id": 10,\n  "userId": 2,\n  "status": "PENDING",\n  "requestedDepartment": { "id": 3, "code": "HR", "name": "HR" }\n}'
+        },
+        {
+          id: "get-dept-pending",
+          method: "GET", path: "/account/department-change-requests/pending", role: "auth", domain: "Account",
+          query: "—", bodySummary: "—",
+          request: "(no body)",
+          response: "DepartmentChangeRequest | 204 empty → null"
+        },
+        {
+          id: "get-rooms",
+          method: "GET", path: "/rooms", role: "auth", domain: "Rooms",
+          query: "q?, active?, page?, size?, sort?",
+          bodySummary: "—",
+          request: "GET /rooms?page=0&size=20&sort=name,asc&q=&active=true",
+          response: "Room[] | Spring page of Room\n// Dashboard: size=200"
+        },
+        {
+          id: "post-room",
+          method: "POST", path: "/admin/rooms", role: "admin", domain: "Rooms",
+          query: "—",
+          bodySummary: "{ name, capacity, isActive, pricePerHour, lockedDepartment }",
+          request: '{\n  "name": "Meeting A",\n  "capacity": 10,\n  "isActive": true,\n  "pricePerHour": 100000,\n  "lockedDepartment": null\n}',
+          response: "BackendRoom\n// fallback 404 → POST /rooms"
+        },
+        {
+          id: "put-room",
+          method: "PUT", path: "/admin/rooms/{id}", role: "admin", domain: "Rooms",
+          query: "—",
+          bodySummary: "{ id, name?, capacity?, isActive?, pricePerHour?, lockedDepartment }",
+          request: '{\n  "id": 1,\n  "name": "Meeting A",\n  "capacity": 12,\n  "isActive": true,\n  "pricePerHour": 120000,\n  "lockedDepartment": { "id": 1 }\n}',
+          response: "BackendRoom\n// fallback → PUT /rooms/{id}"
+        },
+        {
+          id: "patch-room",
+          method: "PATCH", path: "/admin/rooms/{id}", role: "admin", domain: "Rooms",
+          query: "—", bodySummary: "{ id, isActive }",
+          request: '{\n  "id": 1,\n  "isActive": false\n}',
+          response: "BackendRoom (toggle)\n// error.hasbookings nếu còn lịch"
+        },
+        {
+          id: "get-bookings",
+          method: "GET", path: "/bookings", role: "auth", domain: "Bookings",
+          query: "date?, status?, q?, upcoming?, page?, size?, sort?",
+          bodySummary: "—",
+          request: "GET /bookings?date=2026-08-06&page=0&size=200\nGET /bookings?status=PENDING\nGET /bookings?upcoming=true",
+          response: "BackendBookingDto[] | Spring page"
+        },
+        {
+          id: "get-booking",
+          method: "GET", path: "/bookings/{id}", role: "auth", domain: "Bookings",
+          query: "—", bodySummary: "—",
+          request: "(no body)",
+          response: "BackendBookingDto"
+        },
+        {
+          id: "post-booking",
+          method: "POST", path: "/bookings", role: "auth", domain: "Bookings",
+          query: "—",
+          bodySummary: "{ title, startTime, endTime, roomId, room:{id} }",
+          request: '{\n  "title": "Sprint planning",\n  "startTime": "2026-08-06T09:00:00",\n  "endTime": "2026-08-06T10:00:00",\n  "roomId": 1,\n  "room": { "id": 1 }\n}\n// KHÔNG gửi userId — BE lấy từ JWT',
+          response: '{\n  "id": 42,\n  "title": "Sprint planning",\n  "status": "PENDING",\n  "amount": 100000,\n  "room": { "id": 1, "name": "Meeting A" }\n}'
+        },
+        {
+          id: "approve-booking",
+          method: "POST", path: "/admin/bookings/{id}/approve", role: "admin", domain: "Bookings",
+          query: "—", bodySummary: "—",
+          request: "(empty body)",
+          response: 'Booking status → "APPROVED"\n// fallback → POST /bookings/{id}/approve'
+        },
+        {
+          id: "reject-booking",
+          method: "POST", path: "/admin/bookings/{id}/reject", role: "admin", domain: "Bookings",
+          query: "—", bodySummary: "—",
+          request: "(empty body)",
+          response: 'Booking thường → "CANCELLED"\nNotification type: BOOKING_REJECTED\n// fallback → /bookings/{id}/reject'
+        },
+        {
+          id: "cancel-booking",
+          method: "POST", path: "/admin/bookings/{id}/cancel", role: "admin", domain: "Bookings",
+          query: "—", bodySummary: "—",
+          request: "(empty body)",
+          response: 'status → "CANCELLED"\n// error.alreadystarted nếu đã bắt đầu'
+        },
+        {
+          id: "get-users",
+          method: "GET", path: "/admin/users", role: "admin", domain: "Users",
+          query: "page, size, sort?, q?, activated?",
+          bodySummary: "—",
+          request: "GET /admin/users?page=0&size=20&q=&activated=true",
+          response: "ManagedUser[] + header X-Total-Count\n(không dùng Spring content)"
+        },
+        {
+          id: "post-user",
+          method: "POST", path: "/admin/users", role: "admin", domain: "Users",
+          query: "—",
+          bodySummary: "{ login, email, fullName, password, activated, authorities, department }",
+          request: '{\n  "login": "new@company.com",\n  "email": "new@company.com",\n  "fullName": "New User",\n  "password": "123456",\n  "activated": true,\n  "authorities": ["ROLE_USER"],\n  "department": { "id": 1 }\n}',
+          response: "BackendAdminUser"
+        },
+        {
+          id: "put-user",
+          method: "PUT", path: "/admin/users", role: "admin", domain: "Users",
+          query: "—",
+          bodySummary: "{ id, login, email, fullName, activated, authorities, password?, department }",
+          request: "(same fields; password optional)",
+          response: "BackendAdminUser"
+        },
+        {
+          id: "del-user",
+          method: "DELETE", path: "/admin/users/{login}", role: "admin", domain: "Users",
+          query: "—", bodySummary: "—",
+          request: "(no body)",
+          response: "void — deactivate (không xóa cứng)"
+        },
+        {
+          id: "get-dept-reqs",
+          method: "GET", path: "/admin/department-change-requests", role: "admin", domain: "DeptChange",
+          query: "status, page, size, sort",
+          bodySummary: "—",
+          request: "GET ...?status=PENDING&page=0&size=100&sort=id,desc",
+          response: "DepartmentChangeRequest[] | { content }"
+        },
+        {
+          id: "approve-dept",
+          method: "POST", path: "/admin/department-change-requests/{id}/approve", role: "admin", domain: "DeptChange",
+          query: "—", bodySummary: "—",
+          request: "(empty)",
+          response: 'status → "APPROVED"'
+        },
+        {
+          id: "reject-dept",
+          method: "POST", path: "/admin/department-change-requests/{id}/reject", role: "admin", domain: "DeptChange",
+          query: "—", bodySummary: "—",
+          request: "(empty)",
+          response: 'status → "REJECTED"'
+        },
+        {
+          id: "get-depts",
+          method: "GET", path: "/departments", role: "auth", domain: "Departments",
+          query: "—", bodySummary: "—",
+          request: "(no body)",
+          response: '[{ "id": 1, "code": "IT", "name": "IT" }]'
+        },
+        {
+          id: "get-invoices",
+          method: "GET", path: "/account/invoices", role: "auth", domain: "Invoices",
+          query: "page, size, sort?, q?",
+          bodySummary: "—",
+          request: "GET /account/invoices?page=0&size=20&sort=startTime,desc",
+          response: "Booking page/array (APPROVED + amount)"
+        },
+        {
+          id: "get-invoice",
+          method: "GET", path: "/account/invoices/{id}", role: "auth", domain: "Invoices",
+          query: "—", bodySummary: "—",
+          request: "(no body)",
+          response: "BackendBookingDto"
+        },
+        {
+          id: "export-invoices",
+          method: "GET", path: "/account/invoices/export", role: "auth", domain: "Invoices",
+          query: "—", bodySummary: "—",
+          request: "(Bearer + Accept blob)",
+          response: "CSV Blob"
+        },
+        {
+          id: "get-revenue",
+          method: "GET", path: "/admin/revenue", role: "admin", domain: "Revenue",
+          query: "yearMonth (YYYY-MM)",
+          bodySummary: "—",
+          request: "GET /admin/revenue?yearMonth=2026-08",
+          response: "RevenueReport (KPI + previous + byRoom + byDay)"
+        },
+        {
+          id: "get-revenue-room",
+          method: "GET", path: "/admin/revenue/by-room", role: "admin", domain: "Revenue",
+          query: "yearMonth, page, size, sort?, q?",
+          bodySummary: "—",
+          request: "GET /admin/revenue/by-room?yearMonth=2026-08&page=0&size=20",
+          response: "byRoom page/array"
+        },
+        {
+          id: "export-revenue",
+          method: "GET", path: "/admin/revenue/export", role: "admin", domain: "Revenue",
+          query: "yearMonth",
+          bodySummary: "—",
+          request: "GET /admin/revenue/export?yearMonth=2026-08",
+          response: "CSV Blob"
+        },
+        {
+          id: "get-notif",
+          method: "GET", path: "/notifications", role: "auth", domain: "Notifications",
+          query: "page=0, size=20, sort=createdDate,desc",
+          bodySummary: "—",
+          request: "GET /notifications?page=0&size=20&sort=createdDate,desc",
+          response: "Notification[] | Spring page"
+        },
+        {
+          id: "unread-count",
+          method: "GET", path: "/notifications/unread-count", role: "auth", domain: "Notifications",
+          query: "—", bodySummary: "—",
+          request: "(no body)",
+          response: '{ "count": 3 }'
+        },
+        {
+          id: "read-notif",
+          method: "POST", path: "/notifications/{id}/read", role: "auth", domain: "Notifications",
+          query: "—", bodySummary: "—",
+          request: "(empty)",
+          response: "BackendNotification (readDate set)"
+        },
+        {
+          id: "read-all",
+          method: "POST", path: "/notifications/read-all", role: "auth", domain: "Notifications",
+          query: "—", bodySummary: "—",
+          request: "(empty)",
+          response: "void"
+        }
+      ];
+
+      const FLOWS = {
+        login: {
+          title: "Login + 401",
+          steps: [
+            {
+              title: "POST /auth/login",
+              desc: "Public — nhận token + user",
+              api: "POST /auth/login",
+              nodes: ["Client", "POST /auth/login", "JWT + user"],
+              sample: 'Request:\n{ "email": "admin@company.com", "password": "123456" }\n\nResponse (flat):\n{ "accessToken": "…", "role": "ADMIN", … }'
+            },
+            {
+              title: "Lưu token + gọi API có Bearer",
+              desc: "Authorization: Bearer &lt;token&gt;",
+              api: "Header trên mọi request sau login",
+              nodes: ["localStorage token", "api-client interceptor", "BE"],
+              sample: "Authorization: Bearer eyJhbGciOi…"
+            },
+            {
+              title: "401 → logout",
+              desc: "Interceptor emitAuthLogout → /login",
+              api: "Bất kỳ endpoint nào trả 401",
+              nodes: ["401", "emitAuthLogout", "clear session", "/login"],
+              sample: "FE không dùng window.location — dùng auth-events + navigate"
+            }
+          ]
+        },
+        book: {
+          title: "USER đặt phòng",
+          steps: [
+            {
+              title: "GET /rooms + GET /bookings?date=",
+              desc: "Dashboard schedule",
+              api: "GET /rooms · GET /bookings",
+              nodes: ["Dashboard", "rooms size=200", "bookings theo ngày"],
+              sample: "GET /rooms?page=0&size=200\nGET /bookings?date=2026-08-06&page=0&size=200"
+            },
+            {
+              title: "POST /bookings",
+              desc: "Tạo → PENDING; không gửi userId",
+              api: "POST /bookings",
+              nodes: ["Form", "POST /bookings", "status PENDING"],
+              sample: '{\n  "title": "Sync",\n  "startTime": "2026-08-06T14:00:00",\n  "endTime": "2026-08-06T15:00:00",\n  "roomId": 1,\n  "room": { "id": 1 }\n}'
+            },
+            {
+              title: "Notification BOOKING_PENDING",
+              desc: "Admin nhận thông báo chờ duyệt",
+              api: "GET /notifications",
+              nodes: ["BE tạo notif", "Admin bell", "/admin/bookings"],
+              sample: '{ "type": "BOOKING_PENDING", "bookingId": 42, … }'
+            }
+          ]
+        },
+        approve: {
+          title: "ADMIN duyệt booking",
+          steps: [
+            {
+              title: "GET /bookings?status=PENDING",
+              desc: "Tab chờ duyệt",
+              api: "GET /bookings?status=PENDING",
+              nodes: ["/admin/bookings", "pending list"],
+              sample: "page + sort=startTime,asc"
+            },
+            {
+              title: "POST …/approve hoặc …/reject",
+              desc: "Admin path ưu tiên",
+              api: "POST /admin/bookings/{id}/approve|reject",
+              nodes: ["Approve", "APPROVED", "hoặc reject → CANCELLED"],
+              sample: "Empty body. Fallback /bookings/{id}/approve nếu 404."
+            },
+            {
+              title: "User nhận BOOKING_APPROVED / REJECTED",
+              desc: "Notification + invoice nếu APPROVED",
+              api: "notifications + invoices",
+              nodes: ["Notif", "amount snapshot", "/my-invoices"],
+              sample: "APPROVED → hiện trên GET /account/invoices"
+            }
+          ]
+        },
+        dept: {
+          title: "Đổi department",
+          steps: [
+            {
+              title: "GET /account + pending",
+              desc: "ProfileDialog luôn fetch mới",
+              api: "GET /account · GET …/pending",
+              nodes: ["Profile", "account", "pending request"],
+              sample: "pending: 200 DTO hoặc 204 → null"
+            },
+            {
+              title: "POST department-change-requests",
+              desc: "User gửi requestedDepartmentId",
+              api: "POST /account/department-change-requests",
+              nodes: ["User", "PENDING request"],
+              sample: '{ "requestedDepartmentId": 3 }'
+            },
+            {
+              title: "Admin approve/reject",
+              desc: "Tab requests trên /admin/users",
+              api: "POST /admin/department-change-requests/{id}/approve|reject",
+              nodes: ["Admin", "APPROVED|REJECTED", "user.department cập nhật nếu approve"],
+              sample: "Notif DEPT_CHANGE_*; bookingId field = request id"
+            }
+          ]
+        },
+        revenue: {
+          title: "Revenue tháng",
+          steps: [
+            {
+              title: "GET /admin/revenue?yearMonth=",
+              desc: "KPI + charts (full report)",
+              api: "GET /admin/revenue",
+              nodes: ["yearMonth", "KPI", "byDay chart"],
+              sample: "GET /admin/revenue?yearMonth=2026-08"
+            },
+            {
+              title: "GET /admin/revenue/by-room",
+              desc: "Bảng server-side page",
+              api: "GET /admin/revenue/by-room",
+              nodes: ["page/size/sort/q", "DataTable"],
+              sample: "page=0&size=20&sort=amount,desc"
+            },
+            {
+              title: "GET export CSV",
+              desc: "Blob download authenticated",
+              api: "GET /admin/revenue/export",
+              nodes: ["Bearer", "CSV Blob"],
+              sample: "?yearMonth=2026-08"
+            }
+          ]
+        }
+      };
+
+      const SM = {
+        PENDING: {
+          text: "PENDING\n\n• USER vừa tạo booking\n• Admin có thể: approve → APPROVED, reject → CANCELLED\n• BE: nếu startTime đã qua mà vẫn PENDING → EXPIRED\n• UI pending tab: status=PENDING"
+        },
+        APPROVED: {
+          text: "APPROVED\n\n• Hiện trên schedule + invoices\n• Admin có thể cancel → CANCELLED (nếu chưa bắt đầu)\n• error.alreadystarted nếu cancel quá muộn\n• amount snapshot giữ nguyên"
+        },
+        CANCELLED: {
+          text: "CANCELLED\n\n• Kết quả reject hoặc cancel\n• Không có status REJECTED riêng trên Booking type FE\n• Notification có thể là BOOKING_REJECTED hoặc BOOKING_CANCELLED"
+        },
+        EXPIRED: {
+          text: "EXPIRED\n\n• BE set khi PENDING quá startTime\n• History badge: Hết hạn\n• Không approve/reject sau khi đã EXPIRED (error.invalidstatus)"
+        }
+      };
+
+      const live = document.getElementById("live");
+      const apiBody = document.getElementById("apiBody");
+      let roleFilter = "all";
+      let searchQ = "";
+      let openApiId = null;
+
+      function announce(msg) {
+        live.textContent = msg;
+      }
+
+      function methodBadge(m) {
+        const map = { GET: "get", POST: "post", PUT: "put", PATCH: "patch", DELETE: "del" };
+        return `<span class="badge badge-${map[m] || "get"}">${m}</span>`;
+      }
+
+      function roleBadge(r) {
+        if (r === "public") return '<span class="role role-public">Public</span>';
+        if (r === "admin") return '<span class="role role-admin">ADMIN</span>';
+        return '<span class="role role-auth">Auth</span>';
+      }
+
+      function matchesFilter(api) {
+        if (roleFilter !== "all" && api.role !== roleFilter) return false;
+        if (!searchQ) return true;
+        const hay = `${api.method} ${api.path} ${api.domain} ${api.query} ${api.bodySummary}`.toLowerCase();
+        return hay.includes(searchQ);
+      }
+
+      function renderApis() {
+        const list = APIS.filter(matchesFilter);
+        document.getElementById("apiVisibleCount").textContent = `${list.length} / ${APIS.length}`;
+        document.getElementById("endpointCount").textContent = String(APIS.length);
+
+        apiBody.innerHTML = list.map((api) => {
+          const open = openApiId === api.id;
+          return `
+            <tr class="api-row${open ? " is-open" : ""}" data-api-id="${api.id}" tabindex="0" role="button" aria-expanded="${open}">
+              <td>${methodBadge(api.method)}</td>
+              <td class="path">${api.path}</td>
+              <td>${roleBadge(api.role)}</td>
+              <td>${api.domain}</td>
+              <td class="mono">${api.query}</td>
+              <td class="mono">${api.bodySummary}</td>
+            </tr>
+            <tr class="api-detail" data-detail-for="${api.id}" ${open ? "" : "hidden"}>
+              <td colspan="6">
+                <div class="detail-grid">
+                  <div>
+                    <div class="muted" style="margin-bottom:0.35rem;display:flex;justify-content:space-between;align-items:center">
+                      <span>Request</span>
+                      <button type="button" class="copy-btn" data-copy="${encodeURIComponent(api.request)}">Copy</button>
+                    </div>
+                    <pre>${escapeHtml(api.request)}</pre>
+                  </div>
+                  <div>
+                    <div class="muted" style="margin-bottom:0.35rem;display:flex;justify-content:space-between;align-items:center">
+                      <span>Response</span>
+                      <button type="button" class="copy-btn" data-copy="${encodeURIComponent(api.response)}">Copy</button>
+                    </div>
+                    <pre>${escapeHtml(api.response)}</pre>
+                  </div>
+                </div>
+              </td>
+            </tr>`;
+        }).join("");
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function toggleApi(id) {
+        openApiId = openApiId === id ? null : id;
+        renderApis();
+        if (openApiId) announce("Chi tiết " + openApiId);
+      }
+
+      apiBody.addEventListener("click", (e) => {
+        const copy = e.target.closest("[data-copy]");
+        if (copy) {
+          e.stopPropagation();
+          const text = decodeURIComponent(copy.getAttribute("data-copy"));
+          navigator.clipboard.writeText(text).then(() => {
+            copy.textContent = "Copied";
+            setTimeout(() => { copy.textContent = "Copy"; }, 1200);
+            announce("Đã copy");
+          });
+          return;
+        }
+        const row = e.target.closest(".api-row");
+        if (row) toggleApi(row.getAttribute("data-api-id"));
+      });
+
+      apiBody.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const row = e.target.closest(".api-row");
+        if (!row) return;
+        e.preventDefault();
+        toggleApi(row.getAttribute("data-api-id"));
+      });
+
+      document.querySelectorAll("[data-role-filter]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          roleFilter = btn.getAttribute("data-role-filter");
+          document.querySelectorAll("[data-role-filter]").forEach((b) => {
+            b.setAttribute("aria-pressed", String(b === btn));
+          });
+          renderApis();
+        });
+      });
+
+      document.getElementById("apiSearch").addEventListener("input", (e) => {
+        searchQ = e.target.value.trim().toLowerCase();
+        renderApis();
+      });
+
+      /* Sections */
+      const sections = document.querySelectorAll(".section");
+      const navBtns = document.querySelectorAll(".nav-btn[data-section]");
+
+      function showSection(id) {
+        sections.forEach((s) => {
+          const on = s.id === "sec-" + id;
+          s.classList.toggle("is-active", on);
+          s.hidden = !on;
+        });
+        navBtns.forEach((b) => {
+          if (b.getAttribute("data-section") === id) {
+            b.setAttribute("aria-current", "true");
+          } else {
+            b.removeAttribute("aria-current");
+          }
+        });
+        announce("Mục " + id);
+        const sidebar = document.getElementById("sidebar");
+        sidebar.classList.remove("is-open");
+        document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      navBtns.forEach((btn) => {
+        btn.addEventListener("click", () => showSection(btn.getAttribute("data-section")));
+      });
+
+      document.getElementById("menuToggle").addEventListener("click", () => {
+        const sidebar = document.getElementById("sidebar");
+        const open = !sidebar.classList.contains("is-open");
+        sidebar.classList.toggle("is-open", open);
+        document.getElementById("menuToggle").setAttribute("aria-expanded", String(open));
+      });
+
+      /* Theme */
+      document.getElementById("themeToggle").addEventListener("click", () => {
+        const root = document.documentElement;
+        const cur = root.getAttribute("data-theme");
+        const next = cur === "dark" ? "light" : cur === "light" ? "dark" : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
+        root.setAttribute("data-theme", next);
+        announce("Theme " + next);
+      });
+
+      /* Flows */
+      let currentFlow = "login";
+      let stepIndex = 0;
+      let simTimer = null;
+
+      const flowStepsEl = document.getElementById("flowSteps");
+      const flowState = document.getElementById("flowState");
+      const flowSample = document.getElementById("flowSample");
+      const flowDiagram = document.getElementById("flowDiagram");
+      const flowTitle = document.getElementById("flowTitle");
+
+      function setFlowState(kind, text, spinning) {
+        flowState.className = "state-bar state-" + kind;
+        flowState.innerHTML = (spinning ? '<span class="spinner" aria-hidden="true"></span>' : "") + "<span>" + text + "</span>";
+      }
+
+      function renderFlow() {
+        const flow = FLOWS[currentFlow];
+        flowTitle.textContent = flow.title;
+        flowStepsEl.innerHTML = flow.steps.map((s, i) => `
+          <li class="step${i === stepIndex ? " active" : ""}${i < stepIndex ? " done" : ""}" data-step="${i}" tabindex="0">
+            <div class="step-num">${i + 1}</div>
+            <div>
+              <div class="step-title">${s.title}</div>
+              <div class="step-desc">${s.desc}</div>
+              <div class="step-api">${s.api}</div>
+            </div>
+          </li>
+        `).join("");
+        paintStep();
+      }
+
+      function paintStep() {
+        const flow = FLOWS[currentFlow];
+        const step = flow.steps[stepIndex];
+        flowStepsEl.querySelectorAll(".step").forEach((el, i) => {
+          el.classList.toggle("active", i === stepIndex);
+          el.classList.toggle("done", i < stepIndex);
+        });
+        flowSample.textContent = step.sample.replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+        flowDiagram.innerHTML = step.nodes.map((n, i) => {
+          const hl = i === Math.min(stepIndex, step.nodes.length - 1) || i === step.nodes.length - 1;
+          return `<span class="node${hl ? " hl" : ""}">${n}</span>` +
+            (i < step.nodes.length - 1 ? '<span class="arrow">→</span>' : "");
+        }).join("");
+      }
+
+      function goStep(i) {
+        const flow = FLOWS[currentFlow];
+        stepIndex = Math.max(0, Math.min(i, flow.steps.length - 1));
+        if (simTimer) clearTimeout(simTimer);
+        setFlowState("loading", "Đang mô phỏng " + flow.steps[stepIndex].api + "…", true);
+        paintStep();
+        simTimer = setTimeout(() => {
+          setFlowState("ok", "OK — " + flow.steps[stepIndex].title, false);
+          announce(flow.steps[stepIndex].title);
+        }, 450);
+      }
+
+      document.querySelectorAll("[data-flow]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          currentFlow = btn.getAttribute("data-flow");
+          document.querySelectorAll("[data-flow]").forEach((b) => {
+            b.setAttribute("aria-pressed", String(b === btn));
+          });
+          stepIndex = 0;
+          setFlowState("idle", "Sẵn sàng — chọn bước hoặc bấm Next", false);
+          renderFlow();
+        });
+      });
+
+      flowStepsEl.addEventListener("click", (e) => {
+        const li = e.target.closest("[data-step]");
+        if (!li) return;
+        goStep(Number(li.getAttribute("data-step")));
+      });
+
+      flowStepsEl.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const li = e.target.closest("[data-step]");
+        if (!li) return;
+        e.preventDefault();
+        goStep(Number(li.getAttribute("data-step")));
+      });
+
+      document.getElementById("flowNext").addEventListener("click", () => {
+        const flow = FLOWS[currentFlow];
+        if (stepIndex >= flow.steps.length - 1) {
+          setFlowState("ok", "Flow hoàn tất — Reset để chạy lại", false);
+          return;
+        }
+        goStep(stepIndex + 1);
+      });
+
+      document.getElementById("flowReset").addEventListener("click", () => {
+        stepIndex = 0;
+        setFlowState("idle", "Đã reset", false);
+        renderFlow();
+      });
+
+      /* State machine */
+      const smDetail = document.getElementById("smDetail");
+      function showSm(status) {
+        document.querySelectorAll(".sm-node").forEach((b) => {
+          b.setAttribute("aria-pressed", String(b.getAttribute("data-status") === status));
+        });
+        smDetail.textContent = SM[status].text;
+      }
+      document.querySelectorAll(".sm-node").forEach((btn) => {
+        btn.addEventListener("click", () => showSm(btn.getAttribute("data-status")));
+      });
+      showSm("PENDING");
+
+      renderApis();
+      renderFlow();
+    })();
+  </script>
+</body>
+</html>
