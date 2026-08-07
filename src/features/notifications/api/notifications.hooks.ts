@@ -7,6 +7,7 @@ import {
 } from "@/features/notifications/api/notifications.service";
 import type { AppNotification } from "@/features/notifications/api/notifications.types";
 import { isAbortError } from "@/lib/api-error";
+import { onNotificationsChanged } from "@/lib/notification-events";
 
 const POLL_MS = 300_000;
 
@@ -17,7 +18,7 @@ export function useNotifications(enabled: boolean) {
   const [isLoading, setIsLoading] = useState(enabled);
   const [marking, setMarking] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
-  const mutationInFlightRef = useRef(false);
+  const mutationInFlightRef = useRef<boolean>(false);
 
   const runRefresh = useCallback(async (opts?: { showLoading?: boolean }) => {
     controllerRef.current?.abort();
@@ -58,10 +59,14 @@ export function useNotifications(enabled: boolean) {
     const timer = window.setInterval(() => {
       void runRefresh();
     }, POLL_MS);
+    const unsub = onNotificationsChanged(() => {
+      void runRefresh();
+    });
 
     return () => {
       controllerRef.current?.abort();
       window.clearInterval(timer);
+      unsub();
     };
   }, [enabled, runRefresh]);
 

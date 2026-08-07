@@ -41,6 +41,7 @@ import type {
   ManagedUser,
 } from "@/features/users/api/users.types";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { emitNotificationsChanged } from "@/lib/notification-events";
 import { parseNotificationFlash } from "@/lib/notificationNav";
 import type { Department } from "@/lib/types/department";
 import type { UserRole } from "@/lib/types/user";
@@ -248,6 +249,7 @@ export default function AdminUsersPage({
       await approveDepartmentChange(req.id);
       toast.success("Đã duyệt đổi phòng ban");
       await Promise.all([refetchPending(), refetch()]);
+      emitNotificationsChanged();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Duyệt thất bại"));
     } finally {
@@ -261,6 +263,7 @@ export default function AdminUsersPage({
       await rejectDepartmentChange(req.id);
       toast.success("Đã từ chối yêu cầu");
       await refetchPending();
+      emitNotificationsChanged();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Từ chối thất bại"));
     } finally {

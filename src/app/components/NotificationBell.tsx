@@ -12,10 +12,8 @@ import type { AppNotification } from "@/features/notifications/api/notifications
 import { getApiErrorMessage } from "@/lib/api-error";
 import { withNotificationFlash } from "@/lib/notificationNav";
 
-function pathForNotification(
-  n: AppNotification,
-  role?: string,
-): string {
+/** Returns a route for deep-linkable notices; `null` = mark-read only (no navigate). */
+function pathForNotification(n: AppNotification): string | null {
   const ref = n.bookingId;
   if (n.type === "BOOKING_PENDING") {
     return ref != null
@@ -28,20 +26,15 @@ function pathForNotification(
       ? `/admin/users?tab=requests&highlight=${ref}`
       : "/admin/users?tab=requests";
   }
-  if (
-    n.type === "DEPT_CHANGE_APPROVED" ||
-    n.type === "DEPT_CHANGE_REJECTED"
-  ) {
-    return "/dashboard";
-  }
-  return role === "ADMIN" ? "/admin/bookings" : "/dashboard";
+  // REJECTED / CANCELLED / EXPIRED / DEPT_CHANGE_APPROVED|REJECTED — no destination
+  return null;
 }
 
 /** App-shell notification bell — polls while authenticated (interval in useNotifications). */
 export function NotificationBell() {
   const { token } = theme.useToken();
   const toast = useToast();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -75,8 +68,10 @@ export function NotificationBell() {
         );
       }
     }
-    const path = pathForNotification(n, user?.role);
-    navigate(path, { state: withNotificationFlash(location.state) });
+    const path = pathForNotification(n);
+    if (path != null) {
+      navigate(path, { state: withNotificationFlash(location.state) });
+    }
   };
 
   const listBody = (() => {
@@ -114,10 +109,12 @@ export function NotificationBell() {
       <List
         size="small"
         dataSource={items}
-        renderItem={(n) => (
+        renderItem={(n) => {
+          const navigable = pathForNotification(n) != null;
+          return (
           <List.Item
             style={{
-              cursor: marking ? "default" : "pointer",
+              cursor: marking ? "default" : navigable ? "pointer" : "default",
               opacity: marking ? 0.6 : 1,
               background: n.read ? "transparent" : token.colorPrimaryBg,
               padding: "8px 8px",
@@ -142,7 +139,8 @@ export function NotificationBell() {
               }
             />
           </List.Item>
-        )}
+          );
+        }}
       />
     );
   })();
@@ -201,14 +199,24 @@ export function NotificationBell() {
       popupRender={() => dropdown}
       trigger={["click"]}
       placement="bottomRight"
+      onOpenChange={(open) => {
+        if (open) void refresh();
+      }}
     >
-      <Badge count={unreadCount} size="small" overflowCount={99} offset={[-4, 4]}>
+            <Badge
+        count={unreadCount}
+        size="small"
+        overflowCount={99}
+        offset={[-4, 4]}
+        style={{ display: "inline-flex", alignItems: "center" }}
+      >
         <Button
           type="text"
           aria-label="Thông báo"
-          icon={<BellOutlined style={{ fontSize: 18 }} />}
+          icon={<BellOutlined />}
           style={{
             color: "#fff",
+            fontSize: 18,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",

@@ -31,7 +31,7 @@ export function Topbar({
         zIndex: 100,
         width: "100%",
         height: HEADER_HEIGHT,
-        lineHeight: `${HEADER_HEIGHT}px`,
+        lineHeight: 1,
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
