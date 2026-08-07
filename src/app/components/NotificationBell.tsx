@@ -216,7 +216,13 @@ export function NotificationBell() {
           />
         ) : null}
       </span>
-      <OverlayPanel ref={panelRef} dismissable>
+      <OverlayPanel
+        ref={panelRef}
+        dismissable
+        onShow={() => {
+          void refresh();
+        }}
+      >
         <div
           style={{
             width: 360,

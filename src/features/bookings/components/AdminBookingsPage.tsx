@@ -38,6 +38,7 @@ import {
 import type { Booking, BookingStatus } from "@/features/bookings/api/bookings.types";
 import { getApiErrorMessage, isAbortError } from "@/lib/api-error";
 import { formatDateTimeRange } from "@/lib/datetime";
+import { emitNotificationsChanged } from "@/lib/notification-events";
 import { parseNotificationFlash } from "@/lib/notificationNav";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
@@ -204,6 +205,7 @@ export default function AdminBookingsPage() {
       await approveBooking(booking.id);
       toast.success("Đã duyệt yêu cầu đặt phòng");
       await refetchAll();
+      emitNotificationsChanged();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Thao tác thất bại"));
     } finally {
@@ -217,6 +219,7 @@ export default function AdminBookingsPage() {
       await rejectBooking(booking.id);
       toast.success("Đã từ chối yêu cầu đặt phòng");
       await refetchAll();
+      emitNotificationsChanged();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Thao tác thất bại"));
     } finally {
@@ -230,6 +233,7 @@ export default function AdminBookingsPage() {
       await cancelBooking(booking.id);
       toast.success("Đã hủy lịch đặt phòng");
       await refetchAll();
+      emitNotificationsChanged();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Thao tác thất bại"));
     } finally {

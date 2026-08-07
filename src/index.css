@@ -7,6 +7,33 @@ body {
   pointer-events: none;
 }
 
+/*
+ * TabView: tabs with Badge are taller than plain labels. Each tab draws its own
+ * bottom border — unequal heights make the active underline look split / stuck
+ * under the previous tab (classic with "Lịch sử" next to badged tabs).
+ */
+.p-tabview .p-tabview-nav {
+  display: flex;
+  align-items: stretch;
+}
+
+.p-tabview .p-tabview-nav > li:not(.p-tabview-ink-bar) {
+  display: flex;
+}
+
+.p-tabview .p-tabview-nav li .p-tabview-nav-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  /* Room for label + Badge so every tab shares one baseline */
+  min-height: 3.25rem;
+}
+
+.p-tabview-ink-bar {
+  display: none !important;
+}
+
 /* Login: Password wraps input in .p-password — force full width of the card */
 .login-page .p-password {
   width: 100%;

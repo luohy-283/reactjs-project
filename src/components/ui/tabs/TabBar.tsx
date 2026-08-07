@@ -47,23 +47,22 @@ export function TabBar({
       {items.map((item) => (
         <TabPanel
           key={item.key}
-          header={item.label as string}
-          headerTemplate={
-            typeof item.label === "string"
-              ? undefined
-              : (options) => (
-                  <a
-                    className={options.className}
-                    onClick={options.onClick}
-                    onKeyDown={options.onKeyDown}
-                    role="tab"
-                    aria-controls={options.ariaControls}
-                    aria-selected={options.selected}
-                  >
-                    {item.label}
-                  </a>
-                )
-          }
+          header={typeof item.label === "string" ? item.label : undefined}
+          /* Always use headerTemplate so every tab shares the same flex link
+           * structure (plain string headers skip this path and sit shorter when
+           * sibling tabs render Badges — splits the active underline). */
+          headerTemplate={(options) => (
+            <a
+              className={options.className}
+              onClick={options.onClick}
+              onKeyDown={options.onKeyDown}
+              role="tab"
+              aria-controls={options.ariaControls}
+              aria-selected={options.selected}
+            >
+              {item.label}
+            </a>
+          )}
           disabled={item.disabled}
         >
           {renderPanels ? item.children : null}
