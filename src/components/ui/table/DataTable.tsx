@@ -1,33 +1,37 @@
 import { useState } from "react";
-import type { ReactNode } from "react";
-import { Table } from "antd";
-import type {
-  ColumnType,
-  ColumnsType,
-  TableProps,
-} from "antd/es/table";
-import type { SorterResult } from "antd/es/table/interface";
-import { LOADING_TIP } from "@/components/ui/loading/LoadingSpinner";
+import type { CSSProperties, ReactNode } from "react";
+import { Column } from "primereact/column";
+import {
+  DataTable as PrimeDataTable,
+  type DataTablePageEvent,
+  type DataTableSortEvent,
+  type DataTableRowClickEvent,
+} from "primereact/datatable";
+import { ProgressSpinner } from "primereact/progressspinner";
 import { NoData } from "@/components/ui/empty/NoData";
 import { TableSkeleton } from "@/components/ui/table/TableSkeleton";
 import { TableToolbar } from "@/components/ui/table/TableToolbar";
 import {
+  columnBody,
+  columnField,
+  type ColumnDef,
+  type ColumnDefs,
+} from "@/components/ui/table/columnDefs";
+import {
   DEFAULT_PAGE_SIZE,
-  TABLE_PAGINATION,
   parseSortParam,
   toSortParam,
   type TableQuery,
 } from "@/lib/pagination";
 
-/** Sticky to the content scrollport (Topbar is outside it); releases when table leaves view. */
-const DEFAULT_STICKY: TableProps["sticky"] = { offsetHeader: 0 };
-
 export type { TableQuery };
 
-export type DataTableProps<T extends object> = Omit<
-  TableProps<T>,
-  "pagination" | "dataSource" | "loading" | "onChange"
-> & {
+type RowHandlers = {
+  onClick?: (event: unknown) => void;
+};
+
+export type DataTableProps<T extends object> = {
+  columns?: ColumnDefs<T>;
   /** Prefer this alias (company-style); falls back to `dataSource`. */
   data?: readonly T[];
   dataSource?: readonly T[];
@@ -40,7 +44,7 @@ export type DataTableProps<T extends object> = Omit<
   toolbarExtra?: ReactNode;
   /**
    * First-load placeholder when `loading` and no rows.
-   * Default true — set false to always use Spin overlay.
+   * Default true — set false to always use spinner overlay.
    */
   showSkeleton?: boolean;
   skeletonRows?: number;
@@ -51,49 +55,60 @@ export type DataTableProps<T extends object> = Omit<
   serverSide?: boolean;
   /** Required when `serverSide` — total rows from API. */
   total?: number;
-  /** 1-based page (Ant Design). Controlled when `serverSide`. */
+  /** 1-based page. Controlled when `serverSide`. */
   page?: number;
   pageSize?: number;
   /** Spring sort string, e.g. `startTime,desc`. Controlled when `serverSide`. */
   sort?: string;
   /** Fires on page/sort change when `serverSide`. */
   onQueryChange?: (query: TableQuery) => void;
+  /** Ant alias for Prime `dataKey`. */
+  rowKey?: string | ((record: T) => string);
+  dataKey?: string;
+  rowClassName?: string | ((data: T) => string);
+  /** Ant-style row props factory — `onClick` is mapped to `onRowClick`. */
+  onRow?: (record: T) => RowHandlers;
+  className?: string;
+  style?: CSSProperties;
+  /** Kept for API compat; sticky header via scrollable when set. */
+  sticky?: boolean | { offsetHeader?: number };
+  /**
+   * Ant Design `scroll` alias — `{ x }` enables horizontal scroll;
+   * `{ y }` maps to Prime `scrollHeight`.
+   */
+  scroll?: { x?: number | string | true; y?: number | string };
+  scrollHeight?: string;
+  size?: "small" | "normal" | "large";
 };
 
-function sttColumn<T>(page: number, pageSize: number): ColumnType<T> {
+function sttColumn<T extends object>(
+  page: number,
+  pageSize: number,
+): ColumnDef<T> {
   return {
     title: "STT",
     key: "stt",
     width: 64,
     align: "center",
-    render: (_value, _record, index) => (page - 1) * pageSize + index + 1,
+    body: (_row, { rowIndex }) => (page - 1) * pageSize + rowIndex + 1,
   };
 }
 
-function sorterField<T>(sorter: SorterResult<T>): string | undefined {
-  if (typeof sorter.field === "string") return sorter.field;
-  if (Array.isArray(sorter.field)) return sorter.field.map(String).join(".");
-  if (typeof sorter.columnKey === "string") return sorter.columnKey;
+function resolveDataKey<T extends object>(
+  rowKey: DataTableProps<T>["rowKey"],
+  dataKey: string | undefined,
+): string | undefined {
+  if (typeof dataKey === "string") return dataKey;
+  if (typeof rowKey === "string") return rowKey;
   return undefined;
 }
 
-function withSortOrder<T extends object>(
-  columns: ColumnsType<T>,
-  sort: string | undefined,
-): ColumnsType<T> {
-  const parsed = parseSortParam(sort);
-  return columns.map((col) => {
-    if (!("sorter" in col) || !col.sorter) return col;
-    const dataIndex =
-      "dataIndex" in col && typeof col.dataIndex === "string"
-        ? col.dataIndex
-        : undefined;
-    const field =
-      dataIndex ?? (typeof col.key === "string" ? col.key : undefined);
-    const sortOrder =
-      parsed && field === parsed.field ? parsed.order : null;
-    return { ...col, sortOrder };
-  });
+function resolveRowClassName<T extends object>(
+  rowClassName: DataTableProps<T>["rowClassName"],
+  data: T,
+): string | undefined {
+  if (typeof rowClassName === "function") return rowClassName(data) || undefined;
+  return rowClassName;
 }
 
 /** Shared list table: client pagination by default; optional server page/sort. */
@@ -108,32 +123,40 @@ export function DataTable<T extends object>({
   toolbarExtra,
   showSkeleton = true,
   skeletonRows,
-  locale,
-  sticky = DEFAULT_STICKY,
   serverSide = false,
   total = 0,
   page: pageProp,
   pageSize: pageSizeProp,
   sort,
   onQueryChange,
-  ...tableProps
+  rowKey,
+  dataKey: dataKeyProp,
+  rowClassName,
+  onRow,
+  className,
+  style,
+  scroll,
+  scrollHeight,
+  size = "small",
 }: DataTableProps<T>) {
   const [clientPage, setClientPage] = useState(1);
   const [clientPageSize, setClientPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [clientSort, setClientSort] = useState<string | undefined>();
 
   const page = serverSide ? (pageProp ?? 1) : clientPage;
   const pageSize = serverSide
     ? (pageSizeProp ?? DEFAULT_PAGE_SIZE)
     : clientPageSize;
+  const activeSort = serverSide ? sort : clientSort;
+  const parsedSort = parseSortParam(activeSort);
 
   const rows = (data ?? dataSource ?? []) as T[];
-  const baseColumns = (columns ?? []) as ColumnsType<T>;
-  const orderedColumns = serverSide
-    ? withSortOrder(baseColumns, sort)
+  const baseColumns = (columns ?? []) as ColumnDefs<T>;
+  const mergedColumns: ColumnDefs<T> = showStt
+    ? [sttColumn<T>(page, pageSize), ...baseColumns]
     : baseColumns;
-  const mergedColumns: ColumnsType<T> = showStt
-    ? [sttColumn<T>(page, pageSize), ...orderedColumns]
-    : orderedColumns;
+
+  const dataKey = resolveDataKey(rowKey, dataKeyProp);
 
   const toolbarNode =
     toolbar || toolbarExtra ? (
@@ -149,51 +172,155 @@ export function DataTable<T extends object>({
     );
   }
 
+  const emitQuery = (next: TableQuery) => {
+    if (serverSide) {
+      onQueryChange?.(next);
+      return;
+    }
+    setClientPage(next.page);
+    setClientPageSize(next.pageSize);
+    setClientSort(next.sort);
+    onQueryChange?.(next);
+  };
+
+  const onPage = (event: DataTablePageEvent) => {
+    const nextPage = Math.floor(event.first / event.rows) + 1;
+    emitQuery({
+      page: nextPage,
+      pageSize: event.rows,
+      sort: activeSort,
+    });
+  };
+
+  const onSort = (event: DataTableSortEvent) => {
+    const nextSort = toSortParam(
+      typeof event.sortField === "string" ? event.sortField : undefined,
+      event.sortOrder,
+    );
+    emitQuery({
+      page: serverSide ? page : 1,
+      pageSize,
+      sort: nextSort,
+    });
+  };
+
+  const onRowClick = (event: DataTableRowClickEvent) => {
+    const handlers = onRow?.(event.data as T);
+    handlers?.onClick?.(event.originalEvent);
+  };
+
+  const emptyMessage = emptyText ?? <NoData />;
+  const resolvedScrollHeight =
+    scrollHeight ??
+    (scroll?.y != null
+      ? typeof scroll.y === "number"
+        ? `${scroll.y}px`
+        : String(scroll.y)
+      : undefined);
+  const enableScroll = Boolean(resolvedScrollHeight || scroll?.x);
+
   return (
     <>
       {toolbarNode}
-      <Table<T>
-        {...tableProps}
-        sticky={sticky}
-        columns={mergedColumns}
-        dataSource={rows}
-        loading={
-          loading
-            ? { spinning: true, tip: LOADING_TIP }
-            : false
-        }
-        locale={{
-          ...locale,
-          emptyText: emptyText ?? locale?.emptyText ?? <NoData />,
+      <div
+        style={{
+          position: "relative",
+          overflowX: scroll?.x ? "auto" : undefined,
+          ...style,
         }}
-        pagination={{
-          ...TABLE_PAGINATION,
-          current: page,
-          pageSize,
-          total: serverSide ? total : undefined,
-          onChange: serverSide
-            ? undefined
-            : (nextPage, nextPageSize) => {
-                setClientPage(nextPage);
-                setClientPageSize(nextPageSize);
-              },
-        }}
-        onChange={(pagination, _filters, sorter) => {
-          if (!onQueryChange) return;
-          const single = Array.isArray(sorter) ? sorter[0] : sorter;
-          const nextSort = toSortParam(
-            sorterField(single ?? {}),
-            single?.order ?? null,
-          );
-          onQueryChange({
-            page: serverSide ? (pagination.current ?? 1) : 1,
-            pageSize: serverSide
-              ? (pagination.pageSize ?? DEFAULT_PAGE_SIZE)
-              : pageSize,
-            sort: nextSort,
-          });
-        }}
-      />
+        className={className}
+      >
+        {loading && rows.length > 0 ? (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "color-mix(in srgb, var(--p-content-background, #fff) 55%, transparent)",
+            }}
+          >
+            <ProgressSpinner
+              style={{ width: 40, height: 40 }}
+              strokeWidth="4"
+              aria-label="Đang tải"
+            />
+          </div>
+        ) : null}
+        <PrimeDataTable
+          value={rows}
+          dataKey={dataKey}
+          lazy={serverSide}
+          paginator
+          rows={pageSize}
+          first={(page - 1) * pageSize}
+          totalRecords={serverSide ? total : rows.length}
+          onPage={onPage}
+          onSort={serverSide || onQueryChange ? onSort : undefined}
+          sortMode="single"
+          sortField={parsedSort?.field}
+          sortOrder={parsedSort?.order}
+          removableSort
+          size={size}
+          scrollable={enableScroll}
+          scrollHeight={resolvedScrollHeight}
+          emptyMessage={emptyMessage}
+          rowClassName={(rowData) =>
+            resolveRowClassName(rowClassName, rowData as T) ?? ""
+          }
+          onRowClick={onRow ? onRowClick : undefined}
+          pt={
+            dataKey
+              ? {
+                  bodyRow: (options) => {
+                    const data = (
+                      options as
+                        | { context?: { data?: Record<string, unknown> } }
+                        | undefined
+                    )?.context?.data;
+                    return {
+                      "data-row-key": String(data?.[dataKey] ?? ""),
+                    };
+                  },
+                }
+              : undefined
+          }
+        >
+          {mergedColumns.map((col, index) => {
+            const field = columnField(col);
+            const body = columnBody(col);
+            const colKey = col.key ?? field ?? `col-${index}`;
+            const width =
+              typeof col.width === "number" ? `${col.width}px` : col.width;
+            return (
+              <Column
+                key={colKey}
+                field={field}
+                header={col.header ?? col.title}
+                body={body}
+                sortable={Boolean(col.sortable ?? col.sorter)}
+                style={{
+                  width,
+                  textAlign: col.align,
+                  ...col.style,
+                }}
+                frozen={Boolean(col.fixed)}
+                alignFrozen={col.fixed === "right" ? "right" : "left"}
+                className={col.className}
+                headerClassName={col.headerClassName}
+                bodyClassName={
+                  typeof col.bodyClassName === "function"
+                    ? (data) =>
+                        (col.bodyClassName as (d: T) => string)(data as T)
+                    : col.bodyClassName
+                }
+              />
+            );
+          })}
+        </PrimeDataTable>
+      </div>
     </>
   );
 }

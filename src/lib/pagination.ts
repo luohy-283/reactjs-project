@@ -1,7 +1,7 @@
 /** Shared page size for every list Table in the app. */
 export const DEFAULT_PAGE_SIZE = 10;
 
-/** Ant Design Table pagination — same config on all list screens. */
+/** Default pagination options for list tables. */
 export const TABLE_PAGINATION = {
   pageSize: DEFAULT_PAGE_SIZE,
   showSizeChanger: false,
@@ -15,7 +15,7 @@ export interface PageParams {
   sort?: string;
 }
 
-/** Ant Design table query (1-based page) → map to Spring `PageParams` via `toPageParams`. */
+/** Table query (1-based page) → map to Spring `PageParams` via `toPageParams`. */
 export type TableQuery = {
   page: number;
   pageSize: number;
@@ -30,23 +30,36 @@ export function toPageParams(query: TableQuery): PageParams {
   };
 }
 
-/** Build Spring `sort` from Ant Design sorter field + order. */
+/** Ant Design (`ascend`/`descend`) or PrimeReact (`1`/`-1`) sort order. */
+export type SortOrderInput =
+  | "ascend"
+  | "descend"
+  | 1
+  | -1
+  | 0
+  | null
+  | undefined;
+
+/** Build Spring `sort` from field + Ant/Prime sort order. */
 export function toSortParam(
   field: string | undefined,
-  order: "ascend" | "descend" | null | undefined,
+  order: SortOrderInput,
 ): string | undefined {
-  if (!field || !order) return undefined;
-  return `${field},${order === "ascend" ? "asc" : "desc"}`;
+  if (!field || order == null || order === 0) return undefined;
+  if (order === "ascend" || order === 1) return `${field},asc`;
+  if (order === "descend" || order === -1) return `${field},desc`;
+  return undefined;
 }
 
+/** Parse Spring `sort` into PrimeReact DataTable `sortField` / `sortOrder`. */
 export function parseSortParam(
   sort: string | undefined,
-): { field: string; order: "ascend" | "descend" } | null {
+): { field: string; order: 1 | -1 } | null {
   if (!sort) return null;
   const [field, dir] = sort.split(",");
   if (!field) return null;
-  if (dir === "asc") return { field, order: "ascend" };
-  if (dir === "desc") return { field, order: "descend" };
+  if (dir === "asc") return { field, order: 1 };
+  if (dir === "desc") return { field, order: -1 };
   return null;
 }
 

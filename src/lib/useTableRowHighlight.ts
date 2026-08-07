@@ -18,7 +18,7 @@ type Options = {
 };
 
 /**
- * Reads `?highlight=<id>`, scrolls that Ant Design table row into view,
+ * Reads `?highlight=<id>`, scrolls that table row into view,
  * keeps highlight for 3s or until the row is clicked (then fades out).
  */
 export function useTableRowHighlight({
@@ -117,10 +117,13 @@ export function useTableRowHighlight({
       setActiveId(highlightId);
       const row =
         document.querySelector<HTMLElement>(
-          `.ant-table-tbody > tr.ant-table-row[data-row-key="${highlightId}"]`,
+          `.p-datatable-tbody > tr[data-row-key="${highlightId}"]`,
         ) ??
         document.querySelector<HTMLElement>(
           `tr[data-row-key="${highlightId}"]`,
+        ) ??
+        document.querySelector<HTMLElement>(
+          `.p-datatable-tbody > tr.table-row-from-notification`,
         );
       row?.scrollIntoView({ behavior: "smooth", block: "center" });
     });

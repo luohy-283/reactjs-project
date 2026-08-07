@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
-import { Button } from "antd";
-import type { ButtonProps } from "antd";
-import { ImportOutlined } from "@ant-design/icons";
+import { AppButton } from "@/components/ui/button/AppButton";
+import type { AppButtonProps } from "@/components/ui/button/AppButton";
 
-export type ImportButtonProps = Omit<ButtonProps, "children" | "icon"> & {
+export type ImportButtonProps = Omit<AppButtonProps, "children" | "icon"> & {
   children?: ReactNode;
   hideIcon?: boolean;
 };
@@ -17,11 +16,11 @@ export function ImportButton({
   ...buttonProps
 }: ImportButtonProps) {
   return (
-    <Button
-      icon={hideIcon ? undefined : <ImportOutlined />}
+    <AppButton
+      icon={hideIcon ? undefined : "pi pi-upload"}
       {...buttonProps}
     >
       {children}
-    </Button>
+    </AppButton>
   );
 }

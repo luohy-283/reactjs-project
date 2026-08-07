@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Button, Result } from "antd";
+import { Button } from "primereact/button";
 import { useNavigate } from "react-router";
 
 export type NoPermissionProps = {
@@ -18,17 +18,32 @@ export function NoPermission({
   const navigate = useNavigate();
 
   return (
-    <Result
-      status="403"
-      title={title}
-      subTitle={description}
-      extra={
-        extra ?? (
-          <Button type="primary" onClick={() => navigate("/dashboard")}>
-            Về Dashboard
-          </Button>
-        )
-      }
-    />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+        padding: "48px 16px",
+        textAlign: "center",
+      }}
+    >
+      <i
+        className="pi pi-lock"
+        style={{ fontSize: 40, color: "var(--p-orange-500, #f59e0b)" }}
+      />
+      <div style={{ fontSize: 20, fontWeight: 600 }}>{title}</div>
+      <div style={{ color: "var(--p-text-muted-color, #6b7280)", maxWidth: 420 }}>
+        {description}
+      </div>
+      {extra ?? (
+        <Button
+          type="button"
+          label="Về Dashboard"
+          onClick={() => navigate("/dashboard")}
+        />
+      )}
+    </div>
   );
 }

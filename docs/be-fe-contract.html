@@ -1471,10 +1471,10 @@
             },
             {
               title: "Notification BOOKING_PENDING",
-              desc: "Admin nhận thông báo chờ duyệt",
+              desc: "Chỉ admin nhận (actionable); không broadcast outcome cho all users",
               api: "GET /notifications",
-              nodes: ["BE tạo notif", "Admin bell", "/admin/bookings"],
-              sample: '{ "type": "BOOKING_PENDING", "bookingId": 42, … }'
+              nodes: ["BE notifyAdmins", "Admin bell", "/admin/bookings?tab=pending"],
+              sample: '{ "type": "BOOKING_PENDING", "bookingId": 42, … }\nAdmin inbox: PENDING only\nUser inbox: outcome types only'
             }
           ]
         },
@@ -1497,10 +1497,10 @@
             },
             {
               title: "User nhận BOOKING_APPROVED / REJECTED",
-              desc: "Notification + invoice nếu APPROVED",
+              desc: "Chỉ booker không-ADMIN; admin không nhận outcome",
               api: "notifications + invoices",
-              nodes: ["Notif", "amount snapshot", "/my-invoices"],
-              sample: "APPROVED → hiện trên GET /account/invoices"
+              nodes: ["Notif → booker", "skip nếu ROLE_ADMIN", "/my-invoices nếu APPROVED"],
+              sample: "APPROVED → GET /account/invoices\nREJECTED/CANCELLED/EXPIRED → mark-read only (FE không navigate)"
             }
           ]
         },

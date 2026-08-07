@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Badge } from "antd";
+import { Badge } from "primereact/badge";
 import { useLocation } from "react-router";
 import { ConfirmPopconfirm } from "@/components/ui/dialog/ConfirmPopconfirm";
 import { DataTable } from "@/components/ui/table/DataTable";
@@ -341,22 +341,21 @@ export default function AdminBookingsPage() {
     {
       key: "pending",
       label: (
-        <Badge count={pendingCount} offset={[10, 0]} size="small">
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           Chờ duyệt
-        </Badge>
+          {pendingCount > 0 ? <Badge value={pendingCount} /> : null}
+        </span>
       ),
     },
     {
       key: "upcoming",
       label: (
-        <Badge
-          count={upcomingCount}
-          offset={[10, 0]}
-          size="small"
-          color="blue"
-        >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           Đã duyệt (chưa diễn ra)
-        </Badge>
+          {upcomingCount > 0 ? (
+            <Badge value={upcomingCount} severity="info" />
+          ) : null}
+        </span>
       ),
     },
     { key: "all", label: "Lịch sử" },

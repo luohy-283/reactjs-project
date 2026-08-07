@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { Alert, Form, Input, Modal, Select, Typography } from "antd";
+import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
+import { Alert } from "@/components/ui/feedback/Alert";
+import { FormModal } from "@/components/ui/dialog/FormModal";
 import {
   getAccount,
   getMyPendingDepartmentChange,
@@ -19,6 +22,12 @@ type ProfileFormValues = {
   fullName: string;
   email: string;
   requestedDepartmentId?: number | null;
+};
+
+const EMPTY_FORM: ProfileFormValues = {
+  fullName: "",
+  email: "",
+  requestedDepartmentId: null,
 };
 
 export type ProfileDialogProps = {
@@ -46,6 +55,12 @@ function toAuthUser(profile: AccountProfile, fallbackRole?: UserRole): User {
   };
 }
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+const fieldErrorStyle = { color: "var(--p-red-500, #ef4444)", display: "block" as const };
+
 export function ProfileDialog({
   open,
   user,
@@ -54,7 +69,8 @@ export function ProfileDialog({
   onUpdated,
 }: ProfileDialogProps) {
   const toast = useToast();
-  const [form] = Form.useForm<ProfileFormValues>();
+  const [values, setValues] = useState<ProfileFormValues>(EMPTY_FORM);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState<DepartmentChangeRequest | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,6 +86,7 @@ export function ProfileDialog({
     setLoadError("");
     setPending(null);
     setAccount(null);
+    setErrors({});
 
     void (async () => {
       try {
@@ -81,20 +98,20 @@ export function ProfileDialog({
 
         setAccount(profile);
         setPending(pendingReq);
-        form.setFieldsValue({
+        setValues({
           fullName: profile.fullName,
           email: profile.email,
-          requestedDepartmentId: undefined,
+          requestedDepartmentId: null,
         });
         // Keep AuthContext / avatar in sync with DB.
         onUpdated(toAuthUser(profile, user.role));
       } catch (err) {
         if (controller.signal.aborted || isAbortError(err)) return;
         setLoadError(getApiErrorMessage(err, "Không tải được thông tin tài khoản"));
-        form.setFieldsValue({
+        setValues({
           fullName: user.fullName,
           email: user.email,
-          requestedDepartmentId: undefined,
+          requestedDepartmentId: null,
         });
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -102,16 +119,25 @@ export function ProfileDialog({
     })();
 
     return () => controller.abort();
-    // Intentionally omit onUpdated/form from deps — open+user gate the fetch.
+    // Intentionally omit onUpdated from deps — open+user gate the fetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user?.id]);
 
   const currentDepartment = account?.department ?? user?.department ?? null;
   const currentDepartmentId = currentDepartment?.id;
 
+  function validate(): boolean {
+    const next: Record<string, string> = {};
+    if (!values.fullName.trim()) next.fullName = "Nhập họ tên";
+    if (!values.email.trim()) next.email = "Nhập email";
+    else if (!isValidEmail(values.email.trim())) next.email = "Email không hợp lệ";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
+
   const handleOk = async () => {
-    if (!user) return;
-    const values = await form.validateFields();
+    if (!user || loading || loadError) return;
+    if (!validate()) return;
     setSubmitting(true);
     try {
       const updated = await updateAccount({
@@ -149,8 +175,15 @@ export function ProfileDialog({
     }
   };
 
+  const departmentOptions = departments
+    .filter((d) => d.id !== currentDepartmentId)
+    .map((d) => ({
+      value: d.id,
+      label: `${d.name} (${d.code})`,
+    }));
+
   return (
-    <Modal
+    <FormModal
       title="Thông tin tài khoản"
       open={open}
       onCancel={onClose}
@@ -158,16 +191,12 @@ export function ProfileDialog({
       confirmLoading={submitting}
       okText="Lưu"
       cancelText="Đóng"
-      okButtonProps={{ disabled: loading || Boolean(loadError) }}
-      destroyOnHidden
+      okButtonProps={{
+        className: loading || Boolean(loadError) ? "p-disabled" : undefined,
+      }}
     >
       {loadError ? (
-        <Alert
-          type="error"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message={loadError}
-        />
+        <Alert type="error" showIcon style={{ marginBottom: 16 }} message={loadError} />
       ) : null}
       {pending ? (
         <Alert
@@ -178,56 +207,80 @@ export function ProfileDialog({
         />
       ) : null}
       {loading ? (
-        <Typography.Paragraph type="secondary">
+        <p style={{ color: "var(--p-text-muted-color, #6b7280)", marginTop: 0 }}>
           Đang tải thông tin tài khoản…
-        </Typography.Paragraph>
+        </p>
       ) : null}
-      <Form form={form} layout="vertical" disabled={loading}>
-        <Form.Item
-          label="Họ tên"
-          name="fullName"
-          rules={[{ required: true, message: "Nhập họ tên" }]}
-        >
-          <Input />
-        </Form.Item>
-        <Form.Item
-          label="Email"
-          name="email"
-          rules={[
-            { required: true, message: "Nhập email" },
-            { type: "email", message: "Email không hợp lệ" },
-          ]}
-        >
-          <Input />
-        </Form.Item>
-        <Form.Item label="Phòng ban hiện tại">
-          <Input
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, opacity: loading ? 0.6 : 1, pointerEvents: loading ? "none" : undefined }}>
+        <div>
+          <label htmlFor="profile-fullName" style={{ display: "block", marginBottom: 6 }}>
+            Họ tên
+          </label>
+          <InputText
+            id="profile-fullName"
+            value={values.fullName}
+            onChange={(e) => setValues((v) => ({ ...v, fullName: e.target.value }))}
+            style={{ width: "100%" }}
+          />
+          {errors.fullName ? <small style={fieldErrorStyle}>{errors.fullName}</small> : null}
+        </div>
+
+        <div>
+          <label htmlFor="profile-email" style={{ display: "block", marginBottom: 6 }}>
+            Email
+          </label>
+          <InputText
+            id="profile-email"
+            value={values.email}
+            onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
+            style={{ width: "100%" }}
+          />
+          {errors.email ? <small style={fieldErrorStyle}>{errors.email}</small> : null}
+        </div>
+
+        <div>
+          <label htmlFor="profile-current-dept" style={{ display: "block", marginBottom: 6 }}>
+            Phòng ban hiện tại
+          </label>
+          <InputText
+            id="profile-current-dept"
             disabled
             value={
               currentDepartment
                 ? `${currentDepartment.name} (${currentDepartment.code})`
                 : "Chưa gán"
             }
+            style={{ width: "100%" }}
           />
-        </Form.Item>
-        <Form.Item
-          label="Yêu cầu đổi phòng ban"
-          name="requestedDepartmentId"
-          extra="Chỉ đổi phòng ban sau khi admin duyệt."
-        >
-          <Select
-            allowClear
-            disabled={Boolean(pending) || loading}
+        </div>
+
+        <div>
+          <label htmlFor="profile-req-dept" style={{ display: "block", marginBottom: 6 }}>
+            Yêu cầu đổi phòng ban
+          </label>
+          <Dropdown
+            inputId="profile-req-dept"
+            value={values.requestedDepartmentId}
+            onChange={(e) =>
+              setValues((v) => ({
+                ...v,
+                requestedDepartmentId: e.value ?? null,
+              }))
+            }
+            options={departmentOptions}
+            optionLabel="label"
+            optionValue="value"
             placeholder="Chọn phòng ban mới (tuỳ chọn)"
-            options={departments
-              .filter((d) => d.id !== currentDepartmentId)
-              .map((d) => ({
-                value: d.id,
-                label: `${d.name} (${d.code})`,
-              }))}
+            showClear
+            disabled={Boolean(pending) || loading}
+            style={{ width: "100%" }}
           />
-        </Form.Item>
-      </Form>
-    </Modal>
+          <small style={{ color: "var(--p-text-muted-color, #6b7280)" }}>
+            Chỉ đổi phòng ban sau khi admin duyệt.
+          </small>
+        </div>
+      </div>
+    </FormModal>
   );
 }

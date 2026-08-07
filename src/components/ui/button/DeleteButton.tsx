@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Button } from "antd";
-import type { ButtonProps } from "antd";
+import { AppButton } from "@/components/ui/button/AppButton";
+import type { AppButtonProps } from "@/components/ui/button/AppButton";
 
-export type DeleteButtonProps = Omit<ButtonProps, "children" | "danger"> & {
+export type DeleteButtonProps = Omit<AppButtonProps, "children" | "danger"> & {
   children?: ReactNode;
 };
 
@@ -13,8 +13,8 @@ export function DeleteButton({
   ...buttonProps
 }: DeleteButtonProps) {
   return (
-    <Button danger size={size} {...buttonProps}>
+    <AppButton danger size={size} {...buttonProps}>
       {children}
-    </Button>
+    </AppButton>
   );
 }

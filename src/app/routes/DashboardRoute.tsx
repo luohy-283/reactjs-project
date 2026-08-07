@@ -1,14 +1,8 @@
 import { useMemo, useState } from "react";
-import {
-  DatePicker,
-  Button,
-  Form,
-  Select,
-  TimePicker,
-  Input,
-  Space,
-  Typography,
-} from "antd";
+import { Button } from "primereact/button";
+import { Calendar } from "primereact/calendar";
+import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { CreateDialog } from "@/components/ui/dialog/CreateDialog";
@@ -29,6 +23,22 @@ import { useAuth } from "@/features/auth/context/AuthContext";
 import { useRoomSchedule } from "@/app/hooks/use-room-schedule";
 import { estimateBookingAmount, formatVnd } from "@/lib/money";
 
+type BookingFormValues = {
+  roomId: number | null;
+  startTime: Date | null;
+  endTime: Date | null;
+  title: string;
+};
+
+const EMPTY_FORM: BookingFormValues = {
+  roomId: null,
+  startTime: null,
+  endTime: null,
+  title: "",
+};
+
+const fieldErrorStyle = { color: "var(--p-red-500, #ef4444)", display: "block" as const };
+
 /** App-layer route: composes auth + rooms + bookings (no cross-feature imports). */
 export default function DashboardRoute() {
   const toast = useToast();
@@ -40,16 +50,8 @@ export default function DashboardRoute() {
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState("");
-  const [form] = Form.useForm<{
-    roomId: number;
-    startTime: Dayjs;
-    endTime: Dayjs;
-    title: string;
-  }>();
-
-  const watchedRoomId = Form.useWatch("roomId", form);
-  const watchedStart = Form.useWatch("startTime", form);
-  const watchedEnd = Form.useWatch("endTime", form);
+  const [values, setValues] = useState<BookingFormValues>(EMPTY_FORM);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const filteredRooms = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -72,56 +74,60 @@ export default function DashboardRoute() {
     return bookings.filter((b) => ids.has(b.roomId));
   }, [bookings, filteredRooms]);
 
-  const combineDateTime = (time: Dayjs): Dayjs =>
+  const combineDateTime = (time: Date): Dayjs =>
     selectedDate
-      .hour(time.hour())
-      .minute(time.minute())
+      .hour(time.getHours())
+      .minute(time.getMinutes())
       .second(0)
       .millisecond(0);
 
   const estimatedFee = useMemo(() => {
-    const room = rooms.find((r) => r.id === watchedRoomId);
-    if (!room || !watchedStart || !watchedEnd) return null;
-    const startIso = combineDateTime(watchedStart).toISOString();
-    const endIso = combineDateTime(watchedEnd).toISOString();
+    const room = rooms.find((r) => r.id === values.roomId);
+    if (!room || !values.startTime || !values.endTime) return null;
+    const startIso = combineDateTime(values.startTime).toISOString();
+    const endIso = combineDateTime(values.endTime).toISOString();
     if (!dayjs(endIso).isAfter(dayjs(startIso))) return null;
     return estimateBookingAmount(room.pricePerHour, startIso, endIso);
-  }, [rooms, watchedRoomId, watchedStart, watchedEnd, selectedDate]);
+  }, [rooms, values.roomId, values.startTime, values.endTime, selectedDate]);
 
-  const disabledPastDate = (current: Dayjs | null) =>
-    !!current && current.isBefore(dayjs(), "day");
+  const minSelectableDate = dayjs().startOf("day").toDate();
+  const timeMinDate = selectedDate.isSame(dayjs(), "day")
+    ? dayjs().toDate()
+    : undefined;
 
-  const disabledPastTime = () => {
-    if (!selectedDate.isSame(dayjs(), "day")) {
-      return {};
+  function validate(): boolean {
+    const next: Record<string, string> = {};
+    if (values.roomId == null) next.roomId = "Vui lòng chọn phòng";
+    if (!values.startTime) next.startTime = "Vui lòng chọn giờ bắt đầu";
+    else if (combineDateTime(values.startTime).isBefore(dayjs())) {
+      next.startTime = "Không thể chọn giờ trong quá khứ";
     }
-    const now = dayjs();
-    return {
-      disabledHours: () => Array.from({ length: now.hour() }, (_, i) => i),
-      disabledMinutes: (selectedHour: number) =>
-        selectedHour === now.hour()
-          ? Array.from({ length: now.minute() }, (_, i) => i)
-          : [],
-    };
-  };
+    if (!values.endTime) next.endTime = "Vui lòng chọn giờ kết thúc";
+    else if (values.startTime) {
+      const startDateTime = combineDateTime(values.startTime);
+      const endDateTime = combineDateTime(values.endTime);
+      if (!endDateTime.isAfter(startDateTime)) {
+        next.endTime = "Giờ kết thúc phải lớn hơn giờ bắt đầu";
+      }
+    }
+    if (!values.title.trim()) next.title = "Vui lòng nhập tiêu đề";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
 
-  const handleBooking = async (values: {
-    roomId: number;
-    startTime: Dayjs;
-    endTime: Dayjs;
-    title: string;
-  }) => {
+  const handleBooking = async () => {
     if (!user) return;
+    if (!validate()) return;
 
     setSubmitting(true);
     setBookingError("");
 
-    const startDateTime = combineDateTime(values.startTime);
-    const endDateTime = combineDateTime(values.endTime);
+    const startDateTime = combineDateTime(values.startTime as Date);
+    const endDateTime = combineDateTime(values.endTime as Date);
 
     try {
       await createBooking({
-        roomId: values.roomId,
+        roomId: values.roomId as number,
         userId: user.id,
         title: values.title,
         startTime: startDateTime.toISOString(),
@@ -133,7 +139,8 @@ export default function DashboardRoute() {
           : "Đã gửi yêu cầu đặt phòng — chờ admin duyệt",
       );
       setModalOpen(false);
-      form.resetFields();
+      setValues({ ...EMPTY_FORM });
+      setErrors({});
       await refetch();
     } catch (err) {
       setBookingError((err as Error).message);
@@ -148,18 +155,22 @@ export default function DashboardRoute() {
     startMinute: number;
   }) => {
     setBookingError("");
-    form.resetFields();
+    setErrors({});
     if (prefill) {
       const start = dayjs()
         .hour(prefill.startHour)
         .minute(prefill.startMinute)
-        .second(0);
-      const end = start.add(1, "hour");
-      form.setFieldsValue({
+        .second(0)
+        .toDate();
+      const end = dayjs(start).add(1, "hour").toDate();
+      setValues({
         roomId: prefill.roomId,
         startTime: start,
         endTime: end,
+        title: "",
       });
+    } else {
+      setValues({ ...EMPTY_FORM });
     }
     setModalOpen(true);
   };
@@ -175,31 +186,36 @@ export default function DashboardRoute() {
     rooms.length > 0 &&
     filteredRooms.length === 0;
 
+  const roomOptions = rooms.map((room) => ({
+    value: room.id,
+    label: `${room.name} (${room.capacity} người) — ${formatVnd(room.pricePerHour)}/giờ`,
+  }));
+
   return (
     <PageLayout>
       <PageHeader
         title="Lịch phòng họp"
         extra={
-          <Space>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <RefreshButton loading={isLoading} onClick={() => void refetch()} />
-            <Button type="primary" onClick={() => openBookingModal()}>
-              Đặt phòng
-            </Button>
-          </Space>
+            <Button label="Đặt phòng" onClick={() => openBookingModal()} />
+          </div>
         }
       >
         <SearchForm onReset={resetFilters}>
-          <Space direction="vertical" size={4}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <span>Chọn ngày</span>
-            <DatePicker
-              value={selectedDate}
-              onChange={(date) => date && setSelectedDate(date)}
-              format="DD/MM/YYYY"
+            <Calendar
+              value={selectedDate.toDate()}
+              onChange={(e) => {
+                if (e.value instanceof Date) setSelectedDate(dayjs(e.value));
+              }}
+              dateFormat="dd/mm/yy"
+              minDate={minSelectableDate}
+              showIcon
               style={{ width: 180 }}
-              disabledDate={disabledPastDate}
-              allowClear={false}
             />
-          </Space>
+          </div>
           <SearchInput
             value={search}
             onChange={setSearch}
@@ -233,101 +249,106 @@ export default function DashboardRoute() {
         title="Đặt phòng họp"
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
-        onOk={() => form.submit()}
+        onOk={() => void handleBooking()}
         confirmLoading={submitting}
         okText="Đặt phòng"
       >
         <ErrorMessage message={bookingError} style={{ marginBottom: 16 }} />
 
-        <Form form={form} layout="vertical" onFinish={handleBooking}>
-          <Form.Item
-            label="Phòng"
-            name="roomId"
-            rules={[{ required: true, message: "Vui lòng chọn phòng" }]}
-          >
-            <Select
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <label htmlFor="booking-room" style={{ display: "block", marginBottom: 6 }}>
+              Phòng
+            </label>
+            <Dropdown
+              inputId="booking-room"
+              value={values.roomId}
+              onChange={(e) => setValues((v) => ({ ...v, roomId: e.value }))}
+              options={roomOptions}
+              optionLabel="label"
+              optionValue="value"
               placeholder="Chọn phòng"
-              options={rooms.map((room) => ({
-                value: room.id,
-                label: `${room.name} (${room.capacity} người) — ${formatVnd(room.pricePerHour)}/giờ`,
-              }))}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Giờ bắt đầu"
-            name="startTime"
-            rules={[
-              { required: true, message: "Vui lòng chọn giờ bắt đầu" },
-              {
-                validator: (_, value: Dayjs | undefined) => {
-                  if (!value) return Promise.resolve();
-                  const startDateTime = combineDateTime(value);
-                  if (startDateTime.isBefore(dayjs())) {
-                    return Promise.reject(
-                      new Error("Không thể chọn giờ trong quá khứ"),
-                    );
-                  }
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
-            <TimePicker
-              format="HH:mm"
               style={{ width: "100%" }}
-              disabledTime={disabledPastTime}
-              hideDisabledOptions
             />
-          </Form.Item>
+            {errors.roomId ? <small style={fieldErrorStyle}>{errors.roomId}</small> : null}
+          </div>
 
-          <Form.Item
-            label="Giờ kết thúc"
-            name="endTime"
-            dependencies={["startTime"]}
-            rules={[
-              { required: true, message: "Vui lòng chọn giờ kết thúc" },
-              ({ getFieldValue }) => ({
-                validator: (_, value: Dayjs | undefined) => {
-                  const startTime: Dayjs | undefined =
-                    getFieldValue("startTime");
-                  if (!value || !startTime) return Promise.resolve();
-                  const startDateTime = combineDateTime(startTime);
-                  const endDateTime = combineDateTime(value);
-                  if (!endDateTime.isAfter(startDateTime)) {
-                    return Promise.reject(
-                      new Error("Giờ kết thúc phải lớn hơn giờ bắt đầu"),
-                    );
-                  }
-                  return Promise.resolve();
-                },
-              }),
-            ]}
-          >
-            <TimePicker
-              format="HH:mm"
+          <div>
+            <label htmlFor="booking-start" style={{ display: "block", marginBottom: 6 }}>
+              Giờ bắt đầu
+            </label>
+            <Calendar
+              inputId="booking-start"
+              value={values.startTime}
+              onChange={(e) =>
+                setValues((v) => ({
+                  ...v,
+                  startTime: e.value instanceof Date ? e.value : null,
+                }))
+              }
+              timeOnly
+              hourFormat="24"
+              minDate={timeMinDate}
               style={{ width: "100%" }}
-              disabledTime={disabledPastTime}
-              hideDisabledOptions
+              inputStyle={{ width: "100%" }}
             />
-          </Form.Item>
+            {errors.startTime ? (
+              <small style={fieldErrorStyle}>{errors.startTime}</small>
+            ) : null}
+          </div>
 
-          <Form.Item
-            label="Tiêu đề cuộc họp"
-            name="title"
-            rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
-          >
-            <Input placeholder="VD: Họp planning tuần" />
-          </Form.Item>
+          <div>
+            <label htmlFor="booking-end" style={{ display: "block", marginBottom: 6 }}>
+              Giờ kết thúc
+            </label>
+            <Calendar
+              inputId="booking-end"
+              value={values.endTime}
+              onChange={(e) =>
+                setValues((v) => ({
+                  ...v,
+                  endTime: e.value instanceof Date ? e.value : null,
+                }))
+              }
+              timeOnly
+              hourFormat="24"
+              minDate={timeMinDate}
+              style={{ width: "100%" }}
+              inputStyle={{ width: "100%" }}
+            />
+            {errors.endTime ? (
+              <small style={fieldErrorStyle}>{errors.endTime}</small>
+            ) : null}
+          </div>
+
+          <div>
+            <label htmlFor="booking-title" style={{ display: "block", marginBottom: 6 }}>
+              Tiêu đề cuộc họp
+            </label>
+            <InputText
+              id="booking-title"
+              value={values.title}
+              onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
+              placeholder="VD: Họp planning tuần"
+              style={{ width: "100%" }}
+            />
+            {errors.title ? <small style={fieldErrorStyle}>{errors.title}</small> : null}
+          </div>
 
           {estimatedFee != null ? (
-            <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+            <p
+              style={{
+                margin: 0,
+                color: "var(--p-text-muted-color, #6b7280)",
+                fontSize: 14,
+              }}
+            >
               Ước tính phí: <strong>{formatVnd(estimatedFee)}</strong> (làm
               tròn lên theo khối 30 phút, tối thiểu 1 khối)
               {user?.role !== "ADMIN" ? " — tính sau khi admin duyệt" : null}
-            </Typography.Paragraph>
+            </p>
           ) : null}
-        </Form>
+        </div>
       </CreateDialog>
     </PageLayout>
   );

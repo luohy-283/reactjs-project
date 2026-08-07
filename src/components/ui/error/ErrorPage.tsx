@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Result } from "antd";
 
 export type ErrorPageProps = {
   title?: ReactNode;
@@ -15,6 +14,26 @@ export function ErrorPage({
   extra,
 }: ErrorPageProps) {
   return (
-    <Result status="error" title={title} subTitle={description} extra={extra} />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+        padding: "48px 16px",
+        textAlign: "center",
+      }}
+    >
+      <i
+        className="pi pi-times-circle"
+        style={{ fontSize: 40, color: "var(--p-red-500, #ef4444)" }}
+      />
+      <div style={{ fontSize: 20, fontWeight: 600 }}>{title}</div>
+      <div style={{ color: "var(--p-text-muted-color, #6b7280)", maxWidth: 420 }}>
+        {description}
+      </div>
+      {extra}
+    </div>
   );
 }

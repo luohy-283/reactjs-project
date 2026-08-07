@@ -13,7 +13,7 @@ export function ViewDialog({
   return (
     <FormModal
       okText={okText}
-      cancelButtonProps={{ style: { display: "none" } }}
+      hideCancel
       onOk={onOk ?? onCancel}
       onCancel={onCancel}
       {...modalProps}

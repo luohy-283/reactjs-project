@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Form, Input, Select } from "antd";
+import { Button } from "primereact/button";
+import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
+import { Password } from "primereact/password";
 import { useLocation } from "react-router";
 import { ConfirmDialog } from "@/components/ui/dialog/ConfirmDialog";
 import { CreateDialog } from "@/components/ui/dialog/CreateDialog";
@@ -52,13 +55,27 @@ import { useUrlTab } from "@/lib/useUrlTab";
 type UserFormValues = {
   email: string;
   fullName: string;
-  password?: string;
+  password: string;
   role: UserRole;
-  departmentId?: number | null;
+  departmentId: number | null;
 };
 
 type UserActiveFilter = "ACTIVE" | "INACTIVE";
 type UsersTab = "users" | "requests";
+
+const EMPTY_FORM: UserFormValues = {
+  email: "",
+  fullName: "",
+  password: "",
+  role: "USER",
+  departmentId: null,
+};
+
+const fieldErrorStyle = { color: "var(--p-red-500, #ef4444)", display: "block" as const };
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
 export type AdminUsersPageProps = {
   departments: Department[];
@@ -84,6 +101,11 @@ const ACTIVE_COLOR: Record<string, string> = {
   true: "green",
   false: "default",
 };
+
+const ROLE_OPTIONS = [
+  { value: "USER" as const, label: "USER" },
+  { value: "ADMIN" as const, label: "ADMIN" },
+];
 
 export default function AdminUsersPage({
   departments,
@@ -139,37 +161,52 @@ export default function AdminUsersPage({
   );
   const [actionLoading, setActionLoading] = useState(false);
   const [actingRequestId, setActingRequestId] = useState<number | null>(null);
-  const [form] = Form.useForm<UserFormValues>();
+  const [values, setValues] = useState<UserFormValues>(EMPTY_FORM);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const openCreate = () => {
     setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({
-      role: "USER",
-      departmentId: null,
-    });
+    setValues({ ...EMPTY_FORM });
+    setErrors({});
     setModalOpen(true);
   };
 
   const openEdit = (user: ManagedUser) => {
     setEditing(user);
-    form.setFieldsValue({
+    setValues({
       email: user.email,
       fullName: user.fullName,
       role: user.role,
       departmentId: user.department?.id ?? null,
-      password: undefined,
+      password: "",
     });
+    setErrors({});
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setEditing(null);
-    form.resetFields();
+    setValues({ ...EMPTY_FORM });
+    setErrors({});
   };
 
-  const handleSubmit = async (values: UserFormValues) => {
+  function validate(): boolean {
+    const next: Record<string, string> = {};
+    if (!values.fullName.trim()) next.fullName = "Nhập họ tên";
+    if (!values.email.trim()) next.email = "Nhập email";
+    else if (!isValidEmail(values.email.trim())) next.email = "Email không hợp lệ";
+    if (!editing) {
+      if (!values.password) next.password = "Nhập mật khẩu";
+      else if (values.password.length < 4) next.password = "Tối thiểu 4 ký tự";
+    }
+    if (!values.role) next.role = "Chọn vai trò";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
     setSubmitting(true);
     try {
       if (editing) {
@@ -181,14 +218,14 @@ export default function AdminUsersPage({
           role: values.role,
           activated: editing.activated,
           departmentId: values.departmentId ?? null,
-          password: values.password,
+          password: values.password || undefined,
         });
         toast.success("Cập nhật user thành công");
       } else {
         await createUser({
           email: values.email,
           fullName: values.fullName,
-          password: values.password ?? "",
+          password: values.password,
           role: values.role,
           departmentId: values.departmentId ?? null,
           activated: true,
@@ -328,58 +365,80 @@ export default function AdminUsersPage({
   }));
 
   const userForm = (
-    <Form form={form} layout="vertical" onFinish={handleSubmit}>
-      <Form.Item
-        label="Họ tên"
-        name="fullName"
-        rules={[{ required: true, message: "Nhập họ tên" }]}
-      >
-        <Input />
-      </Form.Item>
-      <Form.Item
-        label="Email"
-        name="email"
-        rules={[
-          { required: true, message: "Nhập email" },
-          { type: "email", message: "Email không hợp lệ" },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-      <Form.Item
-        label={editing ? "Mật khẩu mới (tuỳ chọn)" : "Mật khẩu"}
-        name="password"
-        rules={
-          editing
-            ? []
-            : [
-                { required: true, message: "Nhập mật khẩu" },
-                { min: 4, message: "Tối thiểu 4 ký tự" },
-              ]
-        }
-      >
-        <Input.Password />
-      </Form.Item>
-      <Form.Item
-        label="Vai trò"
-        name="role"
-        rules={[{ required: true, message: "Chọn vai trò" }]}
-      >
-        <Select
-          options={[
-            { value: "USER", label: "USER" },
-            { value: "ADMIN", label: "ADMIN" },
-          ]}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div>
+        <label htmlFor="user-fullName" style={{ display: "block", marginBottom: 6 }}>
+          Họ tên
+        </label>
+        <InputText
+          id="user-fullName"
+          value={values.fullName}
+          onChange={(e) => setValues((v) => ({ ...v, fullName: e.target.value }))}
+          style={{ width: "100%" }}
         />
-      </Form.Item>
-      <Form.Item label="Phòng ban" name="departmentId">
-        <Select
-          allowClear
-          placeholder="Chưa gán"
+        {errors.fullName ? <small style={fieldErrorStyle}>{errors.fullName}</small> : null}
+      </div>
+      <div>
+        <label htmlFor="user-email" style={{ display: "block", marginBottom: 6 }}>
+          Email
+        </label>
+        <InputText
+          id="user-email"
+          value={values.email}
+          onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
+          style={{ width: "100%" }}
+        />
+        {errors.email ? <small style={fieldErrorStyle}>{errors.email}</small> : null}
+      </div>
+      <div>
+        <label htmlFor="user-password" style={{ display: "block", marginBottom: 6 }}>
+          {editing ? "Mật khẩu mới (tuỳ chọn)" : "Mật khẩu"}
+        </label>
+        <Password
+          inputId="user-password"
+          value={values.password}
+          onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
+          feedback={false}
+          toggleMask
+          style={{ width: "100%" }}
+          inputStyle={{ width: "100%" }}
+        />
+        {errors.password ? <small style={fieldErrorStyle}>{errors.password}</small> : null}
+      </div>
+      <div>
+        <label htmlFor="user-role" style={{ display: "block", marginBottom: 6 }}>
+          Vai trò
+        </label>
+        <Dropdown
+          inputId="user-role"
+          value={values.role}
+          onChange={(e) => setValues((v) => ({ ...v, role: e.value }))}
+          options={ROLE_OPTIONS}
+          optionLabel="label"
+          optionValue="value"
+          style={{ width: "100%" }}
+        />
+        {errors.role ? <small style={fieldErrorStyle}>{errors.role}</small> : null}
+      </div>
+      <div>
+        <label htmlFor="user-dept" style={{ display: "block", marginBottom: 6 }}>
+          Phòng ban
+        </label>
+        <Dropdown
+          inputId="user-dept"
+          value={values.departmentId}
+          onChange={(e) =>
+            setValues((v) => ({ ...v, departmentId: e.value ?? null }))
+          }
           options={departmentOptions}
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Chưa gán"
+          showClear
+          style={{ width: "100%" }}
         />
-      </Form.Item>
-    </Form>
+      </div>
+    </div>
   );
 
   const userColumns = defineColumns<ManagedUser>([
@@ -422,11 +481,9 @@ export default function AdminUsersPage({
           ) : (
             <Button
               size="small"
-              type="primary"
+              label="Kích hoạt lại"
               onClick={() => setActivateTarget(user)}
-            >
-              Kích hoạt lại
-            </Button>
+            />
           )
         ) : null}
       </TableRowActions>
@@ -470,9 +527,7 @@ export default function AdminUsersPage({
         title="Quản lý user"
         extra={
           tab === "users" ? (
-            <Button type="primary" onClick={openCreate}>
-              Thêm user
-            </Button>
+            <Button label="Thêm user" onClick={openCreate} />
           ) : null
         }
       />
@@ -593,7 +648,7 @@ export default function AdminUsersPage({
           title="Sửa user"
           open={modalOpen}
           onCancel={closeModal}
-          onOk={() => form.submit()}
+          onOk={() => void handleSubmit()}
           confirmLoading={submitting}
         >
           {userForm}
@@ -603,7 +658,7 @@ export default function AdminUsersPage({
           title="Thêm user"
           open={modalOpen}
           onCancel={closeModal}
-          onOk={() => form.submit()}
+          onOk={() => void handleSubmit()}
           confirmLoading={submitting}
         >
           {userForm}

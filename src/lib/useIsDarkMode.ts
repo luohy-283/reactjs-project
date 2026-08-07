@@ -1,7 +1,6 @@
-import { theme } from "antd";
+import { useThemeMode } from "@/app/theme/useThemeMode";
 
-/** True when ConfigProvider uses `theme.darkAlgorithm`. */
+/** True when ThemeProvider is in dark mode. */
 export function useIsDarkMode(): boolean {
-  const { token } = theme.useToken();
-  return token.colorBgBase === "#000";
+  return useThemeMode().isDark;
 }

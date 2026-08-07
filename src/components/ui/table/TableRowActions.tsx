@@ -1,20 +1,32 @@
-import type { ReactNode } from "react";
-import { Space } from "antd";
-import type { SpaceProps } from "antd";
+import type { CSSProperties, ReactNode } from "react";
 
-export type TableRowActionsProps = Omit<SpaceProps, "children"> & {
+export type TableRowActionsProps = {
   children: ReactNode;
+  size?: "small" | "middle" | "large";
+  className?: string;
+  style?: CSSProperties;
 };
 
 /** Horizontal action buttons inside a table actions column. */
 export function TableRowActions({
   size = "small",
   children,
-  ...spaceProps
+  className,
+  style,
 }: TableRowActionsProps) {
+  const gap = size === "large" ? 12 : size === "middle" ? 8 : 6;
   return (
-    <Space size={size} {...spaceProps}>
+    <div
+      className={className}
+      style={{
+        display: "inline-flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap,
+        ...style,
+      }}
+    >
       {children}
-    </Space>
+    </div>
   );
 }

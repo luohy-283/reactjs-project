@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { DatePicker, Space } from "antd";
-import type { Dayjs } from "dayjs";
+import { Calendar } from "primereact/calendar";
 import dayjs from "dayjs";
 import { DataTable } from "@/components/ui/table/DataTable";
 import { FetchError } from "@/components/ui/error/FetchError";
@@ -31,7 +30,7 @@ import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 
 export default function AdminRevenuePage() {
-  const [month, setMonth] = useState<Dayjs>(dayjs());
+  const [month, setMonth] = useState<Date>(() => dayjs().toDate());
   const [search, setSearch] = useState("");
   const debouncedQ = useDebouncedValue(search.trim(), 300);
   const { query, setQuery, pageParams, resetPage } =
@@ -42,7 +41,7 @@ export default function AdminRevenuePage() {
   }, [debouncedQ, resetPage]);
 
   const { exporting, runExport } = useAuthenticatedExport();
-  const yearMonth = month.format("YYYY-MM");
+  const yearMonth = dayjs(month).format("YYYY-MM");
   const q = debouncedQ || undefined;
   const {
     data,
@@ -117,7 +116,7 @@ export default function AdminRevenuePage() {
       <PageHeader
         title="Doanh thu"
         extra={
-          <Space>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <ExportButton
               loading={exporting}
               onClick={() =>
@@ -130,18 +129,19 @@ export default function AdminRevenuePage() {
             >
               Xuất CSV
             </ExportButton>
-            <DatePicker
-              picker="month"
+            <Calendar
               value={month}
-              onChange={(v) => {
-                if (!v) return;
+              onChange={(e) => {
+                const v = e.value;
+                if (!(v instanceof Date)) return;
                 setMonth(v);
                 resetPage();
               }}
-              allowClear={false}
-              format="MM/YYYY"
+              view="month"
+              dateFormat="mm/yy"
+              showIcon
             />
-          </Space>
+          </div>
         }
       />
 

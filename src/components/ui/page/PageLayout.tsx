@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Card } from "antd";
+import { Card } from "primereact/card";
 import { CardSkeleton } from "@/components/ui/loading/CardSkeleton";
 import { LoadingOverlay } from "@/components/ui/loading/LoadingOverlay";
 
@@ -24,7 +24,7 @@ export function PageLayout({
   }
 
   return (
-    <Card bordered={false} style={style}>
+    <Card style={style} pt={{ body: { style: { padding: 0 } }, content: { style: { padding: 24 } } }}>
       <LoadingOverlay spinning={overlay}>{children}</LoadingOverlay>
     </Card>
   );

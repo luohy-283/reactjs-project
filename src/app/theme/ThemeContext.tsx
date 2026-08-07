@@ -11,10 +11,13 @@ import {
   type ThemeMode,
 } from "@/lib/theme-storage";
 import { ThemeContext } from "@/app/theme/theme-context";
+import { applyPrimeTheme } from "@/app/prime-theme";
 
 function applyDocumentTheme(mode: ThemeMode) {
   document.documentElement.setAttribute("data-theme", mode);
+  document.documentElement.classList.toggle("app-dark", mode === "dark");
   document.documentElement.style.colorScheme = mode;
+  applyPrimeTheme(mode === "dark");
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Button } from "antd";
-import type { ButtonProps } from "antd";
+import { AppButton } from "@/components/ui/button/AppButton";
+import type { AppButtonProps } from "@/components/ui/button/AppButton";
 
-export type ViewButtonProps = Omit<ButtonProps, "children"> & {
+export type ViewButtonProps = Omit<AppButtonProps, "children"> & {
   children?: ReactNode;
 };
 
@@ -13,8 +13,8 @@ export function ViewButton({
   ...buttonProps
 }: ViewButtonProps) {
   return (
-    <Button size={size} {...buttonProps}>
+    <AppButton size={size} {...buttonProps}>
       {children}
-    </Button>
+    </AppButton>
   );
 }

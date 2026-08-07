@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
-import { Button } from "antd";
-import type { ButtonProps } from "antd";
+import { AppButton } from "@/components/ui/button/AppButton";
+import type { AppButtonProps } from "@/components/ui/button/AppButton";
 
 export type SearchButtonProps = Omit<
-  ButtonProps,
+  AppButtonProps,
   "children" | "htmlType" | "type"
 > & {
   children?: ReactNode;
-  type?: ButtonProps["type"];
+  type?: AppButtonProps["type"];
 };
 
 /** Apply filters (use when search is submit-driven, not live-on-type). */
@@ -17,8 +17,8 @@ export function SearchButton({
   ...buttonProps
 }: SearchButtonProps) {
   return (
-    <Button type={type} htmlType="button" {...buttonProps}>
+    <AppButton type={type} htmlType="button" {...buttonProps}>
       {children}
-    </Button>
+    </AppButton>
   );
 }

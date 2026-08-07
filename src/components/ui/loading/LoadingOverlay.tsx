@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Spin } from "antd";
+import { ProgressSpinner } from "primereact/progressspinner";
 import { LOADING_TIP } from "@/components/ui/loading/LoadingSpinner";
 
 export type LoadingOverlayProps = {
@@ -18,8 +18,37 @@ export function LoadingOverlay({
   minHeight,
 }: LoadingOverlayProps) {
   return (
-    <Spin spinning={spinning} tip={tip}>
-      <div style={minHeight != null ? { minHeight } : undefined}>{children}</div>
-    </Spin>
+    <div style={{ position: "relative", minHeight }}>
+      <div
+        style={{
+          opacity: spinning ? 0.45 : 1,
+          pointerEvents: spinning ? "none" : undefined,
+          transition: "opacity 0.2s ease",
+        }}
+      >
+        {children}
+      </div>
+      {spinning ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            zIndex: 2,
+          }}
+        >
+          <ProgressSpinner
+            style={{ width: 40, height: 40 }}
+            strokeWidth="4"
+            aria-label={tip}
+          />
+          {tip ? <span style={{ fontSize: 13 }}>{tip}</span> : null}
+        </div>
+      ) : null}
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Button } from "antd";
+import { Button } from "primereact/button";
 import { ConfirmPopconfirm } from "@/components/ui/dialog/ConfirmPopconfirm";
 import { DeleteButton } from "@/components/ui/button/DeleteButton";
 import { TableRowActions } from "@/components/ui/table/TableRowActions";
@@ -31,9 +31,13 @@ export function ApproveRejectActions({
   rejectConfirm,
 }: Props) {
   const approveBtn = (
-    <Button type="primary" size="small" loading={loading} onClick={onApprove}>
-      {approveText}
-    </Button>
+    <Button
+      type="button"
+      label={approveText}
+      size="small"
+      loading={loading}
+      onClick={onApprove}
+    />
   );
   const rejectBtn = (
     <DeleteButton loading={loading} onClick={onReject}>
@@ -50,9 +54,7 @@ export function ApproveRejectActions({
           onConfirm={onApprove}
           okText={approveText}
         >
-          <Button type="primary" size="small" loading={loading}>
-            {approveText}
-          </Button>
+          <Button type="button" label={approveText} size="small" loading={loading} />
         </ConfirmPopconfirm>
       ) : (
         approveBtn

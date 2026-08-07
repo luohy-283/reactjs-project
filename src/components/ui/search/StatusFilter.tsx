@@ -1,4 +1,4 @@
-import { Select } from "antd";
+import { Dropdown } from "primereact/dropdown";
 
 export type StatusFilterOption<T extends string> = {
   value: T;
@@ -25,17 +25,21 @@ export function StatusFilter<T extends string>({
   width = 180,
   allowClear = false,
 }: StatusFilterProps<T>) {
+  const items = [
+    { value: "ALL" as const, label: allLabel },
+    ...options.map((opt) => ({ value: opt.value, label: opt.label })),
+  ];
+
   return (
-    <Select
+    <Dropdown
       value={value}
+      options={items}
+      optionLabel="label"
+      optionValue="value"
       placeholder={placeholder}
-      allowClear={allowClear}
+      showClear={allowClear}
       style={{ width, minWidth: 140 }}
-      options={[
-        { value: "ALL", label: allLabel },
-        ...options.map((opt) => ({ value: opt.value, label: opt.label })),
-      ]}
-      onChange={(next) => onChange((next ?? "ALL") as T | "ALL")}
+      onChange={(e) => onChange((e.value ?? "ALL") as T | "ALL")}
     />
   );
 }

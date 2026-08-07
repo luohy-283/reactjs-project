@@ -1,7 +1,11 @@
-import { Card, Col, Row, Statistic, Typography, theme } from "antd";
 import type { ReactNode } from "react";
-import type { RevenuePeriod, RevenueReport } from "@/features/revenue/api/revenue.types";
+import { Card } from "primereact/card";
+import type {
+  RevenuePeriod,
+  RevenueReport,
+} from "@/features/revenue/api/revenue.types";
 import { formatVnd } from "@/lib/money";
+import { useIsDarkMode } from "@/lib/useIsDarkMode";
 
 type DeltaKind = "higherBetter" | "lowerBetter";
 
@@ -11,9 +15,7 @@ type KpiDef = {
   value: number;
   previous: number;
   kind: DeltaKind;
-  formatter?: (v: number | string) => ReactNode;
-  suffix?: string;
-  precision?: number;
+  formatValue?: (v: number) => ReactNode;
 };
 
 function percentDelta(current: number, previous: number): number | null {
@@ -47,11 +49,14 @@ function formatDeltaLabel(delta: number | null, previousMonth: string): string {
 function deltaColor(
   delta: number | null,
   kind: DeltaKind,
-  colors: { secondary: string; success: string; error: string },
+  isDark: boolean,
 ): string {
-  if (delta == null || delta === 0) return colors.secondary;
+  const secondary = isDark ? "#a6a6a6" : "#8c8c8c";
+  const success = "#52c41a";
+  const error = "#ff4d4f";
+  if (delta == null || delta === 0) return secondary;
   const isGood = kind === "higherBetter" ? delta > 0 : delta < 0;
-  return isGood ? colors.success : colors.error;
+  return isGood ? success : error;
 }
 
 function KpiDelta({
@@ -65,21 +70,18 @@ function KpiDelta({
   previousMonth: string;
   kind: DeltaKind;
 }) {
-  const { token } = theme.useToken();
+  const isDark = useIsDarkMode();
   const delta = percentDelta(current, previous);
   return (
-    <Typography.Text
+    <div
       style={{
-        color: deltaColor(delta, kind, {
-          secondary: token.colorTextSecondary,
-          success: token.colorSuccess,
-          error: token.colorError,
-        }),
+        color: deltaColor(delta, kind, isDark),
         fontSize: 13,
+        marginTop: 8,
       }}
     >
       {formatDeltaLabel(delta, previousMonth)}
-    </Typography.Text>
+    </div>
   );
 }
 
@@ -94,7 +96,7 @@ function buildKpis(
       value: data?.totalAmount ?? 0,
       previous: previous.totalAmount,
       kind: "higherBetter",
-      formatter: (v) => formatVnd(Number(v)),
+      formatValue: (v) => formatVnd(v),
     },
     {
       key: "bookings",
@@ -109,7 +111,7 @@ function buildKpis(
       value: data?.averageAmount ?? 0,
       previous: previous.averageAmount,
       kind: "higherBetter",
-      formatter: (v) => formatVnd(Number(v)),
+      formatValue: (v) => formatVnd(v),
     },
     {
       key: "cancelRate",
@@ -117,8 +119,7 @@ function buildKpis(
       value: data?.cancellationRate ?? 0,
       previous: previous.cancellationRate,
       kind: "lowerBetter",
-      suffix: "%",
-      precision: 1,
+      formatValue: (v) => `${Number(v).toFixed(1)}%`,
     },
   ];
 }
@@ -130,6 +131,7 @@ export function RevenueKpiCards({
   data: RevenueReport | null;
   loading: boolean;
 }) {
+  const isDark = useIsDarkMode();
   const previous: RevenuePeriod = data?.previous ?? {
     yearMonth: "",
     totalAmount: 0,
@@ -143,28 +145,43 @@ export function RevenueKpiCards({
     : "tháng trước";
 
   const kpis = buildKpis(data, previous);
+  const muted = isDark ? "#a6a6a6" : "#8c8c8c";
 
   return (
-    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 16,
+        marginBottom: 24,
+      }}
+    >
       {kpis.map((kpi) => (
-        <Col key={kpi.key} xs={24} sm={12} xl={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={kpi.title}
-              value={kpi.value}
-              formatter={kpi.formatter}
-              suffix={kpi.suffix}
-              precision={kpi.precision}
-            />
-            <KpiDelta
-              current={kpi.value}
-              previous={kpi.previous}
-              previousMonth={previousMonth}
-              kind={kpi.kind}
-            />
+        <div key={kpi.key} style={{ flex: "1 1 200px", minWidth: 0 }}>
+          <Card>
+            {loading ? (
+              <div style={{ height: 72 }} />
+            ) : (
+              <>
+                <div style={{ color: muted, fontSize: 14, marginBottom: 4 }}>
+                  {kpi.title}
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.2 }}>
+                  {kpi.formatValue
+                    ? kpi.formatValue(kpi.value)
+                    : kpi.value}
+                </div>
+                <KpiDelta
+                  current={kpi.value}
+                  previous={kpi.previous}
+                  previousMonth={previousMonth}
+                  kind={kpi.kind}
+                />
+              </>
+            )}
           </Card>
-        </Col>
+        </div>
       ))}
-    </Row>
+    </div>
   );
 }

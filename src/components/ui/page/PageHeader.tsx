@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Col, Row, Typography } from "antd";
 
 export type PageHeaderProps = {
   title: ReactNode;
@@ -13,14 +12,20 @@ export type PageHeaderProps = {
 export function PageHeader({ title, extra, children }: PageHeaderProps) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <Row gutter={[16, 16]} justify="space-between" align="middle">
-        <Col flex="auto">
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            {title}
-          </Typography.Title>
-        </Col>
-        {extra ? <Col>{extra}</Col> : null}
-      </Row>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 16,
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}>
+          {title}
+        </h2>
+        {extra ? <div>{extra}</div> : null}
+      </div>
       {children ? <div style={{ marginTop: 16 }}>{children}</div> : null}
     </div>
   );

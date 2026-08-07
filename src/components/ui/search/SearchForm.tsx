@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Space } from "antd";
 import { FilterPanel } from "@/components/ui/search/FilterPanel";
 import { ResetButton } from "@/components/ui/search/ResetButton";
 import { SearchButton } from "@/components/ui/search/SearchButton";
@@ -34,14 +33,14 @@ export function SearchForm({
     <FilterPanel>
       {children}
       {showActions ? (
-        <Space wrap>
+        <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 8 }}>
           {onReset ? (
             <ResetButton onClick={onReset}>{resetText}</ResetButton>
           ) : null}
           {onSearch ? (
             <SearchButton onClick={onSearch}>{searchText}</SearchButton>
           ) : null}
-        </Space>
+        </div>
       ) : null}
     </FilterPanel>
   );

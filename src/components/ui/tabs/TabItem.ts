@@ -1,7 +1,13 @@
-import type { TabsProps } from "antd";
+import type { ReactNode } from "react";
 
-/** One antd Tabs `items` entry — company alias for Ant Design v5+ items API. */
-export type TabItem = NonNullable<TabsProps["items"]>[number];
+/** One TabBar `items` entry — company alias matching previous Ant Tabs items. */
+export type TabItem = {
+  key: string;
+  label: ReactNode;
+  children?: ReactNode;
+  disabled?: boolean;
+  closable?: boolean;
+};
 
 /** Identity helper — keeps tab item objects typed without a React component. */
 export function defineTabItem(item: TabItem): TabItem {

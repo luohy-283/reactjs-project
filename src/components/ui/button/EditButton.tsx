@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Button } from "antd";
-import type { ButtonProps } from "antd";
+import { AppButton } from "@/components/ui/button/AppButton";
+import type { AppButtonProps } from "@/components/ui/button/AppButton";
 
-export type EditButtonProps = Omit<ButtonProps, "children"> & {
+export type EditButtonProps = Omit<AppButtonProps, "children"> & {
   children?: ReactNode;
 };
 
@@ -13,8 +13,8 @@ export function EditButton({
   ...buttonProps
 }: EditButtonProps) {
   return (
-    <Button size={size} {...buttonProps}>
+    <AppButton size={size} {...buttonProps}>
       {children}
-    </Button>
+    </AppButton>
   );
 }

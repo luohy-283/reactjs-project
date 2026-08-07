@@ -1,167 +1,73 @@
 body {
-
   margin: 0;
-
 }
 
+/* Topbar notification badge — custom absolute badge (avoid p-overlay-badge layout skew) */
+.topbar-notification-badge .p-badge {
+  pointer-events: none;
+}
 
+/* Login: Password wraps input in .p-password — force full width of the card */
+.login-page .p-password {
+  width: 100%;
+  display: block;
+}
+
+.login-page .p-password-input {
+  width: 100%;
+}
+
+.login-page .p-icon-field {
+  width: 100%;
+}
+
+.login-page .p-icon-field > .p-inputtext {
+  width: 100%;
+}
 
 html[data-theme="dark"] body {
-
   background: #141414;
-
 }
-
-
 
 #root {
-
   min-height: 100vh;
-
 }
-
-
 
 .room-schedule-table .ant-table table {
-
   table-layout: fixed;
-
   width: 100%;
-
 }
 
-
-
-/* Notification deep-link highlight — soft fill, rounded ends, fades out */
-
-.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell,
-
-.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell,
-
-.ant-table-tbody > tr.table-row-from-notification > td.ant-table-column-sort,
-
-.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-column-sort,
-
-.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell-fix,
-
-.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell-fix,
-
-.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell-fix-start,
-
-.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell-fix-start,
-
-.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell-fix-end,
-
-.ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell-fix-end {
-
+/* Notification deep-link highlight — soft fill, rounded ends, fades out (Prime DataTable) */
+.p-datatable-tbody > tr.table-row-from-notification > td,
+.p-datatable-tbody > tr.table-row-from-notification:hover > td {
   background: #fff7e6 !important;
-
   transition: background-color 0.45s ease;
-
 }
 
-
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification > td.ant-table-column-sort,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-column-sort,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell-fix,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell-fix,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell-fix-start,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell-fix-start,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell-fix-end,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification:hover > td.ant-table-cell-fix-end {
-
+html.app-dark .p-datatable-tbody > tr.table-row-from-notification > td,
+html.app-dark .p-datatable-tbody > tr.table-row-from-notification:hover > td,
+html[data-theme="dark"] .p-datatable-tbody > tr.table-row-from-notification > td,
+html[data-theme="dark"] .p-datatable-tbody > tr.table-row-from-notification:hover > td {
   background: #3d2e12 !important;
-
 }
 
-
-
-.ant-table-tbody > tr.table-row-from-notification > td.ant-table-cell:first-child {
-
+.p-datatable-tbody > tr.table-row-from-notification > td:first-child {
   border-radius: 8px 0 0 8px;
-
 }
 
-
-
-.ant-table-tbody
-
-  > tr.table-row-from-notification
-
-  > td.ant-table-cell-fix-right:last-child,
-
-.ant-table-tbody
-
-  > tr.table-row-from-notification
-
-  > td.ant-table-cell:last-child:not(.ant-table-cell-fix-left) {
-
+.p-datatable-tbody > tr.table-row-from-notification > td:last-child {
   border-radius: 0 8px 8px 0;
-
 }
 
-
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell,
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell,
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-column-sort,
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-column-sort,
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell-fix,
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell-fix,
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell-fix-start,
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell-fix-start,
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell-fix-end,
-
-.ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell-fix-end {
-
+.p-datatable-tbody > tr.table-row-from-notification.is-fading > td,
+.p-datatable-tbody > tr.table-row-from-notification.is-fading:hover > td {
   background: #ffffff !important;
-
 }
 
-
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-column-sort,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-column-sort,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell-fix,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell-fix,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell-fix-start,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell-fix-start,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading > td.ant-table-cell-fix-end,
-
-html[data-theme="dark"] .ant-table-tbody > tr.table-row-from-notification.is-fading:hover > td.ant-table-cell-fix-end {
-
+html.app-dark .p-datatable-tbody > tr.table-row-from-notification.is-fading > td,
+html.app-dark .p-datatable-tbody > tr.table-row-from-notification.is-fading:hover > td,
+html[data-theme="dark"] .p-datatable-tbody > tr.table-row-from-notification.is-fading > td,
+html[data-theme="dark"] .p-datatable-tbody > tr.table-row-from-notification.is-fading:hover > td {
   background: #141414 !important;
-
 }
-
-

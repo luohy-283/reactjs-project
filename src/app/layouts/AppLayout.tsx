@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Layout, Space } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useDepartments } from "@/features/departments/api/departments.hooks";
@@ -12,8 +11,6 @@ import { defineMenuItems } from "@/components/layouts/MenuItem";
 import { ThemeToggle } from "@/components/layouts/ThemeToggle";
 import { UserMenu } from "@/components/layouts/UserMenu";
 import { ProfileDialog } from "@/features/users/components/ProfileDialog";
-
-const { Content } = Layout; 
 
 export default function AppLayout() {
   const { user, logout, setUser } = useAuth();
@@ -43,13 +40,26 @@ export default function AppLayout() {
   };
 
   return (
-    <Layout style={{ height: "100vh", overflow: "hidden" }}>
+    <div
+      style={{
+        height: "100vh",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <Topbar
         showMenuToggle={isMobileNav}
         menuCollapsed={siderCollapsed}
         onMenuToggle={() => setSiderCollapsed((prev) => !prev)}
         extra={
-          <Space size="middle" align="center">
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 16,
+            }}
+          >
             <NotificationBell />
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
             <UserMenu
@@ -60,10 +70,10 @@ export default function AppLayout() {
               onOpenProfile={() => setProfileOpen(true)}
               onOpenInvoices={() => navigate("/my-invoices")}
             />
-          </Space>
+          </div>
         }
       />
-      <Layout style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
         <Sidebar
           collapsed={siderCollapsed}
           onCollapse={setSiderCollapsed}
@@ -85,12 +95,18 @@ export default function AppLayout() {
             }}
           />
         </Sidebar>
-        <Layout style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: "auto" }}>
-          <Content style={{ margin: 24, minHeight: 280 }}>
-            <Outlet />
-          </Content>
-        </Layout>
-      </Layout>
+        <main
+          style={{
+            flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            overflow: "auto",
+            margin: 24,
+          }}
+        >
+          <Outlet />
+        </main>
+      </div>
 
       <ProfileDialog
         open={profileOpen}
@@ -99,6 +115,6 @@ export default function AppLayout() {
         onClose={() => setProfileOpen(false)}
         onUpdated={setUser}
       />
-    </Layout>
+    </div>
   );
 }

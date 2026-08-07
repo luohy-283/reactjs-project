@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import dayjs from "dayjs";
-import { Descriptions, Space } from "antd";
 import { DataTable } from "@/components/ui/table/DataTable";
 import { ViewButton } from "@/components/ui/button/ViewButton";
-import { EditDialog } from "@/components/ui/dialog/EditDialog";
+import { ViewDialog } from "@/components/ui/dialog/ViewDialog";
 import { FetchError } from "@/components/ui/error/FetchError";
 import { NoData } from "@/components/ui/empty/NoData";
 import { NoSearchResult } from "@/components/ui/empty/NoSearchResult";
@@ -27,6 +26,24 @@ import { billableHours, durationHours, formatVnd } from "@/lib/money";
 import { useAuthenticatedExport } from "@/lib/useAuthenticatedExport";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
+
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 12,
+        padding: "8px 0",
+        borderBottom: "1px solid var(--p-content-border-color, #e5e7eb)",
+      }}
+    >
+      <dt style={{ width: 200, flexShrink: 0, fontWeight: 500, opacity: 0.8 }}>
+        {label}
+      </dt>
+      <dd style={{ margin: 0, flex: 1 }}>{children}</dd>
+    </div>
+  );
+}
 
 export default function MyInvoicesPage() {
   const [search, setSearch] = useState("");
@@ -134,7 +151,7 @@ export default function MyInvoicesPage() {
             sort={query.sort}
             onQueryChange={setQuery}
             toolbarExtra={
-              <Space>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <ExportButton
                   loading={exporting}
                   onClick={() =>
@@ -147,44 +164,39 @@ export default function MyInvoicesPage() {
                   loading={isLoading}
                   onClick={() => void refetch()}
                 />
-              </Space>
+              </div>
             }
           />
         )}
       </PageContent>
 
-      <EditDialog
+      <ViewDialog
         title="Chi tiết hóa đơn"
         open={Boolean(detail)}
         onCancel={() => setDetail(null)}
         onOk={() => setDetail(null)}
         okText="Đóng"
-        cancelButtonProps={{ style: { display: "none" } }}
       >
         {detail ? (
-          <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Tiêu đề">{detail.title}</Descriptions.Item>
-            <Descriptions.Item label="Phòng">
-              {detail.roomName ?? "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Thời gian">
+          <dl style={{ margin: 0 }}>
+            <DetailRow label="Tiêu đề">{detail.title}</DetailRow>
+            <DetailRow label="Phòng">{detail.roomName ?? "—"}</DetailRow>
+            <DetailRow label="Thời gian">
               {formatDateTimeRange(detail.startTime, detail.endTime)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Đơn giá / giờ">
+            </DetailRow>
+            <DetailRow label="Đơn giá / giờ">
               {formatVnd(detail.pricePerHour)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Thời lượng thực">
+            </DetailRow>
+            <DetailRow label="Thời lượng thực">
               {durationHours(detail.startTime, detail.endTime).toFixed(2)} giờ
-            </Descriptions.Item>
-            <Descriptions.Item label="Giờ tính phí (làm tròn 30 phút)">
+            </DetailRow>
+            <DetailRow label="Giờ tính phí (làm tròn 30 phút)">
               {billableHours(detail.startTime, detail.endTime).toFixed(2)} giờ
-            </Descriptions.Item>
-            <Descriptions.Item label="Thành tiền">
-              {formatVnd(detail.amount)}
-            </Descriptions.Item>
-          </Descriptions>
+            </DetailRow>
+            <DetailRow label="Thành tiền">{formatVnd(detail.amount)}</DetailRow>
+          </dl>
         ) : null}
-      </EditDialog>
+      </ViewDialog>
     </PageLayout>
   );
 }

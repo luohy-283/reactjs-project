@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { Button, Form, Input, InputNumber, Select } from "antd";
+import { Button } from "primereact/button";
+import { Dropdown } from "primereact/dropdown";
+import { InputNumber } from "primereact/inputnumber";
+import { InputText } from "primereact/inputtext";
 import { ConfirmDialog } from "@/components/ui/dialog/ConfirmDialog";
 import { CreateDialog } from "@/components/ui/dialog/CreateDialog";
 import { DataTable } from "@/components/ui/table/DataTable";
@@ -34,10 +37,19 @@ type RoomActiveFilter = "ACTIVE" | "INACTIVE";
 
 type RoomFormValues = {
   name: string;
-  capacity: number;
-  lockedDepartmentId?: number | null;
-  pricePerHour: number;
+  capacity: number | null;
+  lockedDepartmentId: number | null;
+  pricePerHour: number | null;
 };
+
+const EMPTY_FORM: RoomFormValues = {
+  name: "",
+  capacity: null,
+  lockedDepartmentId: null,
+  pricePerHour: 100000,
+};
+
+const fieldErrorStyle = { color: "var(--p-red-500, #ef4444)", display: "block" as const };
 
 export type AdminRoomsPageProps = {
   departments: Department[];
@@ -91,52 +103,69 @@ export default function AdminRoomsPage({
   const [deactivateTarget, setDeactivateTarget] = useState<Room | null>(null);
   const [activateTarget, setActivateTarget] = useState<Room | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [form] = Form.useForm<RoomFormValues>();
+  const [values, setValues] = useState<RoomFormValues>(EMPTY_FORM);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const openCreateModal = () => {
     setEditingRoom(null);
-    form.resetFields();
-    form.setFieldsValue({ lockedDepartmentId: null, pricePerHour: 100000 });
+    setValues({ ...EMPTY_FORM });
+    setErrors({});
     setModalOpen(true);
   };
 
   const openEditModal = (room: Room) => {
     setEditingRoom(room);
-    form.setFieldsValue({
+    setValues({
       name: room.name,
       capacity: room.capacity,
       lockedDepartmentId: room.lockedDepartment?.id ?? null,
       pricePerHour: room.pricePerHour,
     });
+    setErrors({});
     setModalOpen(true);
   };
 
   const closeFormModal = () => {
     setModalOpen(false);
     setEditingRoom(null);
-    form.resetFields();
+    setValues({ ...EMPTY_FORM });
+    setErrors({});
   };
 
-  const handleSubmit = async (values: RoomFormValues) => {
+  function validate(): boolean {
+    const next: Record<string, string> = {};
+    if (!values.name.trim()) next.name = "Vui lòng nhập tên phòng";
+    if (values.capacity == null) next.capacity = "Vui lòng nhập sức chứa";
+    else if (values.capacity < 1) next.capacity = "Sức chứa phải lớn hơn 0";
+    if (values.pricePerHour == null) next.pricePerHour = "Vui lòng nhập giá";
+    else if (values.pricePerHour < 0) next.pricePerHour = "Giá không âm";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
     setSubmitting(true);
     try {
       const lockedDepartmentId = values.lockedDepartmentId ?? null;
+      const capacity = values.capacity as number;
+      const pricePerHour = values.pricePerHour as number;
       if (editingRoom) {
         await updateRoom({
           id: editingRoom.id,
           name: values.name,
-          capacity: values.capacity,
+          capacity,
           isActive: editingRoom.isActive,
           lockedDepartmentId,
-          pricePerHour: values.pricePerHour,
+          pricePerHour,
         });
         toast.success("Cập nhật phòng thành công");
       } else {
         await createRoom({
           name: values.name,
-          capacity: values.capacity,
+          capacity,
           lockedDepartmentId,
-          pricePerHour: values.pricePerHour,
+          pricePerHour,
         });
         toast.success("Thêm phòng thành công");
       }
@@ -212,59 +241,91 @@ export default function AdminRoomsPage({
   const departmentOptions = [
     { value: null as number | null, label: "Công khai (mọi phòng ban)" },
     ...departments.map((d) => ({
-      value: d.id,
+      value: d.id as number | null,
       label: `${d.name} (${d.code})`,
     })),
   ];
 
   const roomForm = (
-    <Form form={form} layout="vertical" onFinish={handleSubmit}>
-      <Form.Item
-        label="Tên phòng"
-        name="name"
-        rules={[{ required: true, message: "Vui lòng nhập tên phòng" }]}
-      >
-        <Input placeholder="VD: Phòng Coda" />
-      </Form.Item>
-
-      <Form.Item
-        label="Sức chứa"
-        name="capacity"
-        rules={[
-          { required: true, message: "Vui lòng nhập sức chứa" },
-          {
-            type: "number",
-            min: 1,
-            message: "Sức chứa phải lớn hơn 0",
-          },
-        ]}
-      >
-        <InputNumber min={1} style={{ width: "100%" }} />
-      </Form.Item>
-
-      <Form.Item
-        label="Giá thuê / giờ (VND)"
-        name="pricePerHour"
-        rules={[
-          { required: true, message: "Vui lòng nhập giá" },
-          { type: "number", min: 0, message: "Giá không âm" },
-        ]}
-      >
-        <InputNumber min={0} step={10000} style={{ width: "100%" }} />
-      </Form.Item>
-
-      <Form.Item
-        label="Khóa theo phòng ban"
-        name="lockedDepartmentId"
-        tooltip="Công khai: mọi đơn vị đều thấy. Chọn 1 phòng ban: chỉ đơn vị đó (và admin) thấy/đặt."
-      >
-        <Select
-          allowClear
-          placeholder="Công khai (mọi phòng ban)"
-          options={departmentOptions}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div>
+        <label htmlFor="room-name" style={{ display: "block", marginBottom: 6 }}>
+          Tên phòng
+        </label>
+        <InputText
+          id="room-name"
+          value={values.name}
+          onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
+          placeholder="VD: Phòng Coda"
+          style={{ width: "100%" }}
         />
-      </Form.Item>
-    </Form>
+        {errors.name ? <small style={fieldErrorStyle}>{errors.name}</small> : null}
+      </div>
+
+      <div>
+        <label htmlFor="room-capacity" style={{ display: "block", marginBottom: 6 }}>
+          Sức chứa
+        </label>
+        <InputNumber
+          inputId="room-capacity"
+          value={values.capacity}
+          onValueChange={(e) =>
+            setValues((v) => ({ ...v, capacity: e.value ?? null }))
+          }
+          min={1}
+          style={{ width: "100%" }}
+          inputStyle={{ width: "100%" }}
+        />
+        {errors.capacity ? (
+          <small style={fieldErrorStyle}>{errors.capacity}</small>
+        ) : null}
+      </div>
+
+      <div>
+        <label htmlFor="room-price" style={{ display: "block", marginBottom: 6 }}>
+          Giá thuê / giờ (VND)
+        </label>
+        <InputNumber
+          inputId="room-price"
+          value={values.pricePerHour}
+          onValueChange={(e) =>
+            setValues((v) => ({ ...v, pricePerHour: e.value ?? null }))
+          }
+          min={0}
+          step={10000}
+          style={{ width: "100%" }}
+          inputStyle={{ width: "100%" }}
+        />
+        {errors.pricePerHour ? (
+          <small style={fieldErrorStyle}>{errors.pricePerHour}</small>
+        ) : null}
+      </div>
+
+      <div>
+        <label htmlFor="room-dept" style={{ display: "block", marginBottom: 6 }}>
+          Khóa theo phòng ban
+        </label>
+        <Dropdown
+          inputId="room-dept"
+          value={values.lockedDepartmentId}
+          onChange={(e) =>
+            setValues((v) => ({
+              ...v,
+              lockedDepartmentId: e.value ?? null,
+            }))
+          }
+          options={departmentOptions}
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Công khai (mọi phòng ban)"
+          style={{ width: "100%" }}
+        />
+        <small style={{ color: "var(--p-text-muted-color, #6b7280)" }}>
+          Công khai: mọi đơn vị đều thấy. Chọn 1 phòng ban: chỉ đơn vị đó (và
+          admin) thấy/đặt.
+        </small>
+      </div>
+    </div>
   );
 
   const columns = defineColumns<Room>([
@@ -310,11 +371,9 @@ export default function AdminRoomsPage({
         ) : (
           <Button
             size="small"
-            type="primary"
+            label="Kích hoạt lại"
             onClick={() => setActivateTarget(room)}
-          >
-            Kích hoạt lại
-          </Button>
+          />
         )}
       </TableRowActions>
     )),
@@ -325,9 +384,7 @@ export default function AdminRoomsPage({
       <PageHeader
         title="Quản lý phòng họp"
         extra={
-          <Button type="primary" onClick={openCreateModal}>
-            Thêm phòng mới
-          </Button>
+          <Button label="Thêm phòng mới" onClick={openCreateModal} />
         }
       >
         <SearchForm onReset={resetFilters}>
@@ -385,7 +442,7 @@ export default function AdminRoomsPage({
           title="Sửa phòng"
           open={modalOpen}
           onCancel={closeFormModal}
-          onOk={() => form.submit()}
+          onOk={() => void handleSubmit()}
           confirmLoading={submitting}
         >
           {roomForm}
@@ -395,7 +452,7 @@ export default function AdminRoomsPage({
           title="Thêm phòng mới"
           open={modalOpen}
           onCancel={closeFormModal}
-          onOk={() => form.submit()}
+          onOk={() => void handleSubmit()}
           confirmLoading={submitting}
         >
           {roomForm}

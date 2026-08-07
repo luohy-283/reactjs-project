@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Empty } from "antd";
 
 export type NoDataProps = {
   description?: ReactNode;
@@ -12,8 +11,21 @@ export function NoData({
   children,
 }: NoDataProps) {
   return (
-    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={description}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        padding: "24px 12px",
+        color: "var(--p-text-muted-color, #6b7280)",
+        textAlign: "center",
+      }}
+    >
+      <i className="pi pi-inbox" style={{ fontSize: 28, opacity: 0.55 }} />
+      <div>{description}</div>
       {children}
-    </Empty>
+    </div>
   );
 }

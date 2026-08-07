@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
-import { Button } from "antd";
-import type { ButtonProps } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { AppButton } from "@/components/ui/button/AppButton";
+import type { AppButtonProps } from "@/components/ui/button/AppButton";
 
-export type RefreshButtonProps = Omit<ButtonProps, "children" | "icon"> & {
+export type RefreshButtonProps = Omit<AppButtonProps, "children" | "icon"> & {
   children?: ReactNode;
   /** Hide the reload icon. */
   hideIcon?: boolean;
@@ -16,11 +15,11 @@ export function RefreshButton({
   ...buttonProps
 }: RefreshButtonProps) {
   return (
-    <Button
-      icon={hideIcon ? undefined : <ReloadOutlined />}
+    <AppButton
+      icon={hideIcon ? undefined : "pi pi-refresh"}
       {...buttonProps}
     >
       {children}
-    </Button>
+    </AppButton>
   );
 }

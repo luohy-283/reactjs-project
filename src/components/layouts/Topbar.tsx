@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
-import { Button, Layout } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
-
-const { Header } = Layout;
+import { Button } from "primereact/button";
 
 export const HEADER_HEIGHT = 64;
 
@@ -26,25 +23,29 @@ export function Topbar({
   onMenuToggle,
 }: TopbarProps) {
   return (
-    <Header
+    <header
       style={{
         zIndex: 100,
         width: "100%",
         height: HEADER_HEIGHT,
-        lineHeight: `${HEADER_HEIGHT}px`,
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
         padding: "0 24px",
         flexShrink: 0,
+        background: "var(--p-primary-color, #3B82F6)",
+        color: "var(--p-primary-contrast-color, #fff)",
+        lineHeight: 1,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         {showMenuToggle ? (
           <Button
-            type="text"
+            type="button"
+            text
+            rounded
             aria-label={menuCollapsed ? "Mở menu" : "Đóng menu"}
-            icon={menuCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            icon={menuCollapsed ? "pi pi-bars" : "pi pi-times"}
             onClick={onMenuToggle}
             style={{ color: "#fff", fontSize: 18 }}
           />
@@ -63,6 +64,6 @@ export function Topbar({
         </div>
       </div>
       {extra}
-    </Header>
+    </header>
   );
 }

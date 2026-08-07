@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Button } from "antd";
-import type { ButtonProps } from "antd";
+import { AppButton } from "@/components/ui/button/AppButton";
+import type { AppButtonProps } from "@/components/ui/button/AppButton";
 
-export type ResetButtonProps = Omit<ButtonProps, "children" | "htmlType"> & {
+export type ResetButtonProps = Omit<AppButtonProps, "children" | "htmlType"> & {
   children?: ReactNode;
 };
 
@@ -12,8 +12,8 @@ export function ResetButton({
   ...buttonProps
 }: ResetButtonProps) {
   return (
-    <Button htmlType="button" {...buttonProps}>
+    <AppButton htmlType="button" {...buttonProps}>
       {children}
-    </Button>
+    </AppButton>
   );
 }

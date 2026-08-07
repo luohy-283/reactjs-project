@@ -1,9 +1,17 @@
-import { Alert as AntAlert } from "antd";
-import type { AlertProps as AntAlertProps } from "antd";
+import type { CSSProperties, ReactNode } from "react";
+import { Alert, type AlertType } from "@/components/ui/feedback/Alert";
 
-export type BannerProps = Omit<AntAlertProps, "banner"> & {
-  /** Defaults to `info`. */
-  type?: AntAlertProps["type"];
+export type BannerProps = {
+  type?: AlertType;
+  message?: ReactNode;
+  description?: ReactNode;
+  showIcon?: boolean;
+  closable?: boolean;
+  onClose?: () => void;
+  action?: ReactNode;
+  style?: CSSProperties;
+  className?: string;
+  children?: ReactNode;
 };
 
 /**
@@ -17,10 +25,10 @@ export function Banner({
   ...props
 }: BannerProps) {
   return (
-    <AntAlert
-      banner
+    <Alert
       type={type}
       showIcon={showIcon}
+      banner
       style={{ marginBottom: 16, ...style }}
       {...props}
     />
