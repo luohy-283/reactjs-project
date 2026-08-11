@@ -13,7 +13,7 @@ npm run dev
 
 Yêu cầu Node.js >= 20 (Ant Design v6).
 
-## Tài khoản mock
+## Tài khoản seed
 
 | Email | Mật khẩu | Role |
 | --- | --- | --- |
@@ -24,26 +24,26 @@ Yêu cầu Node.js >= 20 (Ant Design v6).
 
 ```
 src/
-  api/          # Service layer (auth, rooms, bookings) + hooks
-  components/   # Layout, guards, listeners
-  context/      # AuthContext
-  lib/          # api-client, mockApi, auth-events
-  pages/        # Login, Dashboard, AdminRooms
+  app/          # Providers, router, layouts, route guards, Dashboard schedule
+  features/     # auth, rooms, bookings, users, departments, invoices, revenue, …
+                # mỗi feature: api/ (service + hooks) + components/
+  components/   # layouts/ (Topbar, Sidebar, …) + ui/ (page, table, search, …)
+  lib/          # api-client, auth-events, shared types/helpers
 ```
 
 ## Luồng chính
 
-- **Login** (`/login`): `AuthContext.login()` → `api/auth/auth.service.ts`
-- **Dashboard** (`/dashboard`): `useRoomSchedule` hook + modal đặt phòng
-- **Admin** (`/admin/rooms`): `useRooms` hook + CRUD qua `api/rooms/`
+- **Login** (`/login`): `AuthContext.login()` → `features/auth/api/auth.service.ts`
+- **Dashboard** (`/dashboard`): `useRoomSchedule` (`app/hooks/use-room-schedule.ts`) + modal đặt phòng
+- **Admin phòng** (`/admin/rooms`): `useRoomsPage` + CRUD qua `features/rooms/api/`
 
-## Kết nối Backend thật
+## Kết nối Backend
 
-Thay implementation trong `src/api/*/*.service.ts` bằng `apiClient` từ `src/lib/api-client.ts`. Giữ nguyên interface — pages/hooks không đổi.
+HTTP qua `apiClient` (`src/lib/api-client.ts`) → `VITE_API_BASE_URL` (mặc định `http://localhost:8080/api`).
+Feature UI gọi `features/*/api/*.service.ts`, không gọi raw Axios trực tiếp.
 
 ## Scripts
 
 - `npm run dev` — chạy dev server
 - `npm run build` — build production
 - `npm run lint` — ESLint
-

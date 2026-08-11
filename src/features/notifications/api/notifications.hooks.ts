@@ -51,11 +51,15 @@ export function useNotifications(enabled: boolean) {
   useEffect(() => {
     if (!enabled) {
       controllerRef.current?.abort();
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 0);
       return;
     }
 
-    void runRefresh({ showLoading: true });
+    setTimeout(() => {
+      void runRefresh({ showLoading: true });
+    }, 0);
     const timer = window.setInterval(() => {
       void runRefresh();
     }, POLL_MS);

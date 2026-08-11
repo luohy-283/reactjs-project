@@ -15,7 +15,7 @@ import { withNotificationFlash } from "@/lib/notificationNav";
 /** Returns a route for deep-linkable notices; `null` = mark-read only (no navigate). */
 function pathForNotification(n: AppNotification): string | null {
   const ref = n.bookingId;
-  if (n.type === "BOOKING_PENDING") {
+  if (n.type === "BOOKING_PENDING") { 
     return ref != null
       ? `/admin/bookings?tab=pending&highlight=${ref}`
       : "/admin/bookings?tab=pending";
