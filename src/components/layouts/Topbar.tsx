@@ -57,6 +57,7 @@ export function Topbar({
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            padding: "3px 0px",
           }}
         >
           {brand}
