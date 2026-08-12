@@ -118,45 +118,31 @@ export async function updateRoom(payload: UpdateRoomPayload): Promise<Room> {
     payload.lockedDepartmentId === undefined &&
     payload.pricePerHour === undefined;
 
-  try {
-    if (isStatusOnly) {
-      const body = { id: payload.id, isActive: payload.isActive };
-      try {
-        const { data } = await apiClient.patch<BackendRoom>(
-          `/admin/rooms/${payload.id}`,
-          body,
-        );
-        return toRoom(data);
-      } catch (error) {
-        if (!isMissingAdminRoute(error)) throw error;
-        const { data } = await apiClient.patch<BackendRoom>(
-          `/rooms/${payload.id}`,
-          body,
-        );
-        return toRoom(data);
-      }
-    }
+  const body = isStatusOnly
+    ? { isActive: payload.isActive }
+    : {
+        name: payload.name,
+        capacity: payload.capacity,
+        isActive: payload.isActive,
+        pricePerHour: payload.pricePerHour,
+        // Remote Swagger may lag; keep sending when BE adds the field.
+        lockedDepartment:
+          payload.lockedDepartmentId != null
+            ? { id: payload.lockedDepartmentId }
+            : null,
+      };
 
-    const body = {
-      id: payload.id,
-      name: payload.name,
-      capacity: payload.capacity,
-      isActive: payload.isActive,
-      pricePerHour: payload.pricePerHour,
-      lockedDepartment:
-        payload.lockedDepartmentId != null
-          ? { id: payload.lockedDepartmentId }
-          : null,
-    };
+  try {
+    // Local JHipster: /admin/rooms; remote Swagger: PATCH /rooms/{id} only.
     try {
-      const { data } = await apiClient.put<BackendRoom>(
+      const { data } = await apiClient.patch<BackendRoom>(
         `/admin/rooms/${payload.id}`,
         body,
       );
       return toRoom(data);
     } catch (error) {
       if (!isMissingAdminRoute(error)) throw error;
-      const { data } = await apiClient.put<BackendRoom>(
+      const { data } = await apiClient.patch<BackendRoom>(
         `/rooms/${payload.id}`,
         body,
       );

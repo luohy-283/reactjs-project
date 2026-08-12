@@ -209,7 +209,7 @@ export default function AdminUsersPage({
     if (!deactivateTarget) return;
     setActionLoading(true);
     try {
-      await deactivateUser(deactivateTarget.login);
+      await deactivateUser(deactivateTarget.id);
       toast.success(`Đã vô hiệu hóa ${deactivateTarget.email}`);
       setDeactivateTarget(null);
       await refetch();

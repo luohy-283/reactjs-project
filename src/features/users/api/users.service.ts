@@ -19,15 +19,23 @@ interface BackendAdminUser {
   email: string;
   fullName?: string;
   activated: boolean;
-  /** Flat role from some remote BEs (`ROLE_ADMIN` / `ADMIN`) */
-  role?: string;
+  /** Flat `ROLE_*` or AccountResponse `role: string[]` */
+  role?: string | string[];
   authorities?: string[];
   department?: Department | null;
 }
 
-function toRole(authorities: string[] | undefined, role?: string): UserRole {
-  if (role === "ADMIN" || role === "ROLE_ADMIN") return "ADMIN";
-  if (authorities?.some((a) => a === "ROLE_ADMIN" || a === "ADMIN")) {
+function authorityList(u: BackendAdminUser): string[] {
+  if (u.authorities && u.authorities.length > 0) return u.authorities;
+  if (Array.isArray(u.role)) return u.role;
+  if (typeof u.role === "string") return [u.role];
+  return [];
+}
+
+function toRole(u: BackendAdminUser): UserRole {
+  if (
+    authorityList(u).some((a) => a === "ROLE_ADMIN" || a === "ADMIN")
+  ) {
     return "ADMIN";
   }
   return "USER";
@@ -37,37 +45,36 @@ function toAuthorities(role: UserRole): string[] {
   return role === "ADMIN" ? ["ROLE_ADMIN", "ROLE_USER"] : ["ROLE_USER"];
 }
 
+/** Remote CreateUserRequest / UpdateUserRequest enum */
+function toRemoteRole(role: UserRole): "ROLE_ADMIN" | "ROLE_USER" {
+  return role === "ADMIN" ? "ROLE_ADMIN" : "ROLE_USER";
+}
+
 function toManagedUser(u: BackendAdminUser): ManagedUser {
-  const role = toRole(u.authorities, u.role);
-  const authorities =
-    u.authorities && u.authorities.length > 0
-      ? u.authorities
-      : toAuthorities(role);
+  const role = toRole(u);
+  const authorities = authorityList(u);
   return {
     id: u.id,
     login: u.login ?? u.email,
     email: u.email,
     fullName: u.fullName ?? "",
     activated: u.activated,
-    authorities,
+    authorities: authorities.length > 0 ? authorities : toAuthorities(role),
     role,
     department: u.department ?? null,
   };
 }
 
 function toAccountProfile(u: BackendAdminUser): AccountProfile {
-  const role = toRole(u.authorities, u.role);
-  const authorities =
-    u.authorities && u.authorities.length > 0
-      ? u.authorities
-      : toAuthorities(role);
+  const role = toRole(u);
+  const authorities = authorityList(u);
   return {
     id: u.id,
     login: u.login ?? u.email,
     email: u.email,
     fullName: u.fullName ?? "",
     activated: u.activated,
-    authorities,
+    authorities: authorities.length > 0 ? authorities : toAuthorities(role),
     department: u.department ?? null,
   };
 }
@@ -102,7 +109,7 @@ export async function requestDepartmentChange(
 ): Promise<DepartmentChangeRequest> {
   try {
     const { data } = await apiClient.post<DepartmentChangeRequest>(
-      "/account/department-change-requests",
+      "/department-change-requests",
       { requestedDepartmentId },
     );
     return data;
@@ -116,7 +123,7 @@ export async function getMyPendingDepartmentChange(
 ): Promise<DepartmentChangeRequest | null> {
   try {
     const { data, status } = await apiClient.get<DepartmentChangeRequest>(
-      "/account/department-change-requests/pending",
+      "/department-change-requests/pending",
       { signal, validateStatus: (s) => s === 200 || s === 204 },
     );
     if (status === 204 || !data) return null;
@@ -147,7 +154,14 @@ export async function getUsersPage(
   const { signal, page = 0, size = 10, sort, q, activated } = options;
   try {
     const { data, headers } = await apiClient.get<
-      BackendAdminUser[] | { content?: BackendAdminUser[]; totalElements?: number; totalPages?: number; number?: number; size?: number }
+      | BackendAdminUser[]
+      | {
+          content?: BackendAdminUser[];
+          totalElements?: number;
+          totalPages?: number;
+          number?: number;
+          size?: number;
+        }
     >("/admin/users", {
       params: {
         page,
@@ -183,25 +197,21 @@ export async function createUser(
   payload: CreateUserPayload,
 ): Promise<ManagedUser> {
   const body = {
-    login: payload.email.toLowerCase(),
     email: payload.email.toLowerCase(),
     fullName: payload.fullName,
     password: payload.password,
     activated: payload.activated ?? true,
-    authorities: toAuthorities(payload.role),
-    department:
-      payload.departmentId != null ? { id: payload.departmentId } : null,
+    role: toRemoteRole(payload.role),
+    ...(payload.departmentId != null
+      ? { departmentId: payload.departmentId }
+      : {}),
   };
   try {
     const { data } = await apiClient.post<BackendAdminUser>(
       "/admin/users",
       body,
     );
-    return toManagedUser({
-      ...data,
-      authorities: data.authorities ?? body.authorities,
-      department: data.department ?? null,
-    });
+    return toManagedUser(data);
   } catch (error) {
     throw toApiError(error, "Không tạo được user");
   }
@@ -211,19 +221,17 @@ export async function updateUser(
   payload: UpdateUserPayload,
 ): Promise<ManagedUser> {
   const body = {
-    id: payload.id,
-    login: payload.login.toLowerCase(),
     email: payload.email.toLowerCase(),
     fullName: payload.fullName,
     activated: payload.activated,
-    authorities: toAuthorities(payload.role),
-    password: payload.password,
-    department:
-      payload.departmentId != null ? { id: payload.departmentId } : null,
+    role: toRemoteRole(payload.role),
+    ...(payload.departmentId != null
+      ? { departmentId: payload.departmentId }
+      : { departmentId: null }),
   };
   try {
     const { data } = await apiClient.put<BackendAdminUser>(
-      "/admin/users",
+      `/admin/users/${payload.id}`,
       body,
     );
     return toManagedUser(data);
@@ -232,9 +240,10 @@ export async function updateUser(
   }
 }
 
-export async function deactivateUser(login: string): Promise<void> {
+/** Remote Swagger: PATCH /admin/users/{id}/deactivate */
+export async function deactivateUser(id: number): Promise<void> {
   try {
-    await apiClient.delete(`/admin/users/${encodeURIComponent(login)}`);
+    await apiClient.patch(`/admin/users/${id}/deactivate`);
   } catch (error) {
     throw toApiError(error, "Không vô hiệu hóa được user");
   }

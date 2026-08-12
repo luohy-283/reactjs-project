@@ -109,15 +109,16 @@ async function postBookingAction(
   errorMessage: string,
 ): Promise<Booking> {
   try {
+    // Remote Swagger: /bookings/{id}/… only. Local may dual-map /admin/bookings.
     try {
       const { data } = await apiClient.post<BackendBookingDto>(
-        `/admin/bookings/${id}/${action}`,
+        `/bookings/${id}/${action}`,
       );
       return mapBackendBooking(data);
     } catch (error) {
       if (!isMissingAdminRoute(error)) throw error;
       const { data } = await apiClient.post<BackendBookingDto>(
-        `/bookings/${id}/${action}`,
+        `/admin/bookings/${id}/${action}`,
       );
       return mapBackendBooking(data);
     }
