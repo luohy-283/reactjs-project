@@ -30,10 +30,17 @@ export function useNotifications(enabled: boolean) {
       setError(null);
     }
     try {
-      const [page, count] = await Promise.all([
-        getNotifications(controller.signal),
-        getUnreadNotificationCount(controller.signal),
-      ]);
+      // List is required; unread-count soft-fails (remote BE may 500) → derive from items.
+      const page = await getNotifications(controller.signal);
+      let count = page.items.filter((n) => !n.read).length;
+      try {
+        count = await getUnreadNotificationCount(controller.signal);
+      } catch (countErr) {
+        // Remote unread-count may 500; keep count derived from list `read` flags.
+        if (isAbortError(countErr)) {
+          /* aborted — outer guard skips setState */
+        }
+      }
       if (
         !controller.signal.aborted &&
         !mutationInFlightRef.current
