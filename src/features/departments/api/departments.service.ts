@@ -6,7 +6,7 @@ export async function getDepartments(
   signal?: AbortSignal,
 ): Promise<Department[]> {
   try {
-    const { data } = await apiClient.get<Department[]>("/departments", {
+    const { data } = await apiClient.get<Department[]>("/departments/user", {
       signal,
     });
     return data;
