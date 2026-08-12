@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Button, Layout } from "antd";
+import { Button, Layout, theme } from "antd";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 
 const { Header } = Layout;
@@ -25,6 +25,8 @@ export function Topbar({
   menuCollapsed = false,
   onMenuToggle,
 }: TopbarProps) {
+  const { token } = theme.useToken();
+
   return (
     <Header
       style={{
@@ -37,6 +39,8 @@ export function Topbar({
         alignItems: "center",
         padding: "0 24px",
         flexShrink: 0,
+        background: token.colorBgContainer,
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -46,12 +50,12 @@ export function Topbar({
             aria-label={menuCollapsed ? "Mở menu" : "Đóng menu"}
             icon={menuCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={onMenuToggle}
-            style={{ color: "#fff", fontSize: 18 }}
+            style={{ color: token.colorText, fontSize: 18 }}
           />
         ) : null}
         <div
           style={{
-            color: "#fff",
+            color: token.colorText,
             fontWeight: 600,
             fontSize: 16,
             overflow: "hidden",

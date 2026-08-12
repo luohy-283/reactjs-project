@@ -15,7 +15,7 @@ export function AppMenu({
   items,
   selectedKeys,
   onClick,
-  theme = "dark",
+  theme = "light",
   mode = "inline",
 }: AppMenuProps) {
   return (
@@ -25,7 +25,7 @@ export function AppMenu({
       selectedKeys={selectedKeys}
       items={items}
       onClick={onClick}
-      style={{ height: "100%" }}
+      style={{ height: "100%", borderInlineEnd: "none" }}
     />
   );
 }

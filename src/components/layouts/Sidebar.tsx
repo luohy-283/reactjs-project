@@ -12,6 +12,8 @@ export type SidebarProps = {
   onCollapse?: (collapsed: boolean) => void;
   /** `true` when viewport is below `breakpoint`. */
   onBreakpoint?: (broken: boolean) => void;
+  /** Follow app light/dark — Ant Design Sider defaults to always-dark. */
+  theme?: "light" | "dark";
 };
 
 /** Ant Design Sider — fills shell height under Topbar; menu scrolls inside if needed. */
@@ -23,9 +25,11 @@ export function Sidebar({
   collapsed,
   onCollapse,
   onBreakpoint,
+  theme = "light",
 }: SidebarProps) {
   return (
     <Sider
+      theme={theme}
       breakpoint={breakpoint}
       collapsedWidth={collapsedWidth}
       width={width}

@@ -42,6 +42,8 @@ export default function AppLayout() {
     navigate("/login");
   };
 
+  const shellTheme = isDark ? "dark" : "light";
+
   return (
     <Layout style={{ height: "100vh", overflow: "hidden" }}>
       <Topbar
@@ -65,6 +67,7 @@ export default function AppLayout() {
       />
       <Layout style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <Sidebar
+          theme={shellTheme}
           collapsed={siderCollapsed}
           onCollapse={setSiderCollapsed}
           onBreakpoint={(broken) => {
@@ -75,6 +78,7 @@ export default function AppLayout() {
           }}
         >
           <AppMenu
+            theme={shellTheme}
             selectedKeys={[location.pathname]}
             items={menuItems}
             onClick={({ key }) => {

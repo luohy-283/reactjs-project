@@ -1,4 +1,4 @@
-import { Avatar, Button, Dropdown } from "antd";
+import { Avatar, Button, Dropdown, theme } from "antd";
 import type { MenuProps } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 
@@ -22,6 +22,7 @@ export function UserMenu({
   onOpenInvoices,
   logoutLabel = "Đăng xuất",
 }: UserMenuProps) {
+  const { token } = theme.useToken();
   const items: MenuProps["items"] = [
     {
       key: "info",
@@ -51,7 +52,7 @@ export function UserMenu({
       <Button
         type="text"
         style={{
-          color: "#fff",
+          color: token.colorText,
           display: "inline-flex",
           alignItems: "center",
           gap: 8,

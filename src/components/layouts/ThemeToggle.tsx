@@ -1,4 +1,4 @@
-import { Button } from "antd";
+import { Button, theme } from "antd";
 import { MoonOutlined, SunOutlined } from "@ant-design/icons";
 
 export type ThemeToggleProps = {
@@ -8,6 +8,7 @@ export type ThemeToggleProps = {
 
 /** Header theme switch — props only (no context imports). */
 export function ThemeToggle({ isDark, onToggle }: ThemeToggleProps) {
+  const { token } = theme.useToken();
   return (
     <Button
       type="text"
@@ -16,7 +17,7 @@ export function ThemeToggle({ isDark, onToggle }: ThemeToggleProps) {
       icon={isDark ? <SunOutlined /> : <MoonOutlined />}
       onClick={onToggle}
       style={{
-        color: "#fff",
+        color: token.colorText,
         fontSize: 18,
         display: "inline-flex",
         alignItems: "center",
