@@ -6,13 +6,15 @@ import { ThemeProvider } from "@/app/theme/ThemeContext";
 import { useThemeMode } from "@/app/theme/useThemeMode";
 
 function ThemedApp({ children }: { children: ReactNode }) {
-  const { isDark } = useThemeMode();
+  const { isDark, mode } = useThemeMode();
 
   return (
     <ConfigProvider
       locale={viVN}
       theme={{
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        // CSS variables update more reliably on algorithm switch (antd ≥5.8 / 6).
+        cssVar: { key: mode },
       }}
     >
       <AntApp>

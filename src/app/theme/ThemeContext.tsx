@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -23,6 +24,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyDocumentTheme(initial);
     return initial;
   });
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
 
   useEffect(() => {
     applyDocumentTheme(mode);
@@ -30,7 +33,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [mode]);
 
   const toggleTheme = useCallback(() => {
-    setMode((prev) => (prev === "dark" ? "light" : "dark"));
+    // Explicit next value + sync persist (avoid Strict Mode / remount re-reading stale localStorage).
+    const next: ThemeMode = modeRef.current === "dark" ? "light" : "dark";
+    applyDocumentTheme(next);
+    writeThemeMode(next);
+    setMode(next);
   }, []);
 
   const value = useMemo(

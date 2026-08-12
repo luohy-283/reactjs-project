@@ -30,7 +30,7 @@ export function Topbar({
   return (
     <Header
       style={{
-        zIndex: 100,
+        zIndex: 200,
         width: "100%",
         height: HEADER_HEIGHT,
         lineHeight: 1,

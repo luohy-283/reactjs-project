@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Layout, Space } from "antd";
+import { Layout, Space, theme } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useDepartments } from "@/features/departments/api/departments.hooks";
@@ -13,9 +13,10 @@ import { ThemeToggle } from "@/components/layouts/ThemeToggle";
 import { UserMenu } from "@/components/layouts/UserMenu";
 import { ProfileDialog } from "@/features/users/components/ProfileDialog";
 
-const { Content } = Layout; 
+const { Content } = Layout;
 
 export default function AppLayout() {
+  const { token } = theme.useToken();
   const { user, logout, setUser } = useAuth();
   const { isDark, toggleTheme } = useThemeMode();
   const navigate = useNavigate();
@@ -45,7 +46,13 @@ export default function AppLayout() {
   const shellTheme = isDark ? "dark" : "light";
 
   return (
-    <Layout style={{ height: "100vh", overflow: "hidden" }}>
+    <Layout
+      style={{
+        height: "100vh",
+        overflow: "hidden",
+        background: token.colorBgLayout,
+      }}
+    >
       <Topbar
         showMenuToggle={isMobileNav}
         menuCollapsed={siderCollapsed}
@@ -65,7 +72,14 @@ export default function AppLayout() {
           </Space>
         }
       />
-      <Layout style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+      <Layout
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
+          background: token.colorBgLayout,
+        }}
+      >
         <Sidebar
           theme={shellTheme}
           collapsed={siderCollapsed}
@@ -89,7 +103,15 @@ export default function AppLayout() {
             }}
           />
         </Sidebar>
-        <Layout style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: "auto" }}>
+        <Layout
+          style={{
+            flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            overflow: "auto",
+            background: token.colorBgLayout,
+          }}
+        >
           <Content style={{ margin: 24, minHeight: 280 }}>
             <Outlet />
           </Content>
