@@ -11,18 +11,22 @@ import type {
   UpdateUserPayload,
 } from "@/features/users/api/users.types";
 import type { PageParams, PagedResult } from "@/lib/pagination";
+import { toPagedResult } from "@/lib/pagination";
 
 interface BackendAdminUser {
   id: number;
-  login: string;
+  login?: string;
   email: string;
   fullName?: string;
   activated: boolean;
+  /** Flat role from some remote BEs (`ROLE_ADMIN` / `ADMIN`) */
+  role?: string;
   authorities?: string[];
   department?: Department | null;
 }
 
-function toRole(authorities: string[] | undefined): UserRole {
+function toRole(authorities: string[] | undefined, role?: string): UserRole {
+  if (role === "ADMIN" || role === "ROLE_ADMIN") return "ADMIN";
   if (authorities?.some((a) => a === "ROLE_ADMIN" || a === "ADMIN")) {
     return "ADMIN";
   }
@@ -34,27 +38,36 @@ function toAuthorities(role: UserRole): string[] {
 }
 
 function toManagedUser(u: BackendAdminUser): ManagedUser {
-  const authorities = u.authorities ?? [];
+  const role = toRole(u.authorities, u.role);
+  const authorities =
+    u.authorities && u.authorities.length > 0
+      ? u.authorities
+      : toAuthorities(role);
   return {
     id: u.id,
-    login: u.login,
+    login: u.login ?? u.email,
     email: u.email,
     fullName: u.fullName ?? "",
     activated: u.activated,
     authorities,
-    role: toRole(authorities),
+    role,
     department: u.department ?? null,
   };
 }
 
 function toAccountProfile(u: BackendAdminUser): AccountProfile {
+  const role = toRole(u.authorities, u.role);
+  const authorities =
+    u.authorities && u.authorities.length > 0
+      ? u.authorities
+      : toAuthorities(role);
   return {
     id: u.id,
-    login: u.login,
+    login: u.login ?? u.email,
     email: u.email,
     fullName: u.fullName ?? "",
     activated: u.activated,
-    authorities: u.authorities ?? [],
+    authorities,
     department: u.department ?? null,
   };
 }
@@ -127,35 +140,39 @@ export interface GetUsersOptions extends PageParams {
   signal?: AbortSignal;
 }
 
-/** Paginated admin users — JHipster returns a list body + `X-Total-Count`. */
+/** Paginated admin users — list + `X-Total-Count`, or Spring `{ content, totalElements }`. */
 export async function getUsersPage(
   options: GetUsersOptions = {},
 ): Promise<PagedResult<ManagedUser>> {
   const { signal, page = 0, size = 10, sort, q, activated } = options;
   try {
-    const { data, headers } = await apiClient.get<BackendAdminUser[]>(
-      "/admin/users",
-      {
-        params: {
+    const { data, headers } = await apiClient.get<
+      BackendAdminUser[] | { content?: BackendAdminUser[]; totalElements?: number; totalPages?: number; number?: number; size?: number }
+    >("/admin/users", {
+      params: {
+        page,
+        size,
+        ...(sort ? { sort } : {}),
+        ...(q?.trim() ? { q: q.trim() } : {}),
+        ...(activated !== undefined ? { activated } : {}),
+      },
+      signal,
+    });
+    const result = toPagedResult(data, toManagedUser);
+    const totalHeader = headers["x-total-count"];
+    if (totalHeader != null) {
+      const totalElements = Number(totalHeader);
+      if (Number.isFinite(totalElements)) {
+        return {
+          ...result,
           page,
           size,
-          ...(sort ? { sort } : {}),
-          ...(q?.trim() ? { q: q.trim() } : {}),
-          ...(activated !== undefined ? { activated } : {}),
-        },
-        signal,
-      },
-    );
-    const items = (Array.isArray(data) ? data : []).map(toManagedUser);
-    const totalHeader = headers["x-total-count"];
-    const totalElements = totalHeader != null ? Number(totalHeader) : items.length;
-    return {
-      items,
-      page,
-      size,
-      totalElements: Number.isFinite(totalElements) ? totalElements : items.length,
-      totalPages: size > 0 ? Math.ceil((Number.isFinite(totalElements) ? totalElements : items.length) / size) : 1,
-    };
+          totalElements,
+          totalPages: size > 0 ? Math.ceil(totalElements / size) : 1,
+        };
+      }
+    }
+    return { ...result, page: result.page || page, size: result.size || size };
   } catch (error) {
     if (isAbortError(error)) throw error;
     throw toApiError(error, "Không tải được danh sách user");
