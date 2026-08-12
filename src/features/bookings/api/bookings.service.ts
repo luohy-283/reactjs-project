@@ -1,4 +1,3 @@
-import { isAxiosError, type AxiosError } from "axios";
 import { apiClient } from "@/lib/api-client";
 import { isAbortError, toApiError } from "@/lib/api-error";
 import {
@@ -21,13 +20,6 @@ export interface GetBookingsOptions extends PageParams {
   /** APPROVED bookings with startTime after now */
   upcoming?: boolean;
   signal?: AbortSignal;
-}
-
-function isMissingAdminRoute(error: unknown): error is AxiosError {
-  if (!isAxiosError(error)) return false;
-  // Legacy BE without /api/admin/bookings: fall back only on HTTP 404.
-  // Current BE dual-maps /api/admin/bookings. Do not swallow 400/500.
-  return error.response?.status === 404;
 }
 
 function buildQueryParams(options: GetBookingsOptions) {
@@ -93,7 +85,6 @@ export async function createBooking(
     startTime: payload.startTime,
     endTime: payload.endTime,
     roomId: payload.roomId,
-    room: { id: payload.roomId },
   };
   try {
     const { data } = await apiClient.post<BackendBookingDto>("/bookings", body);
@@ -103,25 +94,17 @@ export async function createBooking(
   }
 }
 
+/** Remote Swagger: POST /api/bookings/{id}/approve|reject|cancel (no /admin/bookings). */
 async function postBookingAction(
   id: number,
   action: "approve" | "reject" | "cancel",
   errorMessage: string,
 ): Promise<Booking> {
   try {
-    // Remote Swagger: /bookings/{id}/… only. Local may dual-map /admin/bookings.
-    try {
-      const { data } = await apiClient.post<BackendBookingDto>(
-        `/bookings/${id}/${action}`,
-      );
-      return mapBackendBooking(data);
-    } catch (error) {
-      if (!isMissingAdminRoute(error)) throw error;
-      const { data } = await apiClient.post<BackendBookingDto>(
-        `/admin/bookings/${id}/${action}`,
-      );
-      return mapBackendBooking(data);
-    }
+    const { data } = await apiClient.post<BackendBookingDto>(
+      `/bookings/${id}/${action}`,
+    );
+    return mapBackendBooking(data);
   } catch (error) {
     throw toApiError(error, errorMessage);
   }

@@ -1,4 +1,3 @@
-import { isAxiosError, type AxiosError } from "axios";
 import { apiClient } from "@/lib/api-client";
 import { isAbortError, toApiError } from "@/lib/api-error";
 import {
@@ -43,13 +42,6 @@ function toRoom(room: BackendRoom): Room {
   };
 }
 
-function isMissingAdminRoute(error: unknown): error is AxiosError {
-  if (!isAxiosError(error)) return false;
-  // Legacy BE without /api/admin/rooms: fall back only on HTTP 404.
-  // Current BE dual-maps /api/admin/rooms. Do not swallow 400/500.
-  return error.response?.status === 404;
-}
-
 function buildQueryParams(options: Omit<GetRoomsOptions, "signal">) {
   const params: Record<string, string | number | boolean> = {};
   if (options.q?.trim()) params.q = options.q.trim();
@@ -85,31 +77,27 @@ export async function getRooms(signal?: AbortSignal): Promise<Room[]> {
   return result.items;
 }
 
+/** Remote Swagger: POST /api/rooms only (no /admin/rooms). */
 export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
-  const body = {
+  const body: Record<string, unknown> = {
     name: payload.name,
     capacity: payload.capacity,
     isActive: true,
     pricePerHour: payload.pricePerHour,
-    lockedDepartment:
-      payload.lockedDepartmentId != null
-        ? { id: payload.lockedDepartmentId }
-        : null,
   };
+  // Omit until remote BE documents lockedDepartment on CreateRoomRequest.
+  if (payload.lockedDepartmentId != null) {
+    body.lockedDepartment = { id: payload.lockedDepartmentId };
+  }
   try {
-    try {
-      const { data } = await apiClient.post<BackendRoom>("/admin/rooms", body);
-      return toRoom(data);
-    } catch (error) {
-      if (!isMissingAdminRoute(error)) throw error;
-      const { data } = await apiClient.post<BackendRoom>("/rooms", body);
-      return toRoom(data);
-    }
+    const { data } = await apiClient.post<BackendRoom>("/rooms", body);
+    return toRoom(data);
   } catch (error) {
     throw toApiError(error, "Không tạo được phòng");
   }
 }
 
+/** Remote Swagger: PATCH /api/rooms/{id} only (no /admin/rooms). */
 export async function updateRoom(payload: UpdateRoomPayload): Promise<Room> {
   const isStatusOnly =
     payload.isActive !== undefined &&
@@ -118,36 +106,25 @@ export async function updateRoom(payload: UpdateRoomPayload): Promise<Room> {
     payload.lockedDepartmentId === undefined &&
     payload.pricePerHour === undefined;
 
-  const body = isStatusOnly
+  const body: Record<string, unknown> = isStatusOnly
     ? { isActive: payload.isActive }
     : {
         name: payload.name,
         capacity: payload.capacity,
         isActive: payload.isActive,
         pricePerHour: payload.pricePerHour,
-        // Remote Swagger may lag; keep sending when BE adds the field.
-        lockedDepartment:
-          payload.lockedDepartmentId != null
-            ? { id: payload.lockedDepartmentId }
-            : null,
       };
+  // Omit null — remote currently has no lockedDepartment field (awaiting BE).
+  if (!isStatusOnly && payload.lockedDepartmentId != null) {
+    body.lockedDepartment = { id: payload.lockedDepartmentId };
+  }
 
   try {
-    // Local JHipster: /admin/rooms; remote Swagger: PATCH /rooms/{id} only.
-    try {
-      const { data } = await apiClient.patch<BackendRoom>(
-        `/admin/rooms/${payload.id}`,
-        body,
-      );
-      return toRoom(data);
-    } catch (error) {
-      if (!isMissingAdminRoute(error)) throw error;
-      const { data } = await apiClient.patch<BackendRoom>(
-        `/rooms/${payload.id}`,
-        body,
-      );
-      return toRoom(data);
-    }
+    const { data } = await apiClient.patch<BackendRoom>(
+      `/rooms/${payload.id}`,
+      body,
+    );
+    return toRoom(data);
   } catch (error) {
     throw toApiError(error, "Không cập nhật được phòng");
   }
