@@ -7,10 +7,9 @@ export function formatDateTimeRange(startTime: string, endTime: string): string 
 }
 
 /**
- * Wire wall-clock local time to API `date-time`.
- * Prefer offset (`…+07:00`) over `toISOString()` UTC (`…Z`) so the payload
- * matches what the user picked and LocalDateTime BEs do not shift hours.
+ * Wire wall-clock local time for remote BE `LocalDateTime`
+ * (no offset / `Z` — those cause DateTimeParseException).
  */
 export function toApiDateTime(value: Dayjs): string {
-  return value.format("YYYY-MM-DDTHH:mm:ssZ");
+  return value.format("YYYY-MM-DDTHH:mm:ss");
 }
