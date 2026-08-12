@@ -6,15 +6,17 @@ import { ThemeProvider } from "@/app/theme/ThemeContext";
 import { useThemeMode } from "@/app/theme/useThemeMode";
 
 function ThemedApp({ children }: { children: ReactNode }) {
-  const { isDark, mode } = useThemeMode();
+  const { isDark } = useThemeMode();
 
   return (
     <ConfigProvider
       locale={viVN}
       theme={{
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
-        // CSS variables update more reliably on algorithm switch (antd ≥5.8 / 6).
-        cssVar: { key: mode },
+        // Fixed cssVar scope + no hash → switch updates variables in place (no style rebuild flash).
+        // Do NOT set cssVar.key to light/dark — that remounts the variable scope and flashes.
+        cssVar: true,
+        hashed: false,
       }}
     >
       <AntApp>

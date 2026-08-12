@@ -11,6 +11,13 @@ html[data-theme="dark"] body {
   background: #141414;
 }
 
+/* Instant theme paint — avoid badge / button / sticky thead lagging behind */
+html.theme-switching,
+html.theme-switching * {
+  transition: none !important;
+  animation: none !important;
+}
+
 #root {
   min-height: 100vh;
 }

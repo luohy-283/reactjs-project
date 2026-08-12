@@ -13,6 +13,8 @@ import {
 } from "@/lib/theme-storage";
 import { ThemeContext } from "@/app/theme/theme-context";
 
+const THEME_SWITCH_CLASS = "theme-switching";
+
 function applyDocumentTheme(mode: ThemeMode) {
   document.documentElement.setAttribute("data-theme", mode);
   document.documentElement.style.colorScheme = mode;
@@ -26,18 +28,36 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
   const modeRef = useRef(mode);
   modeRef.current = mode;
+  const switchTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     applyDocumentTheme(mode);
     writeThemeMode(mode);
   }, [mode]);
 
+  useEffect(() => {
+    return () => {
+      if (switchTimerRef.current != null) {
+        window.clearTimeout(switchTimerRef.current);
+      }
+    };
+  }, []);
+
   const toggleTheme = useCallback(() => {
-    // Explicit next value + sync persist (avoid Strict Mode / remount re-reading stale localStorage).
     const next: ThemeMode = modeRef.current === "dark" ? "light" : "dark";
+    const root = document.documentElement;
+    // Suppress CSS transitions for one frame so badge / table / button don't lag mid-tween.
+    root.classList.add(THEME_SWITCH_CLASS);
     applyDocumentTheme(next);
     writeThemeMode(next);
     setMode(next);
+    if (switchTimerRef.current != null) {
+      window.clearTimeout(switchTimerRef.current);
+    }
+    switchTimerRef.current = window.setTimeout(() => {
+      root.classList.remove(THEME_SWITCH_CLASS);
+      switchTimerRef.current = null;
+    }, 50);
   }, []);
 
   const value = useMemo(
