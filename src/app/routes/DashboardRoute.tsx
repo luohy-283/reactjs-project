@@ -28,6 +28,7 @@ import { createBooking } from "@/features/bookings/api/bookings.service";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useRoomSchedule } from "@/app/hooks/use-room-schedule";
 import { estimateBookingAmount, formatVnd } from "@/lib/money";
+import { toApiDateTime } from "@/lib/datetime";
 
 /** App-layer route: composes auth + rooms + bookings (no cross-feature imports). */
 export default function DashboardRoute() {
@@ -82,8 +83,8 @@ export default function DashboardRoute() {
   const estimatedFee = useMemo(() => {
     const room = rooms.find((r) => r.id === watchedRoomId);
     if (!room || !watchedStart || !watchedEnd) return null;
-    const startIso = combineDateTime(watchedStart).toISOString();
-    const endIso = combineDateTime(watchedEnd).toISOString();
+    const startIso = toApiDateTime(combineDateTime(watchedStart));
+    const endIso = toApiDateTime(combineDateTime(watchedEnd));
     if (!dayjs(endIso).isAfter(dayjs(startIso))) return null;
     return estimateBookingAmount(room.pricePerHour, startIso, endIso);
   }, [rooms, watchedRoomId, watchedStart, watchedEnd, selectedDate]);
@@ -124,8 +125,8 @@ export default function DashboardRoute() {
         roomId: values.roomId,
         userId: user.id,
         title: values.title,
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString(),
+        startTime: toApiDateTime(startDateTime),
+        endTime: toApiDateTime(endDateTime),
       });
       toast.success(
         user.role === "ADMIN"
@@ -150,10 +151,12 @@ export default function DashboardRoute() {
     setBookingError("");
     form.resetFields();
     if (prefill) {
-      const start = dayjs()
+      // Use dashboard selected date — not `dayjs()` (today) — so TimePicker/API stay aligned.
+      const start = selectedDate
         .hour(prefill.startHour)
         .minute(prefill.startMinute)
-        .second(0);
+        .second(0)
+        .millisecond(0);
       const end = start.add(1, "hour");
       form.setFieldsValue({
         roomId: prefill.roomId,
