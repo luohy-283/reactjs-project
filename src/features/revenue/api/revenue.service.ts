@@ -19,6 +19,8 @@ interface BackendRevenuePeriod {
   averageAmount?: number | string;
   cancelledCount?: number;
   cancellationRate?: number | string;
+  equipmentCost?: number | string;
+  netAmount?: number | string;
 }
 
 interface BackendRevenueReport {
@@ -28,12 +30,16 @@ interface BackendRevenueReport {
   averageAmount?: number | string;
   cancelledCount?: number;
   cancellationRate?: number | string;
+  equipmentCost?: number | string;
+  netAmount?: number | string;
   previous?: BackendRevenuePeriod;
   byRoom?: Array<{
     roomId: number;
     roomName: string;
     bookingCount: number;
     amount: number | string;
+    equipmentCost?: number | string;
+    netAmount?: number | string;
     sharePercent?: number | string;
   }>;
   byDay?: Array<{
@@ -51,6 +57,8 @@ function toPeriod(data: BackendRevenuePeriod | undefined): RevenuePeriod {
     averageAmount: Number(data?.averageAmount ?? 0),
     cancelledCount: data?.cancelledCount ?? 0,
     cancellationRate: Number(data?.cancellationRate ?? 0),
+    equipmentCost: Number(data?.equipmentCost ?? 0),
+    netAmount: Number(data?.netAmount ?? 0),
   };
 }
 
@@ -62,6 +70,8 @@ function toReport(data: BackendRevenueReport): RevenueReport {
     averageAmount: Number(data.averageAmount ?? 0),
     cancelledCount: data.cancelledCount ?? 0,
     cancellationRate: Number(data.cancellationRate ?? 0),
+    equipmentCost: Number(data.equipmentCost ?? 0),
+    netAmount: Number(data.netAmount ?? 0),
     previous: toPeriod(data.previous),
     byRoom: (data.byRoom ?? []).map(toByRoom),
     byDay: (data.byDay ?? []).map((d) => ({
@@ -77,6 +87,8 @@ function toByRoom(r: {
   roomName: string;
   bookingCount: number;
   amount: number | string;
+  equipmentCost?: number | string;
+  netAmount?: number | string;
   sharePercent?: number | string;
 }): RevenueByRoom {
   return {
@@ -84,6 +96,8 @@ function toByRoom(r: {
     roomName: r.roomName,
     bookingCount: r.bookingCount,
     amount: Number(r.amount ?? 0),
+    equipmentCost: Number(r.equipmentCost ?? 0),
+    netAmount: Number(r.netAmount ?? 0),
     sharePercent: Number(r.sharePercent ?? 0),
   };
 }

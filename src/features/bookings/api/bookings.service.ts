@@ -14,6 +14,10 @@ import type { Booking, BookingStatus, CreateBookingPayload } from "@/lib/types/b
 
 export interface GetBookingsOptions extends PageParams {
   date?: string;
+  /** Inclusive start date (yyyy-MM-dd) — filters startTime ≥ from 00:00 */
+  from?: string;
+  /** Inclusive end date (yyyy-MM-dd) — filters startTime < to+1 day */
+  to?: string;
   status?: BookingStatus;
   /** Text search: title, room name, user login/email/fullName */
   q?: string;
@@ -23,8 +27,10 @@ export interface GetBookingsOptions extends PageParams {
 }
 
 function buildQueryParams(options: GetBookingsOptions) {
-  const params: Record<string, string | number | boolean> = {};
+  const params: Record<string, string | number | boolean | string[]> = {};
   if (options.date) params.date = options.date;
+  if (options.from) params.from = options.from;
+  if (options.to) params.to = options.to;
   if (options.status) params.status = options.status;
   if (options.q?.trim()) params.q = options.q.trim();
   if (options.upcoming) params.upcoming = true;

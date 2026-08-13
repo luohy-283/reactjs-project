@@ -215,7 +215,7 @@ export function NotificationBell() {
           aria-label="Thông báo"
           icon={<BellOutlined />}
           style={{
-            color: "#fff",
+            color: token.colorText,
             fontSize: 18,
             display: "inline-flex",
             alignItems: "center",

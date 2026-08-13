@@ -1,7 +1,11 @@
 import { apiClient } from "@/lib/api-client";
 import { isAbortError, toApiError } from "@/lib/api-error";
 import type { Department } from "@/lib/types/department";
-import type { UserRole } from "@/lib/types/user";
+import {
+  parseUserRole,
+  primaryRoleFromAuthorities,
+  type UserRole,
+} from "@/lib/types/user";
 import type {
   AccountProfile,
   CreateUserPayload,
@@ -19,7 +23,7 @@ interface BackendAdminUser {
   email: string;
   fullName?: string;
   activated: boolean;
-  /** Flat `ROLE_*` or AccountResponse `role: string[]` */
+  /** Flat primary role from BE, or AccountResponse `role: string[]` */
   role?: string | string[];
   authorities?: string[];
   department?: Department | null;
@@ -28,26 +32,22 @@ interface BackendAdminUser {
 function authorityList(u: BackendAdminUser): string[] {
   if (u.authorities && u.authorities.length > 0) return u.authorities;
   if (Array.isArray(u.role)) return u.role;
-  if (typeof u.role === "string") return [u.role];
+  if (typeof u.role === "string" && u.role.startsWith("ROLE_")) return [u.role];
   return [];
 }
 
 function toRole(u: BackendAdminUser): UserRole {
-  if (
-    authorityList(u).some((a) => a === "ROLE_ADMIN" || a === "ADMIN")
-  ) {
-    return "ADMIN";
+  if (typeof u.role === "string" && !u.role.startsWith("ROLE_") && !Array.isArray(u.role)) {
+    return parseUserRole(u.role);
   }
-  return "USER";
-}
-
-function toAuthorities(role: UserRole): string[] {
-  return role === "ADMIN" ? ["ROLE_ADMIN", "ROLE_USER"] : ["ROLE_USER"];
-}
-
-/** Remote CreateUserRequest / UpdateUserRequest enum */
-function toRemoteRole(role: UserRole): "ROLE_ADMIN" | "ROLE_USER" {
-  return role === "ADMIN" ? "ROLE_ADMIN" : "ROLE_USER";
+  const authorities = authorityList(u);
+  if (authorities.length > 0) {
+    return primaryRoleFromAuthorities(authorities);
+  }
+  if (typeof u.role === "string") {
+    return parseUserRole(u.role);
+  }
+  throw new Error("Không xác định được role user");
 }
 
 function toManagedUser(u: BackendAdminUser): ManagedUser {
@@ -59,14 +59,13 @@ function toManagedUser(u: BackendAdminUser): ManagedUser {
     email: u.email,
     fullName: u.fullName ?? "",
     activated: u.activated,
-    authorities: authorities.length > 0 ? authorities : toAuthorities(role),
+    authorities,
     role,
     department: u.department ?? null,
   };
 }
 
 function toAccountProfile(u: BackendAdminUser): AccountProfile {
-  const role = toRole(u);
   const authorities = authorityList(u);
   return {
     id: u.id,
@@ -74,7 +73,7 @@ function toAccountProfile(u: BackendAdminUser): AccountProfile {
     email: u.email,
     fullName: u.fullName ?? "",
     activated: u.activated,
-    authorities: authorities.length > 0 ? authorities : toAuthorities(role),
+    authorities,
     department: u.department ?? null,
   };
 }
@@ -109,7 +108,7 @@ export async function requestDepartmentChange(
 ): Promise<DepartmentChangeRequest> {
   try {
     const { data } = await apiClient.post<DepartmentChangeRequest>(
-      "/department-change-requests",
+      "/account/department-change-requests",
       { requestedDepartmentId },
     );
     return data;
@@ -123,7 +122,7 @@ export async function getMyPendingDepartmentChange(
 ): Promise<DepartmentChangeRequest | null> {
   try {
     const { data, status } = await apiClient.get<DepartmentChangeRequest>(
-      "/department-change-requests/pending",
+      "/account/department-change-requests/pending",
       { signal, validateStatus: (s) => s === 200 || s === 204 },
     );
     if (status === 204 || !data) return null;
@@ -144,6 +143,8 @@ export interface GetUsersOptions extends PageParams {
   q?: string;
   /** `true` / `false`; omit for all */
   activated?: boolean;
+  /** ADMIN | MANAGER | STAFF | USER (or ROLE_*) */
+  role?: string;
   signal?: AbortSignal;
 }
 
@@ -151,7 +152,7 @@ export interface GetUsersOptions extends PageParams {
 export async function getUsersPage(
   options: GetUsersOptions = {},
 ): Promise<PagedResult<ManagedUser>> {
-  const { signal, page = 0, size = 10, sort, q, activated } = options;
+  const { signal, page = 0, size = 10, sort, q, activated, role } = options;
   try {
     const { data, headers } = await apiClient.get<
       | BackendAdminUser[]
@@ -169,6 +170,7 @@ export async function getUsersPage(
         ...(sort ? { sort } : {}),
         ...(q?.trim() ? { q: q.trim() } : {}),
         ...(activated !== undefined ? { activated } : {}),
+        ...(role ? { role } : {}),
       },
       signal,
     });
@@ -193,15 +195,17 @@ export async function getUsersPage(
   }
 }
 
+/** FE sends primary role; BE maps to jhi_user_authority. */
 export async function createUser(
   payload: CreateUserPayload,
 ): Promise<ManagedUser> {
   const body = {
     email: payload.email.toLowerCase(),
+    login: payload.email.toLowerCase(),
     fullName: payload.fullName,
     password: payload.password,
     activated: payload.activated ?? true,
-    role: toRemoteRole(payload.role),
+    role: payload.role,
     ...(payload.departmentId != null
       ? { departmentId: payload.departmentId }
       : {}),
@@ -221,10 +225,13 @@ export async function updateUser(
   payload: UpdateUserPayload,
 ): Promise<ManagedUser> {
   const body = {
+    id: payload.id,
+    login: payload.login,
     email: payload.email.toLowerCase(),
     fullName: payload.fullName,
     activated: payload.activated,
-    role: toRemoteRole(payload.role),
+    role: payload.role,
+    ...(payload.password ? { password: payload.password } : {}),
     ...(payload.departmentId != null
       ? { departmentId: payload.departmentId }
       : { departmentId: null }),

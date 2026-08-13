@@ -19,7 +19,7 @@ export function useMyInvoicesPage(
 ) {
   return useAsyncFetch(
     (signal) => getMyInvoicesPage({ ...options, signal }),
-    [options.page, options.size, options.sort, options.q],
+    [options.page, options.size, options.sort, options.q, options.paymentStatus],
     { initialData: EMPTY_INVOICES_PAGE },
   );
 }

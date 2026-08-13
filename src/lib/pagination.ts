@@ -7,19 +7,22 @@ export const TABLE_PAGINATION = {
   showSizeChanger: false,
 } as const;
 
+/** Spring `sort` — one value or repeated `sort=` params for multi-sort. */
+export type SortParam = string | string[];
+
 export interface PageParams {
   /** Spring page index, 0-based */
   page?: number;
   size?: number;
-  /** Spring sort, e.g. `startTime,desc` */
-  sort?: string;
+  /** Spring sort, e.g. `startTime,desc` or `['startTime,desc','title,asc']` */
+  sort?: SortParam;
 }
 
 /** Ant Design table query (1-based page) → map to Spring `PageParams` via `toPageParams`. */
 export type TableQuery = {
   page: number;
   pageSize: number;
-  sort?: string;
+  sort?: SortParam;
 };
 
 export function toPageParams(query: TableQuery): PageParams {
@@ -48,6 +51,44 @@ export function parseSortParam(
   if (dir === "asc") return { field, order: "ascend" };
   if (dir === "desc") return { field, order: "descend" };
   return null;
+}
+
+export function asSortList(sort: SortParam | undefined): string[] {
+  if (!sort) return [];
+  return Array.isArray(sort) ? sort.filter(Boolean) : [sort];
+}
+
+export function parseSortParams(
+  sort: SortParam | undefined,
+): { field: string; order: "ascend" | "descend" }[] {
+  return asSortList(sort)
+    .map((item) => parseSortParam(item))
+    .filter(
+      (item): item is { field: string; order: "ascend" | "descend" } =>
+        item != null,
+    );
+}
+
+/**
+ * Serialize flat query params for Spring — arrays become repeated keys
+ * (`sort=a,asc&sort=b,desc`), not `sort[]=`.
+ */
+export function serializeSpringParams(
+  params: Record<string, unknown>,
+): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item === undefined || item === null) continue;
+        search.append(key, String(item));
+      }
+    } else {
+      search.append(key, String(value));
+    }
+  }
+  return search.toString();
 }
 
 export interface PagedResult<T> {

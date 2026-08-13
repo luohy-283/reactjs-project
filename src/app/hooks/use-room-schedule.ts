@@ -25,11 +25,11 @@ export function useRoomSchedule(date: string) {
     setBookings([]);
     try {
       const [roomsData, bookingsData] = await Promise.all([
-        getRooms(controller.signal),
+        getRooms(controller.signal, { active: true }),
         getBookings(date, controller.signal),
       ]);
       if (!controller.signal.aborted) {
-        setRooms(roomsData.filter((room) => room.isActive));
+        setRooms(roomsData);
         setBookings(bookingsData);
       }
     } catch (err) {

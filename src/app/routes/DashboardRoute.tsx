@@ -121,17 +121,16 @@ export default function DashboardRoute() {
     const endDateTime = combineDateTime(values.endTime);
 
     try {
-      await createBooking({
+      const created = await createBooking({
         roomId: values.roomId,
-        userId: user.id,
         title: values.title,
         startTime: toApiDateTime(startDateTime),
         endTime: toApiDateTime(endDateTime),
       });
       toast.success(
-        user.role === "ADMIN"
+        created.status === "APPROVED"
           ? "Đặt phòng thành công"
-          : "Đã gửi yêu cầu đặt phòng — chờ admin duyệt",
+          : "Đã gửi yêu cầu đặt phòng — chờ duyệt",
       );
       setModalOpen(false);
       form.resetFields();
@@ -183,7 +182,7 @@ export default function DashboardRoute() {
       <PageHeader
         title="Lịch phòng họp"
         extra={
-          <Space>
+          <Space size={12}>
             <RefreshButton loading={isLoading} onClick={() => void refetch()} />
             <Button type="primary" onClick={() => openBookingModal()}>
               Đặt phòng

@@ -11,6 +11,14 @@ export interface LoginRequest {
   password: string;
 }
 
+/** Sign-up body — never include `role` (BE assigns USER). */
+export interface SignupRequest {
+  email: string;
+  password: string;
+  fullName: string;
+  departmentId?: number;
+}
+
 /** Normalized shape used by AuthContext after mapping the API payload. */
 export interface LoginResponse {
   token: string;

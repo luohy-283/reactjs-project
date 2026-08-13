@@ -1,5 +1,7 @@
 export type BookingStatus = "PENDING" | "APPROVED" | "CANCELLED" | "EXPIRED";
 
+export type PaymentStatus = "UNPAID" | "PAID";
+
 export interface Booking {
   id: number;
   roomId: number;
@@ -13,11 +15,13 @@ export interface Booking {
   userLogin?: string;
   pricePerHour?: number;
   amount?: number;
+  paymentStatus?: PaymentStatus;
+  approvedByLogin?: string;
+  approvedByFullName?: string;
 }
 
 export interface CreateBookingPayload {
   roomId: number;
-  userId: number;
   title: string;
   startTime: string;
   endTime: string;

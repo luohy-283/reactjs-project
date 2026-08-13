@@ -73,10 +73,22 @@ export default function AdminRevenuePage() {
       key: "bookingCount",
     }),
     sortableColumn<RevenueByRoom>({
-      title: "Doanh thu",
+      title: "Gross",
       dataIndex: "amount",
       key: "amount",
       render: (amount: number) => formatVnd(amount),
+    }),
+    sortableColumn<RevenueByRoom>({
+      title: "Chi phí TB",
+      dataIndex: "equipmentCost",
+      key: "equipmentCost",
+      render: (v: number | undefined) => formatVnd(Number(v ?? 0)),
+    }),
+    sortableColumn<RevenueByRoom>({
+      title: "Net",
+      dataIndex: "netAmount",
+      key: "netAmount",
+      render: (v: number | undefined) => formatVnd(Number(v ?? 0)),
     }),
     sortableColumn<RevenueByRoom>({
       title: "Tỷ trọng",

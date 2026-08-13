@@ -45,6 +45,7 @@ import { emitNotificationsChanged } from "@/lib/notification-events";
 import { parseNotificationFlash } from "@/lib/notificationNav";
 import type { Department } from "@/lib/types/department";
 import type { UserRole } from "@/lib/types/user";
+import { USER_ROLES } from "@/lib/types/user";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 import { useTableRowHighlight } from "@/lib/useTableRowHighlight";
@@ -109,13 +110,15 @@ export default function AdminUsersPage({
   const [statusFilter, setStatusFilter] = useState<UserActiveFilter | "ALL">(
     "ALL",
   );
+  const [roleFilter, setRoleFilter] = useState<UserRole | "ALL">("ALL");
   const [requestSearch, setRequestSearch] = useState("");
 
   useEffect(() => {
     resetPage();
   }, [debouncedQ, resetPage]);
 
-  const hasFilters = Boolean(debouncedQ) || statusFilter !== "ALL";
+  const hasFilters =
+    Boolean(debouncedQ) || statusFilter !== "ALL" || roleFilter !== "ALL";
   const pageOpts = {
     ...pageParams,
     ...(debouncedQ ? { q: debouncedQ } : {}),
@@ -124,6 +127,7 @@ export default function AdminUsersPage({
       : statusFilter === "INACTIVE"
         ? { activated: false as const }
         : {}),
+    ...(roleFilter !== "ALL" ? { role: roleFilter } : {}),
   };
   const { data: usersPage, error, isLoading, refetch } = useUsersPage(
     pageOpts,
@@ -322,6 +326,7 @@ export default function AdminUsersPage({
   const resetUserFilters = () => {
     setSearch("");
     setStatusFilter("ALL");
+    setRoleFilter("ALL");
     resetPage();
   };
 
@@ -369,10 +374,7 @@ export default function AdminUsersPage({
         rules={[{ required: true, message: "Chọn vai trò" }]}
       >
         <Select
-          options={[
-            { value: "USER", label: "USER" },
-            { value: "ADMIN", label: "ADMIN" },
-          ]}
+          options={USER_ROLES.map((value) => ({ value, label: value }))}
         />
       </Form.Item>
       <Form.Item label="Phòng ban" name="departmentId">
@@ -417,7 +419,7 @@ export default function AdminUsersPage({
     actionsColumn<ManagedUser>((_, user) => (
       <TableRowActions>
         <EditButton onClick={() => openEdit(user)} />
-        {user.role === "USER" ? (
+        {user.role !== "ADMIN" ? (
           user.activated ? (
             <DeleteButton onClick={() => setDeactivateTarget(user)}>
               Vô hiệu hóa
@@ -506,6 +508,19 @@ export default function AdminUsersPage({
                   options={USER_STATUS_OPTIONS}
                   allLabel="Tất cả trạng thái"
                 />
+                <StatusFilter<UserRole>
+                  value={roleFilter}
+                  onChange={(value) => {
+                    setRoleFilter(value);
+                    resetPage();
+                  }}
+                  options={USER_ROLES.map((value) => ({
+                    value,
+                    label: value,
+                  }))}
+                  allLabel="Tất cả vai trò"
+                  placeholder="Vai trò"
+                />
               </SearchForm>
             </div>
             {error ? (
@@ -535,6 +550,10 @@ export default function AdminUsersPage({
                 pageSize={query.pageSize}
                 sort={query.sort}
                 onQueryChange={setQuery}
+                enableRowSelection
+                enableColumnDrag
+                enableColumnSetting
+                enableMultiSort
                 toolbarExtra={
                   <RefreshButton
                     loading={isLoading}

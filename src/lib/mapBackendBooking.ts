@@ -1,4 +1,8 @@
-import type { Booking, BookingStatus } from "@/lib/types/booking";
+import type {
+  Booking,
+  BookingStatus,
+  PaymentStatus,
+} from "@/lib/types/booking";
 
 /** Shape returned by booking / invoice REST endpoints (flat or nested). */
 export interface BackendBookingDto {
@@ -15,6 +19,9 @@ export interface BackendBookingDto {
   userFullName?: string;
   pricePerHour?: number | string;
   amount?: number | string;
+  paymentStatus?: PaymentStatus;
+  approvedByLogin?: string;
+  approvedByFullName?: string;
   room?: { id: number; name?: string; pricePerHour?: number | string };
   user?: { id: number; login?: string; email?: string };
 }
@@ -42,5 +49,8 @@ export function mapBackendBooking(booking: BackendBookingDto): Booking {
           ? Number(booking.room.pricePerHour)
           : undefined,
     amount: booking.amount != null ? Number(booking.amount) : undefined,
+    paymentStatus: booking.paymentStatus,
+    approvedByLogin: booking.approvedByLogin,
+    approvedByFullName: booking.approvedByFullName,
   };
 }

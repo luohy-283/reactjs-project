@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BE ↔ FE Contract — book-metting-room</title>
+  <title>API Contract + Database — BE handoff</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -779,15 +779,22 @@
       color: var(--ink-soft);
       margin-left: auto;
     }
-  </style>
+  
+    .role-staff { background: rgba(5, 150, 105, 0.12); color: #059669; }
+    .role-manager { background: rgba(124, 58, 237, 0.12); color: #7c3aed; }
+    .role-userplus { background: rgba(14, 116, 144, 0.12); color: var(--user); }
+    :root[data-theme="dark"] .role-staff { color: #6ee7b7; background: rgba(110, 231, 183, 0.12); }
+    :root[data-theme="dark"] .role-manager { color: #c4b5fd; background: rgba(196, 181, 253, 0.12); }
+</style>
 </head>
+
 <body>
   <div class="live-region" id="live" aria-live="polite"></div>
   <div class="app">
     <aside class="sidebar" id="sidebar" aria-label="Mục lục contract">
       <div class="sidebar-top">
         <div>
-          <div class="brand">BE ↔ FE Contract</div>
+          <div class="brand">API + Database</div>
         </div>
         <div style="display:flex;gap:0.35rem">
           <button type="button" class="icon-btn menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="navGroups" title="Menu">☰</button>
@@ -805,251 +812,249 @@
         </select>
       </label>
       <div class="nav-groups" id="navGroups">
-        <div class="nav-drop" data-drop="overview">
-          <button type="button" class="nav-drop-toggle" aria-expanded="true" aria-controls="drop-overview" id="toggle-overview">
-            <span>Tổng quan</span><span class="nav-drop-caret" aria-hidden="true">▾</span>
+        <div class="nav-drop" data-drop="main">
+          <button type="button" class="nav-drop-toggle" aria-expanded="true" aria-controls="drop-main" id="toggle-main">
+            <span>Contract</span><span class="nav-drop-caret" aria-hidden="true">▾</span>
           </button>
-          <div class="nav-drop-panel" id="drop-overview" role="group" aria-labelledby="toggle-overview">
+          <div class="nav-drop-panel" id="drop-main" role="group" aria-labelledby="toggle-main">
             <button type="button" class="nav-btn" data-section="overview" aria-current="true">Overview</button>
-            <button type="button" class="nav-btn" data-section="roles">Roles &amp; seed</button>
-            <button type="button" class="nav-btn" data-section="routes">Routes FE</button>
-            <button type="button" class="nav-btn" data-section="enums">Status / enum</button>
-            <button type="button" class="nav-btn" data-section="dto">Domain DTO</button>
-          </div>
-        </div>
-        <div class="nav-drop" data-drop="apis">
-          <button type="button" class="nav-drop-toggle" aria-expanded="true" aria-controls="drop-apis" id="toggle-apis">
-            <span>API catalog</span><span class="nav-drop-caret" aria-hidden="true">▾</span>
-          </button>
-          <div class="nav-drop-panel" id="drop-apis" role="group" aria-labelledby="toggle-apis">
-            <button type="button" class="nav-btn" data-section="apis">All endpoints</button>
-            <button type="button" class="nav-btn" data-section="errors">Error keys</button>
-            <button type="button" class="nav-btn" data-section="rules">Business rules</button>
-          </div>
-        </div>
-        <div class="nav-drop" data-drop="flows">
-          <button type="button" class="nav-drop-toggle" aria-expanded="true" aria-controls="drop-flows" id="toggle-flows">
-            <span>Flows</span><span class="nav-drop-caret" aria-hidden="true">▾</span>
-          </button>
-          <div class="nav-drop-panel" id="drop-flows" role="group" aria-labelledby="toggle-flows">
-            <button type="button" class="nav-btn" data-section="flows">Interactive flows</button>
-            <button type="button" class="nav-btn" data-section="booking-sm">Booking state machine</button>
+            <button type="button" class="nav-btn" data-section="database">Database</button>
+            <button type="button" class="nav-btn" data-section="apis">API catalog</button>
+            <button type="button" class="nav-btn" data-section="errors">Errors</button>
+            <button type="button" class="nav-btn" data-section="verify">Verify log</button>
           </div>
         </div>
       </div>
     </aside>
 
     <main class="main">
-      <!-- OVERVIEW -->
       <section class="section is-active" id="sec-overview" aria-labelledby="h-overview">
-        <h1 id="h-overview">Contract BE cần map từ FE</h1>
+        <h1 id="h-overview">API contract + Database schema</h1>
         <p class="lead">
-          Inventory đầy đủ API, role, DTO, enum và luồng nghiệp vụ mà frontend đang expect.
-          Dùng để code backend map đúng — không phải tài liệu BE hiện tại.
+          BE handoff: full <code>/api/…</code> paths, roles, payloads, and database tables/enums.
+          Not an FE guide.
         </p>
         <div class="meta-strip">
-          <div class="meta-card"><div class="k">Base URL</div><div class="v">/api</div></div>
-          <div class="meta-card"><div class="k">Auth</div><div class="v">Bearer token</div></div>
-          <div class="meta-card"><div class="k">401</div><div class="v">logout → /login</div></div>
-          <div class="meta-card"><div class="k">Endpoints</div><div class="v" id="endpointCount">~38</div></div>
+          <div class="meta-card"><div class="k">Base URL</div><div class="v">http://localhost:8080/api</div></div>
+          <div class="meta-card"><div class="k">Auth</div><div class="v">Bearer JWT</div></div>
+          <div class="meta-card"><div class="k">Hierarchy</div><div class="v">ADMIN&gt;MANAGER&gt;STAFF&gt;USER</div></div>
+          <div class="meta-card"><div class="k">Endpoints</div><div class="v" id="endpointCount">—</div></div>
         </div>
         <div class="panel">
-          <div class="panel-hd">Phân tầng quyền API</div>
+          <div class="panel-hd">Roles (Spring hierarchy)</div>
           <div class="panel-bd">
-            <div class="flow-diagram" aria-hidden="true">
-              <span class="node">Public: POST /auth/login</span>
-              <span class="arrow">→</span>
-              <span class="node">Auth shared: account · rooms GET · bookings · depts · invoices · notifications</span>
-              <span class="arrow">→</span>
-              <span class="node hl">ADMIN: rooms write · approve/reject/cancel · users · dept-change · revenue</span>
-            </div>
-            <p class="note" style="margin-top:0.85rem">
-              <strong>Pagination:</strong> Spring page <code>{ content, number, size, totalElements, totalPages }</code>
-              hoặc bare array (hoặc single object). <strong>Ngoại lệ:</strong> <code>GET /admin/users</code> = array + header <code>X-Total-Count</code>.
-              Dept-change list: array hoặc <code>{ content }</code>.
-              Badge booking: <code>page=0&amp;size=1</code> → <code>totalElements</code> (không có <code>/bookings/count</code>).
-              Admin write: BE phục vụ <code>/api/admin/…</code> (rooms + booking approve/reject/cancel).
-              FE vẫn giữ fallback path không-<code>/admin</code> <strong>chỉ khi HTTP 404</strong> (BE cũ).
+            <p class="muted" style="margin-bottom:0.75rem">
+              <code>ROLE_ADMIN &gt; ROLE_MANAGER &gt; ROLE_STAFF &gt; ROLE_USER</code> —
+              <code>hasAuthority('ROLE_MANAGER')</code> also admits ADMIN.
             </p>
+            <div class="pill-row">
+              <span class="pill">ROLE_ADMIN</span>
+              <span class="pill">ROLE_MANAGER</span>
+              <span class="pill">ROLE_STAFF</span>
+              <span class="pill">ROLE_USER</span>
+            </div>
           </div>
         </div>
-      </section>
-
-      <!-- ROLES -->
-      <section class="section" id="sec-roles" aria-labelledby="h-roles" hidden>
-        <h2 id="h-roles">1. Roles &amp; authorities</h2>
         <div class="panel">
-          <div class="panel-hd">FE role ↔ JHipster authorities</div>
+          <div class="panel-hd">Seed accounts (password <code>123456</code>)</div>
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr><th>FE role</th><th>Authorities (create/update user)</th><th>Login / account map</th></tr>
-              </thead>
+              <thead><tr><th>Email</th><th>Authority</th><th>UI role label</th></tr></thead>
               <tbody>
-                <tr>
-                  <td><span class="role role-admin">ADMIN</span></td>
-                  <td><code>["ROLE_ADMIN","ROLE_USER"]</code></td>
-                  <td><code>ROLE_ADMIN</code> hoặc <code>ADMIN</code> → <code>ADMIN</code></td>
-                </tr>
-                <tr>
-                  <td><span class="role role-user">USER</span></td>
-                  <td><code>["ROLE_USER"]</code></td>
-                  <td>còn lại / thiếu → <code>USER</code></td>
-                </tr>
+                <tr><td><code>admin@company.com</code></td><td>ROLE_ADMIN (+ ROLE_USER)</td><td><span class="role role-admin">ADMIN</span></td></tr>
+                <tr><td><code>manager@company.com</code></td><td>ROLE_MANAGER (+ ROLE_USER)</td><td><span class="role role-manager">MANAGER+</span></td></tr>
+                <tr><td><code>staff@company.com</code></td><td>ROLE_STAFF (+ ROLE_USER)</td><td><span class="role role-staff">STAFF+</span></td></tr>
+                <tr><td><code>user@company.com</code></td><td>ROLE_USER</td><td><span class="role role-userplus">USER+</span></td></tr>
               </tbody>
             </table>
           </div>
         </div>
-        <div class="panel">
-          <div class="panel-hd">Seed accounts</div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Seed</th><th>Email</th><th>Password</th><th>Role</th></tr></thead>
-              <tbody>
-                <tr><td>Admin</td><td><code>admin@company.com</code></td><td><code>123456</code></td><td><span class="role role-admin">ADMIN</span></td></tr>
-                <tr><td>User</td><td><code>user@company.com</code></td><td><code>123456</code></td><td><span class="role role-user">USER</span></td></tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="note">
+          Pagination: Spring <code>{ content, number, size, totalElements, totalPages }</code>.
+          Admin users may also expose <code>X-Total-Count</code>.
+          Canonical room/booking writes: <code>/api/rooms</code>, <code>/api/bookings</code>
+          (aliases <code>/api/admin/rooms</code>, <code>/api/admin/bookings</code> exist).
         </div>
       </section>
 
-      <!-- ROUTES -->
-      <section class="section" id="sec-routes" aria-labelledby="h-routes" hidden>
-        <h2 id="h-routes">2. Routes FE (đối chiếu quyền)</h2>
-        <div class="panel">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Path</th><th>Ai vào được</th><th>Ghi chú</th></tr></thead>
-              <tbody>
-                <tr><td class="path">/login</td><td><span class="role role-public">Guest</span></td><td>GuestRoute — đã login → /dashboard</td></tr>
-                <tr><td class="path">/dashboard</td><td><span class="role role-auth">Auth</span></td><td>Schedule rooms + bookings</td></tr>
-                <tr><td class="path">/my-invoices</td><td><span class="role role-auth">Auth</span></td><td>Cả ADMIN và USER</td></tr>
-                <tr><td class="path">/admin/rooms</td><td><span class="role role-admin">ADMIN</span></td><td>RequireRole</td></tr>
-                <tr><td class="path">/admin/bookings</td><td><span class="role role-admin">ADMIN</span></td><td>Tabs: Chờ duyệt / Đã duyệt (chưa diễn ra) / Lịch sử</td></tr>
-                <tr><td class="path">/admin/users</td><td><span class="role role-admin">ADMIN</span></td><td>Users + dept-change requests</td></tr>
-                <tr><td class="path">/admin/revenue</td><td><span class="role role-admin">ADMIN</span></td><td>KPI + by-room + export</td></tr>
-              </tbody>
-            </table>
-          </div>
+      <section class="section" id="sec-database" aria-labelledby="h-database" hidden>
+        <h2 id="h-database">Database</h2>
+        <p class="lead">PostgreSQL tables from domain + Liquibase. PK via <code>sequenceGenerator</code>.</p>
+
+        <h3>jhi_user</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
+            <tr><td><code>login</code></td><td>varchar(50) UNIQUE</td><td>= email, lowercase</td></tr>
+            <tr><td><code>password_hash</code></td><td>varchar(60)</td><td>BCrypt</td></tr>
+            <tr><td><code>full_name</code></td><td>varchar(100)</td><td></td></tr>
+            <tr><td><code>email</code></td><td>varchar(254) UNIQUE</td><td></td></tr>
+            <tr><td><code>activated</code></td><td>boolean</td><td></td></tr>
+            <tr><td><code>department_id</code></td><td>bigint FK → department</td><td>nullable</td></tr>
+            <tr><td>audit</td><td>created_by/date, last_modified_*</td><td>AbstractAuditingEntity</td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>jhi_authority / jhi_user_authority</h3>
+        <div class="panel"><div class="panel-bd">
+          <p><code>jhi_authority.name</code> PK: <code>ROLE_ADMIN</code>, <code>ROLE_MANAGER</code>, <code>ROLE_STAFF</code>, <code>ROLE_USER</code>.</p>
+          <p style="margin-top:0.5rem"><code>jhi_user_authority</code>: (<code>user_id</code>, <code>authority_name</code>) composite PK.</p>
+        </div></div>
+
+        <h3>department</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
+            <tr><td><code>code</code></td><td>varchar(50) UNIQUE</td><td>Seed: IT, HR, SALES</td></tr>
+            <tr><td><code>name</code></td><td>varchar(100)</td><td></td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>room</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
+            <tr><td><code>name</code></td><td>varchar(100)</td><td></td></tr>
+            <tr><td><code>capacity</code></td><td>integer</td><td>≥ 1</td></tr>
+            <tr><td><code>is_active</code></td><td>boolean</td><td>soft-delete = false</td></tr>
+            <tr><td><code>locked_department_id</code></td><td>bigint FK?</td><td>null = public</td></tr>
+            <tr><td><code>price_per_hour</code></td><td>decimal(19,2)</td><td>VND/hour</td></tr>
+            <tr><td><code>is_vip</code></td><td>boolean</td><td>default false</td></tr>
+            <tr><td><code>vip_amenities</code></td><td>varchar(500)</td><td>nullable</td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>booking</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
+            <tr><td><code>title</code></td><td>varchar(200)</td><td></td></tr>
+            <tr><td><code>start_time</code> / <code>end_time</code></td><td>timestamp</td><td>Instant</td></tr>
+            <tr><td><code>status</code></td><td>varchar</td><td>BookingStatus</td></tr>
+            <tr><td><code>room_id</code></td><td>bigint FK</td><td></td></tr>
+            <tr><td><code>user_id</code></td><td>bigint FK → jhi_user</td><td></td></tr>
+            <tr><td><code>price_per_hour</code></td><td>decimal(19,2)</td><td>snapshot</td></tr>
+            <tr><td><code>amount</code></td><td>decimal(19,2)</td><td>snapshot total</td></tr>
+            <tr><td><code>payment_status</code></td><td>varchar(20)</td><td>UNPAID | PAID (set on approve)</td></tr>
+            <tr><td><code>approved_by_id</code></td><td>bigint FK → jhi_user</td><td>set on approve</td></tr>
+          </tbody>
+        </table></div></div>
+        <div class="note">
+          <strong>Booking status machine (business):</strong>
+          create → <code>PENDING</code> (USER) or may be <code>APPROVED</code> (ADMIN);
+          MANAGER+ approve → <code>APPROVED</code> + <code>payment_status=UNPAID</code>;
+          reject/cancel → <code>CANCELLED</code>;
+          PENDING past <code>start_time</code> → <code>EXPIRED</code>;
+          mark-paid: APPROVED+UNPAID → <code>PAID</code>.
         </div>
+
+        <h3>department_change_request</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
+            <tr><td><code>user_id</code></td><td>FK jhi_user</td><td></td></tr>
+            <tr><td><code>requested_department_id</code></td><td>FK department</td><td></td></tr>
+            <tr><td><code>status</code></td><td>varchar(20)</td><td>PENDING | APPROVED | REJECTED</td></tr>
+            <tr><td><code>reviewed_by_id</code></td><td>FK jhi_user?</td><td></td></tr>
+            <tr><td><code>reviewed_date</code></td><td>timestamp?</td><td></td></tr>
+            <tr><td>audit</td><td>…</td><td></td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>notification</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
+            <tr><td><code>user_id</code></td><td>FK jhi_user</td><td></td></tr>
+            <tr><td><code>type</code></td><td>varchar(50)</td><td>NotificationType</td></tr>
+            <tr><td><code>title</code> / <code>message</code></td><td>varchar</td><td></td></tr>
+            <tr><td><code>booking_id</code></td><td>bigint nullable</td><td><strong>polymorphic ref</strong> — booking id OR dept-change-request id; <em>no FK</em></td></tr>
+            <tr><td><code>read_date</code></td><td>timestamp?</td><td>null = unread</td></tr>
+            <tr><td>audit</td><td>…</td><td>API may expose createdAt/readAt on some remotes</td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>equipment</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
+            <tr><td><code>name</code></td><td>varchar(100)</td><td></td></tr>
+            <tr><td><code>category</code></td><td>varchar(20)</td><td>EquipmentCategory</td></tr>
+            <tr><td><code>unit_cost</code></td><td>decimal(19,2)</td><td></td></tr>
+            <tr><td><code>is_active</code></td><td>boolean</td><td></td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>room_equipment</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
+            <tr><td><code>room_id</code></td><td>FK room</td><td>UNIQUE(room_id, equipment_id)</td></tr>
+            <tr><td><code>equipment_id</code></td><td>FK equipment</td><td></td></tr>
+            <tr><td><code>quantity</code></td><td>integer</td><td></td></tr>
+            <tr><td><code>status</code></td><td>varchar(20)</td><td>RoomEquipmentStatus</td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>equipment_purchase</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
+            <tr><td><code>room_id</code> / <code>equipment_id</code></td><td>FK</td><td></td></tr>
+            <tr><td><code>quantity</code></td><td>integer</td><td></td></tr>
+            <tr><td><code>unit_cost</code></td><td>decimal(19,2)</td><td></td></tr>
+            <tr><td><code>reason</code></td><td>varchar(500)?</td><td></td></tr>
+            <tr><td><code>status</code></td><td>varchar(20)</td><td>PurchaseStatus</td></tr>
+            <tr><td><code>requested_by_id</code></td><td>FK jhi_user</td><td></td></tr>
+            <tr><td><code>approved_by_id</code></td><td>FK jhi_user?</td><td></td></tr>
+            <tr><td><code>fulfilled_at</code></td><td>timestamp?</td><td></td></tr>
+            <tr><td>audit</td><td>…</td><td></td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>Enums</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Enum</th><th>Values</th></tr></thead>
+          <tbody>
+            <tr><td>BookingStatus</td><td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">CANCELLED</span><span class="pill">EXPIRED</span></div></td></tr>
+            <tr><td>PaymentStatus</td><td><div class="pill-row"><span class="pill">UNPAID</span><span class="pill">PAID</span></div></td></tr>
+            <tr><td>EquipmentCategory</td><td><div class="pill-row"><span class="pill">PROJECTOR</span><span class="pill">DISPLAY</span><span class="pill">AUDIO</span><span class="pill">VC</span><span class="pill">OTHER</span></div></td></tr>
+            <tr><td>RoomEquipmentStatus</td><td><div class="pill-row"><span class="pill">OK</span><span class="pill">BROKEN</span><span class="pill">RETIRED</span></div></td></tr>
+            <tr><td>PurchaseStatus</td><td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">REJECTED</span><span class="pill">FULFILLED</span></div></td></tr>
+            <tr><td>NotificationType</td><td><div class="pill-row"><span class="pill">BOOKING_PENDING</span><span class="pill">BOOKING_APPROVED</span><span class="pill">BOOKING_REJECTED</span><span class="pill">BOOKING_CANCELLED</span><span class="pill">BOOKING_EXPIRED</span><span class="pill">DEPT_CHANGE_PENDING</span><span class="pill">DEPT_CHANGE_APPROVED</span><span class="pill">DEPT_CHANGE_REJECTED</span></div></td></tr>
+            <tr><td>DepartmentChangeRequestStatus</td><td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">REJECTED</span></div></td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>Seeds (summary)</h3>
+        <div class="panel"><div class="panel-bd muted">
+          Users: admin / manager / staff / user @company.com — password <code>123456</code>.
+          Departments: IT, HR, SALES. Demo rooms/bookings via reseed changelog.
+          Equipment catalog seeded (projector/display/audio/…).
+        </div></div>
       </section>
 
-      <!-- ENUMS -->
-      <section class="section" id="sec-enums" aria-labelledby="h-enums" hidden>
-        <h2 id="h-enums">3. Status / enum</h2>
-        <div class="panel">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Domain</th><th>Values</th><th>Ghi chú cho BE</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td>Booking</td>
-                  <td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">CANCELLED</span><span class="pill">EXPIRED</span></div></td>
-                  <td>USER create → PENDING. Past start còn PENDING → BE set EXPIRED. Reject <strong>không</strong> có status REJECTED trên booking (thường → CANCELLED); notification vẫn có <code>BOOKING_REJECTED</code>.</td>
-                </tr>
-                <tr>
-                  <td>Dept change</td>
-                  <td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">REJECTED</span></div></td>
-                  <td>—</td>
-                </tr>
-                <tr>
-                  <td>Room</td>
-                  <td><code>isActive</code> / <code>active</code> boolean</td>
-                  <td>FE: <code>isActive ?? active ?? true</code></td>
-                </tr>
-                <tr>
-                  <td>User</td>
-                  <td><code>activated</code> boolean</td>
-                  <td><code>DELETE /admin/users/{login}</code> = deactivate</td>
-                </tr>
-                <tr>
-                  <td>NotificationType</td>
-                  <td>
-                    <div class="pill-row">
-                      <span class="pill">BOOKING_PENDING</span><span class="pill">BOOKING_APPROVED</span>
-                      <span class="pill">BOOKING_REJECTED</span><span class="pill">BOOKING_CANCELLED</span>
-                      <span class="pill">BOOKING_EXPIRED</span>
-                      <span class="pill">DEPT_CHANGE_PENDING</span><span class="pill">DEPT_CHANGE_APPROVED</span>
-                      <span class="pill">DEPT_CHANGE_REJECTED</span>
-                    </div>
-                  </td>
-                  <td>Với <code>DEPT_CHANGE_*</code>, field <code>bookingId</code> = id request để highlight</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- DTO -->
-      <section class="section" id="sec-dto" aria-labelledby="h-dto" hidden>
-        <h2 id="h-dto">4. Domain DTO (field FE expect)</h2>
-        <div class="dto-block">
-          <h4>Department</h4>
-          <pre>{ id, code, name }</pre>
-        </div>
-        <div class="dto-block">
-          <h4>User (login / AuthContext)</h4>
-          <pre>{ id, email, fullName, role: "ADMIN" | "USER", department?: Department | null }</pre>
-        </div>
-        <div class="dto-block">
-          <h4>BackendAdminUser / AccountProfile</h4>
-          <pre>{ id, login, email, fullName?, activated, authorities?: string[], department?: Department | null }</pre>
-        </div>
-        <div class="dto-block">
-          <h4>Room (BackendRoom → FE Room)</h4>
-          <pre>{ id, name, capacity, isActive? | active?, lockedDepartment?: Department | null, pricePerHour? }
-// visibility BE enforce: public OR locked đúng department user</pre>
-        </div>
-        <div class="dto-block">
-          <h4>Booking (flat và/hoặc nested)</h4>
-          <pre>{
-  id, title, startTime, endTime, status,
-  roomId?, userId?, roomName?, userLogin?, userEmail?, userFullName?,
-  pricePerHour?, amount?,
-  room?: { id, name?, pricePerHour? },
-  user?: { id, login?, email? }
-}
-// amount = snapshot pricePerHour × duration lúc book</pre>
-        </div>
-        <div class="dto-block">
-          <h4>DepartmentChangeRequest</h4>
-          <pre>{ id, userId, userEmail, userFullName, currentDepartment?, requestedDepartment,
-  status, reviewedByLogin?, reviewedDate?, createdDate? }</pre>
-        </div>
-        <div class="dto-block">
-          <h4>Notification</h4>
-          <pre>{ id, type, title, message, bookingId?, readDate?, createdDate?, read? }
-// read = read ?? Boolean(readDate)</pre>
-        </div>
-        <div class="dto-block">
-          <h4>RevenueReport</h4>
-          <pre>{
-  yearMonth, totalAmount, totalBookings, averageAmount, cancelledCount, cancellationRate,
-  previous: { /* same period fields */ },
-  byRoom: [{ roomId, roomName, bookingCount, amount, sharePercent? }],
-  byDay: [{ date, bookingCount, amount }]
-}
-// số có thể number | string — FE Number(...)</pre>
-        </div>
-        <div class="dto-block">
-          <h4>Invoices</h4>
-          <pre>Reuse Booking DTO (APPROVED + amount). Không có invoice status riêng.</pre>
-        </div>
-      </section>
-
-      <!-- APIS -->
       <section class="section" id="sec-apis" aria-labelledby="h-apis" hidden>
-        <h2 id="h-apis">5. API catalog</h2>
-        <p class="lead">Click một dòng để xem sample request / response. Lọc theo role hoặc tìm path.</p>
+        <h2 id="h-apis">API catalog</h2>
+        <p class="lead">Click a row for request / response. Paths always include <code>/api</code>.</p>
         <div class="toolbar" role="search">
           <label id="roleFilterLabel">Role</label>
           <div class="seg" role="group" aria-labelledby="roleFilterLabel">
             <button type="button" data-role-filter="all" aria-pressed="true">All</button>
-            <button type="button" data-role-filter="public" aria-pressed="false">Public</button>
-            <button type="button" data-role-filter="auth" aria-pressed="false">Auth</button>
-            <button type="button" data-role-filter="admin" aria-pressed="false">ADMIN</button>
+            <button type="button" data-role-filter="public" aria-pressed="false">public</button>
+            <button type="button" data-role-filter="USER+" aria-pressed="false">USER+</button>
+            <button type="button" data-role-filter="STAFF+" aria-pressed="false">STAFF+</button>
+            <button type="button" data-role-filter="MANAGER+" aria-pressed="false">MANAGER+</button>
+            <button type="button" data-role-filter="ADMIN" aria-pressed="false">ADMIN</button>
           </div>
           <label for="apiSearch" class="sr-only" style="position:absolute;clip:rect(0,0,0,0)">Search</label>
           <input type="search" id="apiSearch" class="search" placeholder="Tìm path, method, domain…" autocomplete="off" />
@@ -1072,506 +1077,816 @@
             </table>
           </div>
         </div>
-        <p class="note">
-          <strong>Fallback:</strong> Một số admin write gọi <code>/admin/…</code> trước; nếu 404 FE thử path không-admin (rooms write, booking approve/reject/cancel).
-        </p>
       </section>
 
-      <!-- ERRORS -->
       <section class="section" id="sec-errors" aria-labelledby="h-errors" hidden>
-        <h2 id="h-errors">6. Error keys FE đã map</h2>
-        <p class="lead">ProblemDetail-ish: <code>{ title?, detail?, message?, params? }</code></p>
+        <h2 id="h-errors">Error keys</h2>
+        <p class="lead">ProblemDetail-ish body: <code>{ title?, detail?, message?, params? }</code> — <code>message</code> often <code>error.&lt;key&gt;</code>.</p>
         <div class="panel">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>message key</th><th>Ý nghĩa FE</th></tr></thead>
+              <thead><tr><th>message key</th><th>Meaning</th></tr></thead>
               <tbody>
-                <tr><td><code>error.hasbookings</code></td><td>Không deactivate phòng còn lịch PENDING/APPROVED chưa xong</td></tr>
-                <tr><td><code>error.overlap</code></td><td>Overlap booking cùng phòng / khoảng thời gian</td></tr>
-                <tr><td><code>error.alreadystarted</code></td><td>Không cancel lịch đã bắt đầu hoặc đã qua</td></tr>
-                <tr><td><code>error.invalidstatus</code></td><td>Status không hợp lệ cho thao tác</td></tr>
+                <tr><td><code>error.emailexists</code></td><td>Email already registered (signup / admin create)</td></tr>
+                <tr><td><code>error.userexists</code></td><td>Login already used</td></tr>
+                <tr><td><code>error.hasbookings</code></td><td>Cannot deactivate room with open PENDING/APPROVED bookings</td></tr>
+                <tr><td><code>error.overlap</code></td><td>Booking time overlaps another active booking</td></tr>
+                <tr><td><code>error.alreadystarted</code></td><td>Cannot cancel after start</td></tr>
+                <tr><td><code>error.invalidstatus</code></td><td>Wrong status for approve/reject/cancel/mark-paid/purchase</td></tr>
+                <tr><td><code>error.alreadypaid</code></td><td>Invoice already PAID</td></tr>
+                <tr><td><code>error.pendingexists</code></td><td>User already has pending dept-change</td></tr>
+                <tr><td><code>error.sameDepartment</code></td><td>Requested dept equals current</td></tr>
+                <tr><td><code>error.departmentnotfound</code></td><td>Dept id missing</td></tr>
+                <tr><td><code>error.idnotfound</code> / <code>idexists</code> / <code>idnull</code> / <code>idinvalid</code></td><td>Entity id errors</td></tr>
+                <tr><td><code>error.forbidden</code></td><td>Notification not owned by caller</td></tr>
+                <tr><td><code>error.validation</code></td><td>Bean validation</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:1rem">
+          <div class="panel-hd">HTTP status (contract)</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Status</th><th>When</th></tr></thead>
+              <tbody>
+                <tr><td><code>200</code> / <code>201</code></td><td>OK / created (signup returns 201 + token)</td></tr>
+                <tr><td><code>204</code></td><td>No body (delete room/booking soft-or-hard; pending dept empty)</td></tr>
+                <tr><td><code>400</code></td><td>Validation / business <code>error.*</code> keys above</td></tr>
+                <tr><td><code>401</code></td><td>Missing/invalid JWT or bad login credentials</td></tr>
+                <tr><td><code>403</code></td><td>Authenticated but role too low (e.g. USER → mark-paid; MANAGER → /admin/users; USER → equipment-purchases)</td></tr>
+                <tr><td><code>404</code></td><td>Entity missing</td></tr>
+                <tr><td><code>500</code></td><td>Server bug — e.g. notifications <code>sort=createdAt</code> on local JHipster (no such property). Not a stable client contract.</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- RULES -->
-      <section class="section" id="sec-rules" aria-labelledby="h-rules" hidden>
-        <h2 id="h-rules">7. Quy tắc nghiệp vụ BE phải giữ</h2>
+      <section class="section" id="sec-verify" aria-labelledby="h-verify" hidden>
+        <h2 id="h-verify">Local verify log</h2>
+        <p class="lead">
+          Smoke against running BE <code>localhost:8080</code> (2026-08-13). Re-run after schema/role changes.
+          Do not treat FE abort/race or antd console warnings as API contract failures.
+        </p>
         <div class="panel">
-          <div class="panel-bd">
-            <ul style="padding-left:1.15rem;font-size:0.88rem;display:grid;gap:0.55rem">
-              <li>Room visibility: public <strong>hoặc</strong> locked đúng department user (không chỉ filter FE).</li>
-              <li>USER book → <code>PENDING</code>; ADMIN approve/reject/cancel; <code>EXPIRED</code> do BE khi PENDING quá <code>startTime</code>.</li>
-              <li>Admin bookings UI: 3 tabs — <code>pending</code> / <code>upcoming</code> (<code>upcoming=true</code>) / <code>all</code> (Lịch sử). Badge: <code>page=0&amp;size=1</code> → <code>totalElements</code>.</li>
-              <li>Profile: <code>fullName</code>/<code>email</code> update ngay; đổi department qua request + admin duyệt.</li>
-              <li><code>amount</code> snapshot trên booking; invoices = booking đã duyệt có amount.</li>
-              <li>Admin path ưu tiên <code>/admin/…</code> — BE map cả <code>/api/admin/rooms</code> và <code>/api/admin/bookings</code>. FE fallback path không-admin <strong>chỉ khi HTTP 404</strong> (legacy).</li>
-              <li>Approve/reject/cancel booking và approve/reject dept-change: sau khi đổi status, BE xóa notif PENDING liên quan. <code>@Modifying</code> delete notif phải <code>flushAutomatically = true</code> (cùng <code>clearAutomatically</code>) — nếu chỉ clear PC mà chưa flush, API vẫn 200 + body status mới nhưng DB không đổi → list/badge không giảm.</li>
-              <li>Create booking: FE gửi <code>roomId</code> + <code>room: { id }</code>, times = <code>toISOString()</code> UTC — <strong>không</strong> gửi <code>userId</code> (BE lấy từ JWT).</li>
-            </ul>
+          <div class="panel-hd">Endpoint checks (method + path)</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Call</th><th>Result</th><th>Note</th></tr></thead>
+              <tbody>
+                <tr><td><code>POST /api/auth/login</code> × 4 seeds</td><td>200</td><td>ADMIN / MANAGER / STAFF / USER</td></tr>
+                <tr><td><code>POST /api/auth/signup</code> (+ bogus <code>role: ADMIN</code>)</td><td>201</td><td>Always <code>user.role=USER</code></td></tr>
+                <tr><td><code>GET /api/account/invoices</code> (+ <code>paymentStatus</code>)</td><td>200</td><td>Caller APPROVED only</td></tr>
+                <tr><td><code>POST /api/bookings/{id}/mark-paid</code> as USER</td><td>403</td><td>MANAGER+ required</td></tr>
+                <tr><td><code>POST /api/bookings/{id}/mark-paid</code> as MANAGER/ADMIN</td><td>200</td><td>Any APPROVED+UNPAID id</td></tr>
+                <tr><td><code>GET /api/admin/users</code> as MANAGER</td><td>403</td><td>ADMIN only</td></tr>
+                <tr><td><code>GET /api/admin/revenue</code> as MANAGER</td><td>200</td><td>MANAGER+</td></tr>
+                <tr><td><code>GET /api/equipment</code> as USER</td><td>200</td><td>Authenticated read</td></tr>
+                <tr><td><code>GET /api/equipment-purchases</code> as USER</td><td>403</td><td>STAFF+</td></tr>
+                <tr><td><code>GET /api/equipment-purchases</code> as STAFF</td><td>200</td><td>—</td></tr>
+                <tr><td><code>GET /api/notifications?sort=createdDate,desc</code></td><td>200</td><td>Local property</td></tr>
+                <tr><td><code>GET /api/notifications?sort=createdAt,desc</code></td><td>500</td><td>Local: no <code>createdAt</code> — FE falls back</td></tr>
+                <tr><td><code>GET /api/rooms</code>, <code>/bookings</code>, <code>/departments</code></td><td>200</td><td>Smoke OK</td></tr>
+                <tr><td>FE UI <code>/signup</code>, <code>/my-invoices</code></td><td>OK</td><td>Network matched <code>/api/auth/signup</code>, <code>/api/account/invoices</code>, <code>/api/bookings/.../mark-paid</code></td></tr>
+                <tr><td>Export CSV / purchase fulfill</td><td>—</td><td>API only / button if present; not re-hit in this pass</td></tr>
+              </tbody>
+            </table>
           </div>
+        </div>
+        <div class="note">
+          <strong>FE remediation checked:</strong> <code>AuthGuestLayout</code> on login/signup;
+          payment maps in <code>features/invoices/lib/paymentStatus</code>; DataTable Spin uses <code>description</code>;
+          dead <code>getMyInvoices(size=200)</code> removed.
         </div>
       </section>
-
-      <!-- FLOWS -->
-      <section class="section" id="sec-flows" aria-labelledby="h-flows" hidden>
-        <h2 id="h-flows">8. Interactive flows</h2>
-        <p class="lead">Chọn luồng → bước qua từng API. Mô phỏng loading / success (không gọi mạng).</p>
-        <div class="flow-picker" role="tablist" aria-label="Chọn flow">
-          <button type="button" data-flow="login" aria-pressed="true">Login + 401</button>
-          <button type="button" data-flow="book" aria-pressed="false">USER đặt phòng</button>
-          <button type="button" data-flow="approve" aria-pressed="false">ADMIN duyệt</button>
-          <button type="button" data-flow="dept" aria-pressed="false">Đổi department</button>
-          <button type="button" data-flow="revenue" aria-pressed="false">Revenue tháng</button>
-        </div>
-        <div class="grid-2">
-          <div class="panel">
-            <div class="panel-hd">
-              <span id="flowTitle">Login + 401</span>
-              <div class="btn-row" style="margin:0">
-                <button type="button" class="btn-ghost btn" id="flowReset">Reset</button>
-                <button type="button" class="btn" id="flowNext">Next step</button>
-              </div>
-            </div>
-            <div class="panel-bd">
-              <ol class="steps" id="flowSteps"></ol>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel-hd">Payload / state</div>
-            <div class="panel-bd">
-              <div class="state-bar state-idle" id="flowState" role="status">Sẵn sàng — chọn bước hoặc bấm Next</div>
-              <div class="flow-diagram" id="flowDiagram" aria-hidden="true"></div>
-              <h3 style="margin-top:0.85rem;font-size:0.78rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.05em">Sample</h3>
-              <pre id="flowSample">Chọn một bước để xem request / response mẫu.</pre>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- BOOKING SM -->
-      <section class="section" id="sec-booking-sm" aria-labelledby="h-sm" hidden>
-        <h2 id="h-sm">9. Booking state machine</h2>
-        <p class="lead">Click một status để xem transition hợp lệ FE đang giả định.</p>
-        <div class="panel">
-          <div class="panel-bd">
-            <div class="state-machine" role="group" aria-label="Booking statuses">
-              <button type="button" class="sm-node pending" data-status="PENDING" aria-pressed="true">PENDING</button>
-              <span class="sm-edge">approve →</span>
-              <button type="button" class="sm-node approved" data-status="APPROVED" aria-pressed="false">APPROVED</button>
-              <span class="sm-edge">reject / cancel →</span>
-              <button type="button" class="sm-node cancelled" data-status="CANCELLED" aria-pressed="false">CANCELLED</button>
-              <span class="sm-edge">PENDING past start →</span>
-              <button type="button" class="sm-node expired" data-status="EXPIRED" aria-pressed="false">EXPIRED</button>
-            </div>
-            <pre id="smDetail"></pre>
-          </div>
-        </div>
-      </section>
-
     </main>
   </div>
 
   <script>
     (function () {
-      const APIS = [
-        {
-          id: "login",
-          method: "POST", path: "/auth/login", role: "public", domain: "Auth",
-          query: "—",
-          bodySummary: "{ email, password }",
-          request: '{\n  "email": "user@company.com",\n  "password": "123456"\n}',
-          response: '// Flat:\n{\n  "accessToken": "<jwt>",\n  "id": 2,\n  "email": "user@company.com",\n  "fullName": "User",\n  "role": "USER",\n  "department": { "id": 1, "code": "IT", "name": "IT" }\n}\n// Nested cũng ok:\n{\n  "token": "<jwt>",\n  "user": { "id": 2, "email": "…", "fullName": "…", "role": "USER", "department": {…} }\n}'
-        },
-        {
-          id: "get-account",
-          method: "GET", path: "/account", role: "auth", domain: "Account",
-          query: "—", bodySummary: "—",
-          request: "(no body)",
-          response: '{\n  "id": 2,\n  "login": "user@company.com",\n  "email": "user@company.com",\n  "fullName": "User",\n  "activated": true,\n  "authorities": ["ROLE_USER"],\n  "department": { "id": 1, "code": "IT", "name": "IT" }\n}'
-        },
-        {
-          id: "put-account",
-          method: "PUT", path: "/account", role: "auth", domain: "Account",
-          query: "—", bodySummary: "{ fullName, email }",
-          request: '{\n  "fullName": "Nguyen Van A",\n  "email": "user@company.com"\n}',
-          response: "(AccountProfile — same shape as GET /account)"
-        },
-        {
-          id: "post-dept-change",
-          method: "POST", path: "/account/department-change-requests", role: "auth", domain: "Account",
-          query: "—", bodySummary: "{ requestedDepartmentId }",
-          request: '{\n  "requestedDepartmentId": 3\n}',
-          response: '{\n  "id": 10,\n  "userId": 2,\n  "status": "PENDING",\n  "requestedDepartment": { "id": 3, "code": "HR", "name": "HR" }\n}'
-        },
-        {
-          id: "get-dept-pending",
-          method: "GET", path: "/account/department-change-requests/pending", role: "auth", domain: "Account",
-          query: "—", bodySummary: "—",
-          request: "(no body)",
-          response: "DepartmentChangeRequest | 204 empty → null"
-        },
-        {
-          id: "get-rooms",
-          method: "GET", path: "/rooms", role: "auth", domain: "Rooms",
-          query: "q?, active?, page?, size?, sort?",
-          bodySummary: "—",
-          request: "GET /rooms?page=0&size=20&sort=name,asc&q=&active=true",
-          response: "Room[] | Spring page of Room\n// Dashboard: size=200"
-        },
-        {
-          id: "post-room",
-          method: "POST", path: "/admin/rooms", role: "admin", domain: "Rooms",
-          query: "—",
-          bodySummary: "{ name, capacity, isActive, pricePerHour, lockedDepartment }",
-          request: '{\n  "name": "Meeting A",\n  "capacity": 10,\n  "isActive": true,\n  "pricePerHour": 100000,\n  "lockedDepartment": null\n}',
-          response: "BackendRoom\n// BE: /api/admin/rooms (+ alias /api/rooms). FE fallback CHỈ HTTP 404 → POST /rooms"
-        },
-        {
-          id: "put-room",
-          method: "PUT", path: "/admin/rooms/{id}", role: "admin", domain: "Rooms",
-          query: "—",
-          bodySummary: "{ id, name?, capacity?, isActive?, pricePerHour?, lockedDepartment }",
-          request: '{\n  "id": 1,\n  "name": "Meeting A",\n  "capacity": 12,\n  "isActive": true,\n  "pricePerHour": 120000,\n  "lockedDepartment": { "id": 1 }\n}',
-          response: "BackendRoom\n// BE: /api/admin/rooms/{id}. FE fallback CHỈ HTTP 404 → PUT /rooms/{id}"
-        },
-        {
-          id: "patch-room",
-          method: "PATCH", path: "/admin/rooms/{id}", role: "admin", domain: "Rooms",
-          query: "—", bodySummary: "{ id, isActive }",
-          request: '{\n  "id": 1,\n  "isActive": false\n}',
-          response: "BackendRoom (toggle)\n// BE: /api/admin/rooms/{id}. FE fallback CHỈ HTTP 404 → PATCH /rooms/{id}\n// error.hasbookings nếu còn lịch\n// FE map isActive ?? active ?? true"
-        },
-        {
-          id: "get-bookings",
-          method: "GET", path: "/bookings", role: "auth", domain: "Bookings",
-          query: "date?, status?, q?, upcoming?, page?, size?, sort?",
-          bodySummary: "—",
-          request: "GET /bookings?date=2026-08-06&page=0&size=200\nGET /bookings?status=PENDING\nGET /bookings?upcoming=true\n  // upcoming = APPROVED && startTime > now (tab Đã duyệt chưa diễn ra)\n// Badge count (không có /bookings/count):\nGET /bookings?status=PENDING&page=0&size=1 → totalElements",
-          response: "BackendBookingDto[] | Spring page | single object"
-        },
-        {
-          id: "get-booking",
-          method: "GET", path: "/bookings/{id}", role: "auth", domain: "Bookings",
-          query: "—", bodySummary: "—",
-          request: "(no body)\n// FE: BOOKING_PENDING → ?tab=pending&highlight=; pin chỉ trên tab pending",
-          response: "BackendBookingDto"
-        },
-        {
-          id: "post-booking",
-          method: "POST", path: "/bookings", role: "auth", domain: "Bookings",
-          query: "—",
-          bodySummary: "{ title, startTime, endTime, roomId, room:{id} }",
-          request: '{\n  "title": "Sprint planning",\n  "startTime": "2026-08-06T02:00:00.000Z",\n  "endTime": "2026-08-06T03:00:00.000Z",\n  "roomId": 1,\n  "room": { "id": 1 }\n}\n// FE Dashboard: toISOString() UTC — KHÔNG gửi userId (JWT)',
-          response: '{\n  "id": 42,\n  "title": "Sprint planning",\n  "status": "PENDING",\n  "amount": 100000,\n  "room": { "id": 1, "name": "Meeting A" }\n}'
-        },
-        {
-          id: "approve-booking",
-          method: "POST", path: "/admin/bookings/{id}/approve", role: "admin", domain: "Bookings",
-          query: "—", bodySummary: "—",
-          request: "(empty body)",
-          response: 'Booking status → "APPROVED"\n// BE: /api/admin/bookings/{id}/approve. FE fallback CHỈ HTTP 404 → POST /bookings/{id}/approve\n// Persist thật trên DB (GET lại không còn PENDING). FE refetch list + badge counts.'
-        },
-        {
-          id: "reject-booking",
-          method: "POST", path: "/admin/bookings/{id}/reject", role: "admin", domain: "Bookings",
-          query: "—", bodySummary: "—",
-          request: "(empty body)",
-          response: 'Booking thường → "CANCELLED"\nNotification type: BOOKING_REJECTED\n// BE /api/admin/…. FE fallback CHỈ 404 → /bookings/{id}/reject\n// Persist trên DB; FE refetch list + badge counts'
-        },
-        {
-          id: "cancel-booking",
-          method: "POST", path: "/admin/bookings/{id}/cancel", role: "admin", domain: "Bookings",
-          query: "—", bodySummary: "—",
-          request: "(empty body)",
-          response: 'status → "CANCELLED"\n// error.alreadystarted nếu đã bắt đầu\n// BE /api/admin/…. FE fallback CHỈ 404 → /bookings/{id}/cancel\n// Persist trên DB; FE refetch list + badge counts'
-        },
-        {
-          id: "get-users",
-          method: "GET", path: "/admin/users", role: "admin", domain: "Users",
-          query: "page, size, sort?, q?, activated?",
-          bodySummary: "—",
-          request: "GET /admin/users?page=0&size=20&q=&activated=true",
-          response: "ManagedUser[] + header X-Total-Count\n(không dùng Spring content)"
-        },
-        {
-          id: "post-user",
-          method: "POST", path: "/admin/users", role: "admin", domain: "Users",
-          query: "—",
-          bodySummary: "{ login, email, fullName, password, activated, authorities, department }",
-          request: '{\n  "login": "new@company.com",\n  "email": "new@company.com",\n  "fullName": "New User",\n  "password": "123456",\n  "activated": true,\n  "authorities": ["ROLE_USER"],\n  "department": { "id": 1 }\n}',
-          response: "BackendAdminUser"
-        },
-        {
-          id: "put-user",
-          method: "PUT", path: "/admin/users", role: "admin", domain: "Users",
-          query: "—",
-          bodySummary: "{ id, login, email, fullName, activated, authorities, password?, department }",
-          request: "(same fields; password optional)",
-          response: "BackendAdminUser"
-        },
-        {
-          id: "del-user",
-          method: "DELETE", path: "/admin/users/{login}", role: "admin", domain: "Users",
-          query: "—", bodySummary: "—",
-          request: "(no body)",
-          response: "void — deactivate (không xóa cứng)"
-        },
-        {
-          id: "get-dept-reqs",
-          method: "GET", path: "/admin/department-change-requests", role: "admin", domain: "DeptChange",
-          query: "status, page, size, sort",
-          bodySummary: "—",
-          request: "GET ...?status=PENDING&page=0&size=100&sort=id,desc",
-          response: "DepartmentChangeRequest[] | { content }"
-        },
-        {
-          id: "approve-dept",
-          method: "POST", path: "/admin/department-change-requests/{id}/approve", role: "admin", domain: "DeptChange",
-          query: "—", bodySummary: "—",
-          request: "(empty)",
-          response: 'status → "APPROVED"\n// Cập nhật user.department; xóa notif DEPT_CHANGE_PENDING\n// BE @Modifying delete notif: flushAutomatically=true — status phải persist trên DB'
-        },
-        {
-          id: "reject-dept",
-          method: "POST", path: "/admin/department-change-requests/{id}/reject", role: "admin", domain: "DeptChange",
-          query: "—", bodySummary: "—",
-          request: "(empty)",
-          response: 'status → "REJECTED"\n// Persist trên DB; list PENDING phải mất record sau refetch'
-        },
-        {
-          id: "get-depts",
-          method: "GET", path: "/departments", role: "auth", domain: "Departments",
-          query: "—", bodySummary: "—",
-          request: "(no body)",
-          response: '[{ "id": 1, "code": "IT", "name": "IT" }]'
-        },
-        {
-          id: "get-invoices",
-          method: "GET", path: "/account/invoices", role: "auth", domain: "Invoices",
-          query: "page, size, sort?, q?",
-          bodySummary: "—",
-          request: "GET /account/invoices?page=0&size=20&sort=startTime,desc",
-          response: "Booking page/array (APPROVED + amount)"
-        },
-        {
-          id: "get-invoice",
-          method: "GET", path: "/account/invoices/{id}", role: "auth", domain: "Invoices",
-          query: "—", bodySummary: "—",
-          request: "(no body)",
-          response: "BackendBookingDto"
-        },
-        {
-          id: "export-invoices",
-          method: "GET", path: "/account/invoices/export", role: "auth", domain: "Invoices",
-          query: "—", bodySummary: "—",
-          request: "(Bearer + Accept blob)",
-          response: "CSV Blob"
-        },
-        {
-          id: "get-revenue",
-          method: "GET", path: "/admin/revenue", role: "admin", domain: "Revenue",
-          query: "yearMonth (YYYY-MM)",
-          bodySummary: "—",
-          request: "GET /admin/revenue?yearMonth=2026-08",
-          response: "RevenueReport (KPI + previous + byRoom + byDay)"
-        },
-        {
-          id: "get-revenue-room",
-          method: "GET", path: "/admin/revenue/by-room", role: "admin", domain: "Revenue",
-          query: "yearMonth, page, size, sort?, q?",
-          bodySummary: "—",
-          request: "GET /admin/revenue/by-room?yearMonth=2026-08&page=0&size=20",
-          response: "byRoom page/array"
-        },
-        {
-          id: "export-revenue",
-          method: "GET", path: "/admin/revenue/export", role: "admin", domain: "Revenue",
-          query: "yearMonth",
-          bodySummary: "—",
-          request: "GET /admin/revenue/export?yearMonth=2026-08",
-          response: "CSV Blob"
-        },
-        {
-          id: "get-notif",
-          method: "GET", path: "/notifications", role: "auth", domain: "Notifications",
-          query: "page=0, size=20, sort=createdDate,desc",
-          bodySummary: "—",
-          request: "GET /notifications?page=0&size=20&sort=createdDate,desc",
-          response: "Notification[] | Spring page"
-        },
-        {
-          id: "unread-count",
-          method: "GET", path: "/notifications/unread-count", role: "auth", domain: "Notifications",
-          query: "—", bodySummary: "—",
-          request: "(no body)",
-          response: '{ "count": 3 }'
-        },
-        {
-          id: "read-notif",
-          method: "POST", path: "/notifications/{id}/read", role: "auth", domain: "Notifications",
-          query: "—", bodySummary: "—",
-          request: "(empty)",
-          response: "BackendNotification (readDate set)"
-        },
-        {
-          id: "read-all",
-          method: "POST", path: "/notifications/read-all", role: "auth", domain: "Notifications",
-          query: "—", bodySummary: "—",
-          request: "(empty)",
-          response: "void"
-        }
-      ];
-
-      const FLOWS = {
-        login: {
-          title: "Login + 401",
-          steps: [
-            {
-              title: "POST /auth/login",
-              desc: "Public — nhận token + user",
-              api: "POST /auth/login",
-              nodes: ["Client", "POST /auth/login", "JWT + user"],
-              sample: 'Request:\n{ "email": "admin@company.com", "password": "123456" }\n\nResponse (flat):\n{ "accessToken": "…", "role": "ADMIN", … }'
-            },
-            {
-              title: "Lưu token + gọi API có Bearer",
-              desc: "Authorization: Bearer &lt;token&gt;",
-              api: "Header trên mọi request sau login",
-              nodes: ["localStorage token", "api-client interceptor", "BE"],
-              sample: "Authorization: Bearer eyJhbGciOi…"
-            },
-            {
-              title: "401 → logout",
-              desc: "Interceptor emitAuthLogout → /login",
-              api: "Bất kỳ endpoint nào trả 401",
-              nodes: ["401", "emitAuthLogout", "clear session", "/login"],
-              sample: "FE không dùng window.location — dùng auth-events + navigate"
-            }
-          ]
-        },
-        book: {
-          title: "USER đặt phòng",
-          steps: [
-            {
-              title: "GET /rooms + GET /bookings?date=",
-              desc: "Dashboard schedule",
-              api: "GET /rooms · GET /bookings",
-              nodes: ["Dashboard", "rooms size=200", "bookings theo ngày"],
-              sample: "GET /rooms?page=0&size=200\nGET /bookings?date=2026-08-06&page=0&size=200"
-            },
-            {
-              title: "POST /bookings",
-              desc: "Tạo → PENDING; không gửi userId",
-              api: "POST /bookings",
-              nodes: ["Form", "POST /bookings", "status PENDING"],
-              sample: '{\n  "title": "Sync",\n  "startTime": "2026-08-06T14:00:00",\n  "endTime": "2026-08-06T15:00:00",\n  "roomId": 1,\n  "room": { "id": 1 }\n}'
-            },
-            {
-              title: "Notification BOOKING_PENDING",
-              desc: "Chỉ admin nhận (actionable); không broadcast outcome cho all users",
-              api: "GET /notifications",
-              nodes: ["BE notifyAdmins", "Admin bell", "/admin/bookings?tab=pending"],
-              sample: '{ "type": "BOOKING_PENDING", "bookingId": 42, … }\nAdmin inbox: PENDING only\nUser inbox: outcome types only'
-            }
-          ]
-        },
-        approve: {
-          title: "ADMIN duyệt booking",
-          steps: [
-            {
-              title: "3 tabs admin bookings",
-              desc: "pending / upcoming / all",
-              api: "GET /bookings?status=PENDING · ?upcoming=true",
-              nodes: ["/admin/bookings", "pending", "upcoming", "history"],
-              sample: "pending → status=PENDING\nupcoming → upcoming=true (APPROVED, startTime > now)\nall → Lịch sử\nBadge: page=0&size=1 → totalElements"
-            },
-            {
-              title: "POST …/approve hoặc …/reject hoặc …/cancel",
-              desc: "BE /api/admin/…; FE fallback 404-only (legacy)",
-              api: "POST /admin/bookings/{id}/approve|reject|cancel",
-              nodes: ["Approve", "APPROVED", "reject/cancel → CANCELLED"],
-              sample: "Empty body. Fallback /bookings/{id}/… CHỈ khi HTTP 404."
-            },
-            {
-              title: "User nhận BOOKING_APPROVED / REJECTED",
-              desc: "Chỉ booker không-ADMIN; admin không nhận outcome",
-              api: "notifications + invoices",
-              nodes: ["Notif → booker", "skip nếu ROLE_ADMIN", "/my-invoices nếu APPROVED"],
-              sample: "APPROVED → GET /account/invoices\nREJECTED/CANCELLED/EXPIRED → mark-read only (FE không navigate)"
-            }
-          ]
-        },
-        dept: {
-          title: "Đổi department",
-          steps: [
-            {
-              title: "GET /account + pending",
-              desc: "ProfileDialog luôn fetch mới",
-              api: "GET /account · GET …/pending",
-              nodes: ["Profile", "account", "pending request"],
-              sample: "pending: 200 DTO hoặc 204 → null"
-            },
-            {
-              title: "POST department-change-requests",
-              desc: "User gửi requestedDepartmentId",
-              api: "POST /account/department-change-requests",
-              nodes: ["User", "PENDING request"],
-              sample: '{ "requestedDepartmentId": 3 }'
-            },
-            {
-              title: "Admin approve/reject",
-              desc: "Tab requests trên /admin/users",
-              api: "POST /admin/department-change-requests/{id}/approve|reject",
-              nodes: ["Admin", "APPROVED|REJECTED", "user.department cập nhật nếu approve"],
-              sample: "Notif DEPT_CHANGE_*; bookingId field = request id"
-            }
-          ]
-        },
-        revenue: {
-          title: "Revenue tháng",
-          steps: [
-            {
-              title: "GET /admin/revenue?yearMonth=",
-              desc: "KPI + charts (full report)",
-              api: "GET /admin/revenue",
-              nodes: ["yearMonth", "KPI", "byDay chart"],
-              sample: "GET /admin/revenue?yearMonth=2026-08"
-            },
-            {
-              title: "GET /admin/revenue/by-room",
-              desc: "Bảng server-side page",
-              api: "GET /admin/revenue/by-room",
-              nodes: ["page/size/sort/q", "DataTable"],
-              sample: "page=0&size=20&sort=amount,desc"
-            },
-            {
-              title: "GET export CSV",
-              desc: "Blob download authenticated",
-              api: "GET /admin/revenue/export",
-              nodes: ["Bearer", "CSV Blob"],
-              sample: "?yearMonth=2026-08"
-            }
-          ]
-        }
-      };
-
-      const SM = {
-        PENDING: {
-          text: "PENDING\n\n• USER vừa tạo booking\n• Admin: approve → APPROVED; reject/cancel → CANCELLED\n• BE: startTime đã qua mà vẫn PENDING → EXPIRED\n• UI: tab pending = status=PENDING; upcoming = APPROVED + future; all = Lịch sử"
-        },
-        APPROVED: {
-          text: "APPROVED\n\n• Hiện trên schedule + invoices\n• Admin có thể cancel → CANCELLED (nếu chưa bắt đầu)\n• error.alreadystarted nếu cancel quá muộn\n• amount snapshot giữ nguyên"
-        },
-        CANCELLED: {
-          text: "CANCELLED\n\n• Kết quả reject hoặc cancel\n• Không có status REJECTED riêng trên Booking type FE\n• Notification có thể là BOOKING_REJECTED hoặc BOOKING_CANCELLED"
-        },
-        EXPIRED: {
-          text: "EXPIRED\n\n• BE set khi PENDING quá startTime\n• History badge: Hết hạn\n• Không approve/reject sau khi đã EXPIRED (error.invalidstatus)"
-        }
-      };
+const APIS = [
+  {
+    "id": "login",
+    "method": "POST",
+    "path": "/api/auth/login",
+    "role": "public",
+    "domain": "Auth",
+    "query": "—",
+    "bodySummary": "{ email, password }",
+    "request": "{\n  \"email\": \"user@company.com\",\n  \"password\": \"123456\"\n}",
+    "response": "{\n  \"token\": \"<jwt>\",\n  \"user\": {\n    \"id\": 2,\n    \"email\": \"user@company.com\",\n    \"fullName\": \"User\",\n    \"role\": \"USER\",\n    \"department\": { \"id\": 1, \"code\": \"IT\", \"name\": \"IT\" }\n  }\n}",
+    "notes": "Authorization: Bearer also set on response header. 401 if bad credentials."
+  },
+  {
+    "id": "signup",
+    "method": "POST",
+    "path": "/api/auth/signup",
+    "role": "public",
+    "domain": "Auth",
+    "query": "—",
+    "bodySummary": "{ email, password, fullName, departmentId? }",
+    "request": "{\n  \"email\": \"new@company.com\",\n  \"password\": \"123456\",\n  \"fullName\": \"New User\",\n  \"departmentId\": 1\n}",
+    "response": "201 + same shape as login ({ token, user })",
+    "notes": "Always creates ROLE_USER; ignores any client role. BE password @Size(min=4); FE signup UI currently min 6. 400 validation; error.emailexists / error.userexists → 400."
+  },
+  {
+    "id": "get-account",
+    "method": "GET",
+    "path": "/api/account",
+    "role": "USER+",
+    "domain": "Account",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "{\n  \"id\": 2,\n  \"login\": \"user@company.com\",\n  \"email\": \"user@company.com\",\n  \"fullName\": \"User\",\n  \"activated\": true,\n  \"authorities\": [\"ROLE_USER\"],\n  \"department\": { \"id\": 1, \"code\": \"IT\", \"name\": \"IT\" }\n}",
+    "notes": ""
+  },
+  {
+    "id": "put-account",
+    "method": "PUT",
+    "path": "/api/account",
+    "role": "USER+",
+    "domain": "Account",
+    "query": "—",
+    "bodySummary": "{ fullName, email }",
+    "request": "{\n  \"fullName\": \"Nguyen Van A\",\n  \"email\": \"user@company.com\"\n}",
+    "response": "AdminUserDTO (same as GET /api/account)",
+    "notes": "Does not change department — use POST /api/account/department-change-requests (FE must include /account; not /api/department-change-requests)."
+  },
+  {
+    "id": "post-dept-change",
+    "method": "POST",
+    "path": "/api/account/department-change-requests",
+    "role": "USER+",
+    "domain": "Account",
+    "query": "—",
+    "bodySummary": "{ requestedDepartmentId }",
+    "request": "{\n  \"requestedDepartmentId\": 3\n}",
+    "response": "{\n  \"id\": 10,\n  \"userId\": 2,\n  \"status\": \"PENDING\",\n  \"requestedDepartment\": { \"id\": 3, \"code\": \"HR\", \"name\": \"HR\" }\n}",
+    "notes": "error.pendingexists | error.sameDepartment | error.departmentnotfound. FE: /account/department-change-requests"
+  },
+  {
+    "id": "get-dept-pending",
+    "method": "GET",
+    "path": "/api/account/department-change-requests/pending",
+    "role": "USER+",
+    "domain": "Account",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "DepartmentChangeRequestDTO | 204 No Content",
+    "notes": "FE: /account/department-change-requests/pending (not /department-change-requests/pending)"
+  },
+  {
+    "id": "get-invoices",
+    "method": "GET",
+    "path": "/api/account/invoices",
+    "role": "USER+",
+    "domain": "Invoices",
+    "query": "q?, paymentStatus?, page?, size?, sort?",
+    "bodySummary": "—",
+    "request": "GET /api/account/invoices?page=0&size=20&sort=startTime,desc&paymentStatus=UNPAID",
+    "response": "Spring Page<BookingDTO> — APPROVED bookings only; fields include paymentStatus, approvedByLogin, approvedByFullName, amount",
+    "notes": "Invoice = APPROVED booking of the JWT user only. Optional paymentStatus=UNPAID|PAID filter."
+  },
+  {
+    "id": "export-invoices",
+    "method": "GET",
+    "path": "/api/account/invoices/export",
+    "role": "USER+",
+    "domain": "Invoices",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(Bearer; Accept text/csv)",
+    "response": "CSV blob (Content-Disposition: invoices.csv)",
+    "notes": "Caller invoices only; columns include paymentStatus + approvedBy. UI: Export on /my-invoices."
+  },
+  {
+    "id": "get-invoice",
+    "method": "GET",
+    "path": "/api/account/invoices/{id}",
+    "role": "USER+",
+    "domain": "Invoices",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "BookingDTO (own APPROVED only) or 404",
+    "notes": ""
+  },
+  {
+    "id": "get-rooms",
+    "method": "GET",
+    "path": "/api/rooms",
+    "role": "USER+",
+    "domain": "Rooms",
+    "query": "q?, active?, vip?, page?, size?, sort?",
+    "bodySummary": "—",
+    "request": "GET /api/rooms?page=0&size=20&sort=name,asc&active=true&vip=false",
+    "response": "Spring Page<RoomDTO> — { id, name, capacity, isActive, isVip, vipAmenities, pricePerHour, lockedDepartment }",
+    "notes": "Non-admin: active-only + dept visibility (public OR locked to own dept)."
+  },
+  {
+    "id": "get-room",
+    "method": "GET",
+    "path": "/api/rooms/{id}",
+    "role": "USER+",
+    "domain": "Rooms",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "RoomDTO | 404",
+    "notes": ""
+  },
+  {
+    "id": "post-room",
+    "method": "POST",
+    "path": "/api/rooms",
+    "role": "MANAGER+",
+    "domain": "Rooms",
+    "query": "—",
+    "bodySummary": "{ name, capacity, isActive, isVip, vipAmenities?, pricePerHour, lockedDepartment? }",
+    "request": "{\n  \"name\": \"Meeting A\",\n  \"capacity\": 10,\n  \"isActive\": true,\n  \"isVip\": false,\n  \"pricePerHour\": 100000,\n  \"lockedDepartment\": null\n}",
+    "response": "201 RoomDTO",
+    "notes": "Alias also /api/admin/rooms. error.idexists"
+  },
+  {
+    "id": "put-room",
+    "method": "PUT",
+    "path": "/api/rooms/{id}",
+    "role": "MANAGER+",
+    "domain": "Rooms",
+    "query": "—",
+    "bodySummary": "{ id, name, capacity, isActive, isVip, pricePerHour, lockedDepartment? }",
+    "request": "{\n  \"id\": 1,\n  \"name\": \"Meeting A\",\n  \"capacity\": 12,\n  \"isActive\": true,\n  \"isVip\": true,\n  \"vipAmenities\": \"TV, coffee\",\n  \"pricePerHour\": 120000,\n  \"lockedDepartment\": { \"id\": 1 }\n}",
+    "response": "RoomDTO",
+    "notes": "Alias /api/admin/rooms/{id}"
+  },
+  {
+    "id": "patch-room",
+    "method": "PATCH",
+    "path": "/api/rooms/{id}",
+    "role": "MANAGER+",
+    "domain": "Rooms",
+    "query": "—",
+    "bodySummary": "{ id, …partial }",
+    "request": "{\n  \"id\": 1,\n  \"isActive\": false\n}",
+    "response": "RoomDTO",
+    "notes": "Soft deactivate. error.hasbookings if PENDING/APPROVED future bookings remain."
+  },
+  {
+    "id": "del-room",
+    "method": "DELETE",
+    "path": "/api/rooms/{id}",
+    "role": "MANAGER+",
+    "domain": "Rooms",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "204 — soft delete (isActive=false)",
+    "notes": "Alias /api/admin/rooms/{id}"
+  },
+  {
+    "id": "get-bookings",
+    "method": "GET",
+    "path": "/api/bookings",
+    "role": "USER+",
+    "domain": "Bookings",
+    "query": "date?, from?, to?, status?, q?, upcoming?, page?, size?, sort?",
+    "bodySummary": "—",
+    "request": "GET /api/bookings?date=2026-08-13&page=0&size=50\nGET /api/bookings?from=2026-08-01&to=2026-08-31&status=PENDING\nGET /api/bookings?upcoming=true&sort=startTime,desc&sort=title,asc",
+    "response": "Spring Page<BookingDTO>",
+    "notes": "date = one calendar day (overlap). from/to = inclusive LocalDate on startTime (≥ from 00:00 and < to+1 day). Repeated sort= for multi-sort. upcoming=true → APPROVED + startTime > now."
+  },
+  {
+    "id": "get-booking",
+    "method": "GET",
+    "path": "/api/bookings/{id}",
+    "role": "USER+",
+    "domain": "Bookings",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "BookingDTO",
+    "notes": "404 if missing / not visible to caller."
+  },
+  {
+    "id": "put-booking",
+    "method": "PUT",
+    "path": "/api/bookings/{id}",
+    "role": "USER+",
+    "domain": "Bookings",
+    "query": "—",
+    "bodySummary": "{ id, title, startTime, endTime, room… }",
+    "request": "(full BookingDTO with id)",
+    "response": "BookingDTO",
+    "notes": "Owner/admin rules in BookingService; error.overlap | id mismatch. Alias /api/admin/bookings/{id}."
+  },
+  {
+    "id": "patch-booking",
+    "method": "PATCH",
+    "path": "/api/bookings/{id}",
+    "role": "USER+",
+    "domain": "Bookings",
+    "query": "—",
+    "bodySummary": "partial BookingDTO",
+    "request": "(merge-patch / JSON partial)",
+    "response": "BookingDTO | 404",
+    "notes": "Partial update. Alias /api/admin/bookings/{id}."
+  },
+  {
+    "id": "post-booking",
+    "method": "POST",
+    "path": "/api/bookings",
+    "role": "USER+",
+    "domain": "Bookings",
+    "query": "—",
+    "bodySummary": "{ title, startTime, endTime, room: { id } }",
+    "request": "{\n  \"title\": \"Sprint planning\",\n  \"startTime\": \"2026-08-13T02:00:00.000Z\",\n  \"endTime\": \"2026-08-13T03:00:00.000Z\",\n  \"room\": { \"id\": 1 }\n}",
+    "response": "{\n  \"id\": 42,\n  \"title\": \"Sprint planning\",\n  \"status\": \"PENDING\",\n  \"amount\": 100000,\n  \"pricePerHour\": 100000,\n  \"paymentStatus\": null,\n  \"room\": { \"id\": 1, \"name\": \"Meeting A\" }\n}",
+    "notes": "USER→PENDING (paymentStatus null until approve). ADMIN create auto-APPROVED + paymentStatus UNPAID + approvedBy=current. error.overlap | room access. Do not send userId (JWT)."
+  },
+  {
+    "id": "approve-booking",
+    "method": "POST",
+    "path": "/api/bookings/{id}/approve",
+    "role": "MANAGER+",
+    "domain": "Bookings",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty body)",
+    "response": "status → APPROVED; paymentStatus → UNPAID; approvedBy* set",
+    "notes": "error.invalidstatus if not PENDING. Alias /api/admin/bookings/{id}/approve"
+  },
+  {
+    "id": "reject-booking",
+    "method": "POST",
+    "path": "/api/bookings/{id}/reject",
+    "role": "MANAGER+",
+    "domain": "Bookings",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty body)",
+    "response": "status → CANCELLED; notif BOOKING_REJECTED",
+    "notes": "error.invalidstatus. Alias /api/admin/bookings/{id}/reject"
+  },
+  {
+    "id": "cancel-booking",
+    "method": "POST",
+    "path": "/api/bookings/{id}/cancel",
+    "role": "MANAGER+",
+    "domain": "Bookings",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty body)",
+    "response": "status → CANCELLED",
+    "notes": "error.alreadystarted | error.invalidstatus. Alias /api/admin/bookings/{id}/cancel"
+  },
+  {
+    "id": "mark-paid",
+    "method": "POST",
+    "path": "/api/bookings/{id}/mark-paid",
+    "role": "MANAGER+",
+    "domain": "Bookings",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty body)",
+    "response": "paymentStatus → PAID (APPROVED + UNPAID only)",
+    "notes": "MANAGER+; no owner check — any APPROVED+UNPAID by id. App UI only shows the button on caller invoices (GET /api/account/invoices). 403 if below MANAGER; error.invalidstatus | error.alreadypaid. Alias /api/admin/bookings/{id}/mark-paid"
+  },
+  {
+    "id": "del-booking",
+    "method": "DELETE",
+    "path": "/api/bookings/{id}",
+    "role": "ADMIN",
+    "domain": "Bookings",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "204",
+    "notes": "Hard delete — ADMIN only"
+  },
+  {
+    "id": "get-users",
+    "method": "GET",
+    "path": "/api/admin/users",
+    "role": "ADMIN",
+    "domain": "Users",
+    "query": "page, size, sort?, q?, activated?, role?",
+    "bodySummary": "—",
+    "request": "GET /api/admin/users?page=0&size=20&q=&activated=true&role=MANAGER\nGET /api/admin/users?role=USER&sort=fullName,asc&sort=email,asc",
+    "response": "AdminUserDTO[] + header X-Total-Count (and/or Spring page depending on deploy)",
+    "notes": "ADMIN only. role=ADMIN|MANAGER|STAFF|USER (or ROLE_*). USER = primary USER only (no higher authority). Repeated sort= for multi-sort."
+  },
+  {
+    "id": "post-user",
+    "method": "POST",
+    "path": "/api/admin/users",
+    "role": "ADMIN",
+    "domain": "Users",
+    "query": "—",
+    "bodySummary": "{ login, email, fullName, password, activated, authorities|role, departmentId? }",
+    "request": "{\n  \"login\": \"new@company.com\",\n  \"email\": \"new@company.com\",\n  \"fullName\": \"New User\",\n  \"password\": \"123456\",\n  \"activated\": true,\n  \"authorities\": [\"ROLE_STAFF\", \"ROLE_USER\"],\n  \"department\": { \"id\": 1 }\n}",
+    "response": "AdminUserDTO",
+    "notes": "error.emailexists | error.userexists"
+  },
+  {
+    "id": "put-users",
+    "method": "PUT",
+    "path": "/api/admin/users",
+    "role": "ADMIN",
+    "domain": "Users",
+    "query": "—",
+    "bodySummary": "{ id, login, email, fullName, activated, authorities, password?, department }",
+    "request": "(same fields; password optional)",
+    "response": "AdminUserDTO",
+    "notes": ""
+  },
+  {
+    "id": "put-user-login",
+    "method": "PUT",
+    "path": "/api/admin/users/{login}",
+    "role": "ADMIN",
+    "domain": "Users",
+    "query": "—",
+    "bodySummary": "same as PUT /api/admin/users",
+    "request": "(body with id + fields)",
+    "response": "AdminUserDTO",
+    "notes": "Path alias of PUT /api/admin/users"
+  },
+  {
+    "id": "get-user",
+    "method": "GET",
+    "path": "/api/admin/users/{login}",
+    "role": "ADMIN",
+    "domain": "Users",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "AdminUserDTO | 404",
+    "notes": ""
+  },
+  {
+    "id": "del-user",
+    "method": "DELETE",
+    "path": "/api/admin/users/{login}",
+    "role": "ADMIN",
+    "domain": "Users",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "204 — deactivate (not hard delete)",
+    "notes": ""
+  },
+  {
+    "id": "get-depts",
+    "method": "GET",
+    "path": "/api/departments",
+    "role": "USER+",
+    "domain": "Departments",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "[{ \"id\": 1, \"code\": \"IT\", \"name\": \"IT\" }]",
+    "notes": ""
+  },
+  {
+    "id": "post-dept",
+    "method": "POST",
+    "path": "/api/departments",
+    "role": "MANAGER+",
+    "domain": "Departments",
+    "query": "—",
+    "bodySummary": "{ code, name }",
+    "request": "{\n  \"code\": \"OPS\",\n  \"name\": \"Operations\"\n}",
+    "response": "201 DepartmentDTO",
+    "notes": ""
+  },
+  {
+    "id": "put-dept",
+    "method": "PUT",
+    "path": "/api/departments/{id}",
+    "role": "MANAGER+",
+    "domain": "Departments",
+    "query": "—",
+    "bodySummary": "{ id, code, name }",
+    "request": "{\n  \"id\": 1,\n  \"code\": \"IT\",\n  \"name\": \"Information Technology\"\n}",
+    "response": "DepartmentDTO",
+    "notes": ""
+  },
+  {
+    "id": "get-dept-reqs",
+    "method": "GET",
+    "path": "/api/admin/department-change-requests",
+    "role": "MANAGER+",
+    "domain": "DeptChange",
+    "query": "status?, page?, size?, sort?",
+    "bodySummary": "—",
+    "request": "GET /api/admin/department-change-requests?status=PENDING&page=0&size=20",
+    "response": "Spring Page<DepartmentChangeRequestDTO>",
+    "notes": ""
+  },
+  {
+    "id": "approve-dept",
+    "method": "POST",
+    "path": "/api/admin/department-change-requests/{id}/approve",
+    "role": "MANAGER+",
+    "domain": "DeptChange",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty)",
+    "response": "status → APPROVED; user.department updated",
+    "notes": "error.invalidstatus | error.idnotfound"
+  },
+  {
+    "id": "reject-dept",
+    "method": "POST",
+    "path": "/api/admin/department-change-requests/{id}/reject",
+    "role": "MANAGER+",
+    "domain": "DeptChange",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty)",
+    "response": "status → REJECTED",
+    "notes": "error.invalidstatus"
+  },
+  {
+    "id": "get-revenue",
+    "method": "GET",
+    "path": "/api/admin/revenue",
+    "role": "MANAGER+",
+    "domain": "Revenue",
+    "query": "yearMonth? (yyyy-MM)",
+    "bodySummary": "—",
+    "request": "GET /api/admin/revenue?yearMonth=2026-08",
+    "response": "{\n  \"yearMonth\": \"2026-08\",\n  \"totalAmount\": 5000000,\n  \"equipmentCost\": 800000,\n  \"netAmount\": 4200000,\n  \"totalBookings\": 40,\n  \"averageAmount\": 125000,\n  \"cancelledCount\": 5,\n  \"cancellationRate\": 0.11,\n  \"previous\": { … },\n  \"byRoom\": [{ \"roomId\", \"roomName\", \"bookingCount\", \"amount\", \"equipmentCost\", \"netAmount\", \"sharePercent\" }],\n  \"byDay\": [{ \"date\", \"bookingCount\", \"amount\" }]\n}",
+    "notes": "netAmount = totalAmount − equipmentCost (fulfilled purchases in month)"
+  },
+  {
+    "id": "get-revenue-room",
+    "method": "GET",
+    "path": "/api/admin/revenue/by-room",
+    "role": "MANAGER+",
+    "domain": "Revenue",
+    "query": "yearMonth?, q?, page?, size?, sort?",
+    "bodySummary": "—",
+    "request": "GET /api/admin/revenue/by-room?yearMonth=2026-08&page=0&size=20",
+    "response": "Spring Page<RevenueByRoomDTO>",
+    "notes": ""
+  },
+  {
+    "id": "export-revenue",
+    "method": "GET",
+    "path": "/api/admin/revenue/export",
+    "role": "MANAGER+",
+    "domain": "Revenue",
+    "query": "yearMonth?",
+    "bodySummary": "—",
+    "request": "GET /api/admin/revenue/export?yearMonth=2026-08",
+    "response": "CSV blob",
+    "notes": ""
+  },
+  {
+    "id": "get-equipment",
+    "method": "GET",
+    "path": "/api/equipment",
+    "role": "USER+",
+    "domain": "Equipment",
+    "query": "q?, active?, page?, size?, sort?",
+    "bodySummary": "—",
+    "request": "GET /api/equipment?page=0&size=20&active=true",
+    "response": "Spring Page<EquipmentDTO> — { id, name, category, unitCost, isActive }",
+    "notes": "Authenticated USER+ can list/read. Writes require STAFF+. Product UI may still hide catalog from USER."
+  },
+  {
+    "id": "get-equipment-one",
+    "method": "GET",
+    "path": "/api/equipment/{id}",
+    "role": "USER+",
+    "domain": "Equipment",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "EquipmentDTO | 404",
+    "notes": "Authenticated read (USER+)."
+  },
+  {
+    "id": "post-equipment",
+    "method": "POST",
+    "path": "/api/equipment",
+    "role": "STAFF+",
+    "domain": "Equipment",
+    "query": "—",
+    "bodySummary": "{ name, category, unitCost, isActive }",
+    "request": "{\n  \"name\": \"Projector HD\",\n  \"category\": \"PROJECTOR\",\n  \"unitCost\": 15000000,\n  \"isActive\": true\n}",
+    "response": "201 EquipmentDTO",
+    "notes": "error.idexists"
+  },
+  {
+    "id": "put-equipment",
+    "method": "PUT",
+    "path": "/api/equipment/{id}",
+    "role": "STAFF+",
+    "domain": "Equipment",
+    "query": "—",
+    "bodySummary": "{ id, name, category, unitCost, isActive }",
+    "request": "(full body with id)",
+    "response": "EquipmentDTO",
+    "notes": ""
+  },
+  {
+    "id": "patch-equipment",
+    "method": "PATCH",
+    "path": "/api/equipment/{id}",
+    "role": "STAFF+",
+    "domain": "Equipment",
+    "query": "—",
+    "bodySummary": "{ id, …partial }",
+    "request": "{\n  \"id\": 1,\n  \"isActive\": false\n}",
+    "response": "EquipmentDTO",
+    "notes": ""
+  },
+  {
+    "id": "get-room-eq",
+    "method": "GET",
+    "path": "/api/rooms/{roomId}/equipment",
+    "role": "USER+",
+    "domain": "RoomEquipment",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "RoomEquipmentDTO[] — { id, roomId, equipment, quantity, status }",
+    "notes": ""
+  },
+  {
+    "id": "put-room-eq",
+    "method": "PUT",
+    "path": "/api/rooms/{roomId}/equipment/{roomEquipmentId}",
+    "role": "STAFF+",
+    "domain": "RoomEquipment",
+    "query": "—",
+    "bodySummary": "{ quantity?, status? }",
+    "request": "{\n  \"quantity\": 2,\n  \"status\": \"OK\"\n}",
+    "response": "RoomEquipmentDTO",
+    "notes": ""
+  },
+  {
+    "id": "patch-room-eq",
+    "method": "PATCH",
+    "path": "/api/rooms/{roomId}/equipment/{roomEquipmentId}",
+    "role": "STAFF+",
+    "domain": "RoomEquipment",
+    "query": "—",
+    "bodySummary": "{ quantity?, status? }",
+    "request": "{\n  \"status\": \"BROKEN\"\n}",
+    "response": "RoomEquipmentDTO",
+    "notes": ""
+  },
+  {
+    "id": "report-broken",
+    "method": "POST",
+    "path": "/api/rooms/{roomId}/equipment/{roomEquipmentId}/report-broken",
+    "role": "USER+",
+    "domain": "RoomEquipment",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty)",
+    "response": "RoomEquipmentDTO status → BROKEN",
+    "notes": ""
+  },
+  {
+    "id": "post-purchase",
+    "method": "POST",
+    "path": "/api/equipment-purchases",
+    "role": "STAFF+",
+    "domain": "Purchases",
+    "query": "—",
+    "bodySummary": "{ roomId|room, equipmentId|equipment, quantity, unitCost?, reason? }",
+    "request": "{\n  \"room\": { \"id\": 1 },\n  \"equipment\": { \"id\": 2 },\n  \"quantity\": 1,\n  \"reason\": \"Broken unit\"\n}",
+    "response": "201 EquipmentPurchaseDTO status PENDING",
+    "notes": ""
+  },
+  {
+    "id": "get-purchases",
+    "method": "GET",
+    "path": "/api/equipment-purchases",
+    "role": "STAFF+",
+    "domain": "Purchases",
+    "query": "status?, roomId?, page?, size?, sort?",
+    "bodySummary": "—",
+    "request": "GET /api/equipment-purchases?status=PENDING&page=0&size=20",
+    "response": "Spring Page<EquipmentPurchaseDTO>",
+    "notes": "STAFF+. USER → 403 (local verify)."
+  },
+  {
+    "id": "get-purchase",
+    "method": "GET",
+    "path": "/api/equipment-purchases/{id}",
+    "role": "STAFF+",
+    "domain": "Purchases",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "EquipmentPurchaseDTO | 404",
+    "notes": ""
+  },
+  {
+    "id": "approve-purchase",
+    "method": "POST",
+    "path": "/api/equipment-purchases/{id}/approve",
+    "role": "MANAGER+",
+    "domain": "Purchases",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty)",
+    "response": "status → APPROVED",
+    "notes": "error.invalidstatus"
+  },
+  {
+    "id": "reject-purchase",
+    "method": "POST",
+    "path": "/api/equipment-purchases/{id}/reject",
+    "role": "MANAGER+",
+    "domain": "Purchases",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty)",
+    "response": "status → REJECTED",
+    "notes": "error.invalidstatus"
+  },
+  {
+    "id": "fulfill-purchase",
+    "method": "POST",
+    "path": "/api/equipment-purchases/{id}/fulfill",
+    "role": "STAFF+",
+    "domain": "Purchases",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty)",
+    "response": "status → FULFILLED; room_equipment qty updated; fulfilledAt set",
+    "notes": "error.invalidstatus (must be APPROVED)"
+  },
+  {
+    "id": "get-notif",
+    "method": "GET",
+    "path": "/api/notifications",
+    "role": "USER+",
+    "domain": "Notifications",
+    "query": "page?, size?, sort?",
+    "bodySummary": "—",
+    "request": "GET /api/notifications?page=0&size=20&sort=createdDate,desc\n// Local JHipster: createdDate. Remote may use createdAt — FE falls back once if primary sort 500s.",
+    "response": "Spring Page — { id, type, title, message, bookingId, readDate, createdDate, read }",
+    "notes": "bookingId is polymorphic ref (booking id OR dept-change request id). Wrong sort property on local (e.g. createdAt) → 500 No property 'createdAt'. Prefer createdDate,desc locally; remote may need createdAt,desc."
+  },
+  {
+    "id": "unread-count",
+    "method": "GET",
+    "path": "/api/notifications/unread-count",
+    "role": "USER+",
+    "domain": "Notifications",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(no body)",
+    "response": "{ \"count\": 3 }",
+    "notes": "Soft-fail on FE if broken — derive unread from list."
+  },
+  {
+    "id": "read-notif",
+    "method": "POST",
+    "path": "/api/notifications/{id}/read",
+    "role": "USER+",
+    "domain": "Notifications",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty)",
+    "response": "NotificationDTO (readDate set)",
+    "notes": "error.forbidden | error.idnotfound"
+  },
+  {
+    "id": "read-all",
+    "method": "POST",
+    "path": "/api/notifications/read-all",
+    "role": "USER+",
+    "domain": "Notifications",
+    "query": "—",
+    "bodySummary": "—",
+    "request": "(empty)",
+    "response": "{ \"updated\": 5 }",
+    "notes": ""
+  },
+  {
+    "id": "ws-stomp",
+    "method": "STOMP",
+    "path": "/ws",
+    "role": "USER+",
+    "domain": "WebSocket",
+    "query": "SockJS / native WS",
+    "bodySummary": "CONNECT + SUBSCRIBE",
+    "request": "Endpoint: ws://host:8080/ws (SockJS: /ws)\nCONNECT headers:\n  Authorization: Bearer <jwt>\nSUBSCRIBE:\n  destination: /user/queue/notifications",
+    "response": "PUSH NotificationDTO on new notification\nBroker: /topic, /queue · app prefix /app · user prefix /user",
+    "notes": "HTTP /ws/** permitAll; JWT required on STOMP CONNECT. convertAndSendToUser(login, /queue/notifications, dto)."
+  }
+];
 
       const live = document.getElementById("live");
       const apiBody = document.getElementById("apiBody");
@@ -1579,25 +1894,26 @@
       let searchQ = "";
       let openApiId = null;
 
-      function announce(msg) {
-        live.textContent = msg;
-      }
+      function announce(msg) { live.textContent = msg; }
 
       function methodBadge(m) {
-        const map = { GET: "get", POST: "post", PUT: "put", PATCH: "patch", DELETE: "del" };
+        const map = { GET: "get", POST: "post", PUT: "put", PATCH: "patch", DELETE: "del", STOMP: "patch" };
         return `<span class="badge badge-${map[m] || "get"}">${m}</span>`;
       }
 
       function roleBadge(r) {
-        if (r === "public") return '<span class="role role-public">Public</span>';
-        if (r === "admin") return '<span class="role role-admin">ADMIN</span>';
-        return '<span class="role role-auth">Auth</span>';
+        if (r === "public") return '<span class="role role-public">public</span>';
+        if (r === "ADMIN") return '<span class="role role-admin">ADMIN</span>';
+        if (r === "MANAGER+") return '<span class="role role-manager">MANAGER+</span>';
+        if (r === "STAFF+") return '<span class="role role-staff">STAFF+</span>';
+        if (r === "USER+") return '<span class="role role-userplus">USER+</span>';
+        return '<span class="role role-auth">' + r + '</span>';
       }
 
       function matchesFilter(api) {
         if (roleFilter !== "all" && api.role !== roleFilter) return false;
         if (!searchQ) return true;
-        const hay = `${api.method} ${api.path} ${api.domain} ${api.query} ${api.bodySummary}`.toLowerCase();
+        const hay = `${api.method} ${api.path} ${api.domain} ${api.query} ${api.bodySummary} ${api.notes || ""}`.toLowerCase();
         return hay.includes(searchQ);
       }
 
@@ -1605,9 +1921,11 @@
         const list = APIS.filter(matchesFilter);
         document.getElementById("apiVisibleCount").textContent = `${list.length} / ${APIS.length}`;
         document.getElementById("endpointCount").textContent = String(APIS.length);
-
         apiBody.innerHTML = list.map((api) => {
           const open = openApiId === api.id;
+          const notes = api.notes
+            ? `<div class="note" style="margin-top:0.75rem"><strong>Notes:</strong> ${escapeHtml(api.notes)}</div>`
+            : "";
           return `
             <tr class="api-row${open ? " is-open" : ""}" data-api-id="${api.id}" tabindex="0" role="button" aria-expanded="${open}">
               <td>${methodBadge(api.method)}</td>
@@ -1635,6 +1953,7 @@
                     <pre>${escapeHtml(api.response)}</pre>
                   </div>
                 </div>
+                ${notes}
               </td>
             </tr>`;
         }).join("");
@@ -1692,7 +2011,6 @@
         renderApis();
       });
 
-      /* Sections */
       const sections = document.querySelectorAll(".section");
       const navBtns = document.querySelectorAll(".nav-btn[data-section]");
 
@@ -1703,27 +2021,11 @@
           s.hidden = !on;
         });
         navBtns.forEach((b) => {
-          if (b.getAttribute("data-section") === id) {
-            b.setAttribute("aria-current", "true");
-          } else {
-            b.removeAttribute("aria-current");
-          }
+          if (b.getAttribute("data-section") === id) b.setAttribute("aria-current", "true");
+          else b.removeAttribute("aria-current");
         });
-        const activeBtn = document.querySelector('.nav-btn[data-section="' + id + '"]');
-        if (activeBtn) {
-          const drop = activeBtn.closest(".nav-drop");
-          if (drop) {
-            const toggle = drop.querySelector(".nav-drop-toggle");
-            const panel = drop.querySelector(".nav-drop-panel");
-            if (toggle && panel) {
-              toggle.setAttribute("aria-expanded", "true");
-              panel.hidden = false;
-            }
-          }
-        }
         announce("Mục " + id);
-        const sidebar = document.getElementById("sidebar");
-        sidebar.classList.remove("is-open");
+        document.getElementById("sidebar").classList.remove("is-open");
         document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -1748,7 +2050,6 @@
         document.getElementById("menuToggle").setAttribute("aria-expanded", String(open));
       });
 
-      /* Theme */
       document.getElementById("themeToggle").addEventListener("click", () => {
         const root = document.documentElement;
         const cur = root.getAttribute("data-theme");
@@ -1757,7 +2058,6 @@
         announce("Theme " + next);
       });
 
-      /* Font (shared with fe-dev-guide via localStorage) */
       const FONT_KEY = "docs-ui-font";
       const fontSelect = document.getElementById("fontSelect");
       const savedFont = document.documentElement.getAttribute("data-font") || "be-vietnam";
@@ -1769,121 +2069,7 @@
         announce("Font " + fontSelect.options[fontSelect.selectedIndex].text);
       });
 
-      /* Flows */
-      let currentFlow = "login";
-      let stepIndex = 0;
-      let simTimer = null;
-
-      const flowStepsEl = document.getElementById("flowSteps");
-      const flowState = document.getElementById("flowState");
-      const flowSample = document.getElementById("flowSample");
-      const flowDiagram = document.getElementById("flowDiagram");
-      const flowTitle = document.getElementById("flowTitle");
-
-      function setFlowState(kind, text, spinning) {
-        flowState.className = "state-bar state-" + kind;
-        flowState.innerHTML = (spinning ? '<span class="spinner" aria-hidden="true"></span>' : "") + "<span>" + text + "</span>";
-      }
-
-      function renderFlow() {
-        const flow = FLOWS[currentFlow];
-        flowTitle.textContent = flow.title;
-        flowStepsEl.innerHTML = flow.steps.map((s, i) => `
-          <li class="step${i === stepIndex ? " active" : ""}${i < stepIndex ? " done" : ""}" data-step="${i}" tabindex="0">
-            <div class="step-num">${i + 1}</div>
-            <div>
-              <div class="step-title">${s.title}</div>
-              <div class="step-desc">${s.desc}</div>
-              <div class="step-api">${s.api}</div>
-            </div>
-          </li>
-        `).join("");
-        paintStep();
-      }
-
-      function paintStep() {
-        const flow = FLOWS[currentFlow];
-        const step = flow.steps[stepIndex];
-        flowStepsEl.querySelectorAll(".step").forEach((el, i) => {
-          el.classList.toggle("active", i === stepIndex);
-          el.classList.toggle("done", i < stepIndex);
-        });
-        flowSample.textContent = step.sample.replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-        flowDiagram.innerHTML = step.nodes.map((n, i) => {
-          const hl = i === Math.min(stepIndex, step.nodes.length - 1) || i === step.nodes.length - 1;
-          return `<span class="node${hl ? " hl" : ""}">${n}</span>` +
-            (i < step.nodes.length - 1 ? '<span class="arrow">→</span>' : "");
-        }).join("");
-      }
-
-      function goStep(i) {
-        const flow = FLOWS[currentFlow];
-        stepIndex = Math.max(0, Math.min(i, flow.steps.length - 1));
-        if (simTimer) clearTimeout(simTimer);
-        setFlowState("loading", "Đang mô phỏng " + flow.steps[stepIndex].api + "…", true);
-        paintStep();
-        simTimer = setTimeout(() => {
-          setFlowState("ok", "OK — " + flow.steps[stepIndex].title, false);
-          announce(flow.steps[stepIndex].title);
-        }, 450);
-      }
-
-      document.querySelectorAll("[data-flow]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          currentFlow = btn.getAttribute("data-flow");
-          document.querySelectorAll("[data-flow]").forEach((b) => {
-            b.setAttribute("aria-pressed", String(b === btn));
-          });
-          stepIndex = 0;
-          setFlowState("idle", "Sẵn sàng — chọn bước hoặc bấm Next", false);
-          renderFlow();
-        });
-      });
-
-      flowStepsEl.addEventListener("click", (e) => {
-        const li = e.target.closest("[data-step]");
-        if (!li) return;
-        goStep(Number(li.getAttribute("data-step")));
-      });
-
-      flowStepsEl.addEventListener("keydown", (e) => {
-        if (e.key !== "Enter" && e.key !== " ") return;
-        const li = e.target.closest("[data-step]");
-        if (!li) return;
-        e.preventDefault();
-        goStep(Number(li.getAttribute("data-step")));
-      });
-
-      document.getElementById("flowNext").addEventListener("click", () => {
-        const flow = FLOWS[currentFlow];
-        if (stepIndex >= flow.steps.length - 1) {
-          setFlowState("ok", "Flow hoàn tất — Reset để chạy lại", false);
-          return;
-        }
-        goStep(stepIndex + 1);
-      });
-
-      document.getElementById("flowReset").addEventListener("click", () => {
-        stepIndex = 0;
-        setFlowState("idle", "Đã reset", false);
-        renderFlow();
-      });
-
-      /* State machine */
-      const smDetail = document.getElementById("smDetail");
-      function showSm(status) {
-        document.querySelectorAll(".sm-node").forEach((b) => {
-          b.setAttribute("aria-pressed", String(b.getAttribute("data-status") === status));
-        });
-        smDetail.textContent = SM[status].text;
-      }
-      document.querySelectorAll(".sm-node").forEach((btn) => {
-        btn.addEventListener("click", () => showSm(btn.getAttribute("data-status")));
-      });
-      showSm("PENDING");
-
       renderApis();
-      renderFlow();
     })();
   </script>
 </body>

@@ -1,24 +1,20 @@
 import { apiClient } from "@/lib/api-client";
 import { toApiError } from "@/lib/api-error";
+import { parseUserRole } from "@/lib/types/user";
 import type {
   LoginApiResponse,
   LoginRequest,
   LoginResponse,
+  SignupRequest,
   User,
-  UserRole,
 } from "@/features/auth/api/auth.types";
-
-function normalizeRole(role: string | undefined): UserRole {
-  if (role === "ADMIN" || role === "ROLE_ADMIN") return "ADMIN";
-  return "USER";
-}
 
 function mapLoginResponse(data: LoginApiResponse): LoginResponse {
   const token = data.accessToken ?? data.token;
   const user: User | undefined = data.user
     ? {
         ...data.user,
-        role: normalizeRole(data.user.role),
+        role: parseUserRole(data.user.role),
         department: data.user.department ?? null,
       }
     : data.id != null && data.email
@@ -26,7 +22,7 @@ function mapLoginResponse(data: LoginApiResponse): LoginResponse {
           id: data.id,
           email: data.email,
           fullName: data.fullName ?? "",
-          role: normalizeRole(data.role),
+          role: parseUserRole(data.role),
           department: data.department ?? null,
         }
       : undefined;
@@ -47,5 +43,22 @@ export async function login(input: LoginRequest): Promise<LoginResponse> {
     return mapLoginResponse(data);
   } catch (error) {
     throw toApiError(error, "Đăng nhập thất bại");
+  }
+}
+
+/** Register as USER only — payload must not include `role`. */
+export async function signup(input: SignupRequest): Promise<LoginResponse> {
+  try {
+    const { data } = await apiClient.post<LoginApiResponse>("/auth/signup", {
+      email: input.email,
+      password: input.password,
+      fullName: input.fullName,
+      ...(input.departmentId != null
+        ? { departmentId: input.departmentId }
+        : {}),
+    });
+    return mapLoginResponse(data);
+  } catch (error) {
+    throw toApiError(error, "Đăng ký thất bại");
   }
 }

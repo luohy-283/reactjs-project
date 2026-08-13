@@ -30,6 +30,8 @@ export function useBookingsPage(
       options.sort,
       options.status,
       options.date,
+      options.from,
+      options.to,
       options.q,
       options.upcoming,
     ],
@@ -44,7 +46,7 @@ export function useBookingsCount(
 ) {
   return useAsyncFetch(
     (signal) => getBookingsCount({ ...options, signal }),
-    [options.status, options.date, options.q, options.upcoming],
+    [options.status, options.date, options.from, options.to, options.q, options.upcoming],
     { initialData: 0, enabled },
   );
 }

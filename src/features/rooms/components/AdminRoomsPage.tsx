@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Form, Input, InputNumber, Select } from "antd";
+import { Button, Checkbox, Form, Input, InputNumber, Select, Space, Tag } from "antd";
 import { ConfirmDialog } from "@/components/ui/dialog/ConfirmDialog";
 import { CreateDialog } from "@/components/ui/dialog/CreateDialog";
 import { DataTable } from "@/components/ui/table/DataTable";
@@ -24,6 +24,7 @@ import { useAppModal, useToast } from "@/components/ui/feedback/useFeedback";
 import { createRoom, updateRoom } from "@/features/rooms/api/rooms.service";
 import { useRoomsPage } from "@/features/rooms/api/rooms.hooks";
 import type { Room } from "@/features/rooms/api/rooms.types";
+import { VIP_AMENITY_OPTIONS } from "@/features/rooms/api/rooms.types";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatVnd } from "@/lib/money";
 import type { Department } from "@/lib/types/department";
@@ -31,13 +32,29 @@ import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { useServerTableQuery } from "@/lib/useServerTableQuery";
 
 type RoomActiveFilter = "ACTIVE" | "INACTIVE";
+type RoomVipFilter = "VIP" | "STANDARD";
 
 type RoomFormValues = {
   name: string;
   capacity: number;
   lockedDepartmentId?: number | null;
   pricePerHour: number;
+  isVip?: boolean;
+  vipAmenityList?: string[];
 };
+
+function amenitiesToCsv(list: string[] | undefined): string | null {
+  if (!list || list.length === 0) return null;
+  return list.join(",");
+}
+
+function csvToAmenities(csv: string | null | undefined): string[] {
+  if (!csv?.trim()) return [];
+  return csv
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 export type AdminRoomsPageProps = {
   departments: Department[];
@@ -47,6 +64,11 @@ export type AdminRoomsPageProps = {
 const ROOM_STATUS_OPTIONS = [
   { value: "ACTIVE" as const, label: "Đang hoạt động" },
   { value: "INACTIVE" as const, label: "Ngừng hoạt động" },
+];
+
+const ROOM_VIP_OPTIONS = [
+  { value: "VIP" as const, label: "VIP" },
+  { value: "STANDARD" as const, label: "Thường" },
 ];
 
 const ROOM_ACTIVE_LABEL: Record<string, string> = {
@@ -69,6 +91,7 @@ export default function AdminRoomsPage({
   const [statusFilter, setStatusFilter] = useState<RoomActiveFilter | "ALL">(
     "ALL",
   );
+  const [vipFilter, setVipFilter] = useState<RoomVipFilter | "ALL">("ALL");
   const { query, setQuery, pageParams, resetPage } =
     useServerTableQuery();
 
@@ -83,7 +106,9 @@ export default function AdminRoomsPage({
       : statusFilter === "INACTIVE"
         ? false
         : undefined;
-  const pageOpts = { ...pageParams, q, active };
+  const vip =
+    vipFilter === "VIP" ? true : vipFilter === "STANDARD" ? false : undefined;
+  const pageOpts = { ...pageParams, q, active, vip };
   const { data: roomsPage, error, isLoading, refetch } = useRoomsPage(pageOpts);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -96,7 +121,12 @@ export default function AdminRoomsPage({
   const openCreateModal = () => {
     setEditingRoom(null);
     form.resetFields();
-    form.setFieldsValue({ lockedDepartmentId: null, pricePerHour: 100000 });
+    form.setFieldsValue({
+      lockedDepartmentId: null,
+      pricePerHour: 100000,
+      isVip: false,
+      vipAmenityList: [],
+    });
     setModalOpen(true);
   };
 
@@ -107,6 +137,8 @@ export default function AdminRoomsPage({
       capacity: room.capacity,
       lockedDepartmentId: room.lockedDepartment?.id ?? null,
       pricePerHour: room.pricePerHour,
+      isVip: Boolean(room.isVip),
+      vipAmenityList: csvToAmenities(room.vipAmenities),
     });
     setModalOpen(true);
   };
@@ -121,6 +153,10 @@ export default function AdminRoomsPage({
     setSubmitting(true);
     try {
       const lockedDepartmentId = values.lockedDepartmentId ?? null;
+      const isVip = Boolean(values.isVip);
+      const vipAmenities = isVip
+        ? amenitiesToCsv(values.vipAmenityList)
+        : null;
       if (editingRoom) {
         await updateRoom({
           id: editingRoom.id,
@@ -129,6 +165,8 @@ export default function AdminRoomsPage({
           isActive: editingRoom.isActive,
           lockedDepartmentId,
           pricePerHour: values.pricePerHour,
+          isVip,
+          vipAmenities,
         });
         toast.success("Cập nhật phòng thành công");
       } else {
@@ -137,6 +175,8 @@ export default function AdminRoomsPage({
           capacity: values.capacity,
           lockedDepartmentId,
           pricePerHour: values.pricePerHour,
+          isVip,
+          vipAmenities,
         });
         toast.success("Thêm phòng thành công");
       }
@@ -198,10 +238,12 @@ export default function AdminRoomsPage({
   const resetFilters = () => {
     setSearch("");
     setStatusFilter("ALL");
+    setVipFilter("ALL");
     resetPage();
   };
 
-  const hasActiveFilters = Boolean(q) || statusFilter !== "ALL";
+  const hasActiveFilters =
+    Boolean(q) || statusFilter !== "ALL" || vipFilter !== "ALL";
 
   const tableEmpty = hasActiveFilters ? (
     <NoSearchResult onReset={resetFilters} />
@@ -264,11 +306,46 @@ export default function AdminRoomsPage({
           options={departmentOptions}
         />
       </Form.Item>
+
+      <Form.Item name="isVip" valuePropName="checked">
+        <Checkbox>Phòng VIP</Checkbox>
+      </Form.Item>
+
+      <Form.Item
+        noStyle
+        shouldUpdate={(prev, next) => prev.isVip !== next.isVip}
+      >
+        {({ getFieldValue }) =>
+          getFieldValue("isVip") ? (
+            <Form.Item label="Tiện ích VIP" name="vipAmenityList">
+              <Select
+                mode="multiple"
+                allowClear
+                placeholder="Chọn tiện ích"
+                options={VIP_AMENITY_OPTIONS.map((o) => ({
+                  value: o.value,
+                  label: o.label,
+                }))}
+              />
+            </Form.Item>
+          ) : null
+        }
+      </Form.Item>
     </Form>
   );
 
   const columns = defineColumns<Room>([
-    sortableColumn<Room>({ title: "Tên phòng", dataIndex: "name", key: "name" }),
+    sortableColumn<Room>({
+      title: "Tên phòng",
+      dataIndex: "name",
+      key: "name",
+      render: (name: string, room) => (
+        <Space size={6}>
+          <span>{name}</span>
+          {room.isVip ? <Tag color="gold">VIP</Tag> : null}
+        </Space>
+      ),
+    }),
     sortableColumn<Room>({
       title: "Sức chứa",
       dataIndex: "capacity",
@@ -345,6 +422,15 @@ export default function AdminRoomsPage({
             options={ROOM_STATUS_OPTIONS}
             allLabel="Tất cả trạng thái"
           />
+          <StatusFilter<RoomVipFilter>
+            value={vipFilter}
+            onChange={(value) => {
+              setVipFilter(value);
+              resetPage();
+            }}
+            options={ROOM_VIP_OPTIONS}
+            allLabel="Tất cả loại phòng"
+          />
         </SearchForm>
       </PageHeader>
 
@@ -370,6 +456,10 @@ export default function AdminRoomsPage({
             pageSize={query.pageSize}
             sort={query.sort}
             onQueryChange={setQuery}
+            enableRowSelection
+            enableColumnDrag
+            enableColumnSetting
+            enableMultiSort
             toolbarExtra={
               <RefreshButton
                 loading={isLoading}

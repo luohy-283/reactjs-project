@@ -3,6 +3,8 @@ export interface RevenueByRoom {
   roomName: string;
   bookingCount: number;
   amount: number;
+  equipmentCost?: number;
+  netAmount?: number;
   sharePercent: number;
 }
 
@@ -19,6 +21,8 @@ export interface RevenuePeriod {
   averageAmount: number;
   cancelledCount: number;
   cancellationRate: number;
+  equipmentCost?: number;
+  netAmount?: number;
 }
 
 export interface RevenueReport {
@@ -28,6 +32,8 @@ export interface RevenueReport {
   averageAmount: number;
   cancelledCount: number;
   cancellationRate: number;
+  equipmentCost?: number;
+  netAmount?: number;
   previous: RevenuePeriod;
   byRoom: RevenueByRoom[];
   byDay: RevenueByDay[];

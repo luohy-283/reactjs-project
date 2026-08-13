@@ -8,6 +8,8 @@ export interface Room {
   lockedDepartment?: Department | null;
   /** VND per hour */
   pricePerHour: number;
+  isVip?: boolean;
+  vipAmenities?: string | null;
 }
 
 export interface CreateRoomPayload {
@@ -15,6 +17,8 @@ export interface CreateRoomPayload {
   capacity: number;
   lockedDepartmentId?: number | null;
   pricePerHour: number;
+  isVip?: boolean;
+  vipAmenities?: string | null;
 }
 
 export interface UpdateRoomPayload {
@@ -24,4 +28,15 @@ export interface UpdateRoomPayload {
   isActive?: boolean;
   lockedDepartmentId?: number | null;
   pricePerHour?: number;
+  isVip?: boolean;
+  vipAmenities?: string | null;
 }
+
+/** Stored as CSV on Room.vipAmenities */
+export const VIP_AMENITY_OPTIONS = [
+  { value: "VIDEO_4K", label: "Video 4K" },
+  { value: "SOUNDPROOF", label: "Cách âm" },
+  { value: "CATERING", label: "Catering" },
+  { value: "DEDICATED_SUPPORT", label: "Hỗ trợ riêng" },
+  { value: "PRIVACY_GLASS", label: "Kính riêng tư" },
+] as const;

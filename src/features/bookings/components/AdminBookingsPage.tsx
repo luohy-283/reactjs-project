@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Badge } from "antd";
+import { Badge, DatePicker } from "antd";
+import type { Dayjs } from "dayjs";
 import { useLocation } from "react-router";
 import { ConfirmPopconfirm } from "@/components/ui/dialog/ConfirmPopconfirm";
 import { DataTable } from "@/components/ui/table/DataTable";
@@ -91,6 +92,9 @@ export default function AdminBookingsPage() {
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "ALL">(
     "ALL",
   );
+  const [dateRange, setDateRange] = useState<
+    [Dayjs | null, Dayjs | null] | null
+  >(null);
   /** Resolved deep-link pin: only set from fetch callbacks, reset during render. */
   const [pinState, setPinState] = useState<{
     id: number;
@@ -99,6 +103,8 @@ export default function AdminBookingsPage() {
 
   const searchQ = debouncedQ;
   const hasTextSearch = Boolean(searchQ);
+  const fromDate = dateRange?.[0]?.format("YYYY-MM-DD");
+  const toDate = dateRange?.[1]?.format("YYYY-MM-DD");
   const highlightRaw = searchParams.get("highlight");
   const highlightId =
     highlightRaw && /^\d+$/.test(highlightRaw) ? Number(highlightRaw) : null;
@@ -106,7 +112,7 @@ export default function AdminBookingsPage() {
 
   useEffect(() => {
     resetPage();
-  }, [debouncedQ, resetPage]);
+  }, [debouncedQ, fromDate, toDate, resetPage]);
 
   // Reset pin when highlight/tab context changes (React “adjust state while rendering”).
   const [prevPinResolveKey, setPrevPinResolveKey] = useState(pinResolveKey);
@@ -123,6 +129,8 @@ export default function AdminBookingsPage() {
       ? { status: statusFilter }
       : {}),
     ...(searchQ ? { q: searchQ } : {}),
+    ...(fromDate ? { from: fromDate } : {}),
+    ...(toDate ? { to: toDate } : {}),
   };
 
   const { data: pageResult, error, isLoading, refetch } =
@@ -330,10 +338,13 @@ export default function AdminBookingsPage() {
   const resetFilters = () => {
     setSearch("");
     setStatusFilter("ALL");
+    setDateRange(null);
     resetPage();
   };
   const hasFilters =
-    hasTextSearch || (tab === "all" && statusFilter !== "ALL");
+    hasTextSearch ||
+    (tab === "all" && statusFilter !== "ALL") ||
+    Boolean(fromDate || toDate);
   const searchEmpty = hasFilters ? (
     <NoSearchResult onReset={resetFilters} />
   ) : null;
@@ -413,6 +424,16 @@ export default function AdminBookingsPage() {
                   onChange={setSearch}
                   placeholder="Tìm theo tiêu đề, phòng, người đặt…"
                 />
+                <DatePicker.RangePicker
+                  value={dateRange}
+                  onChange={(value) => {
+                    setDateRange(value);
+                    resetPage();
+                  }}
+                  allowEmpty={[true, true]}
+                  format="DD/MM/YYYY"
+                  placeholder={["Từ ngày", "Đến ngày"]}
+                />
                 {tab === "all" ? (
                   <StatusFilter<BookingStatus>
                     value={statusFilter}
@@ -442,6 +463,10 @@ export default function AdminBookingsPage() {
               pageSize={query.pageSize}
               sort={query.sort}
               onQueryChange={setQuery}
+              enableRowSelection
+              enableColumnDrag
+              enableColumnSetting
+              enableMultiSort
               onRow={tab === "pending" ? onRow : undefined}
               rowClassName={tab === "pending" ? rowClassName : undefined}
               toolbarExtra={refreshExtra}

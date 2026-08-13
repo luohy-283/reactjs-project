@@ -5,7 +5,9 @@ import RequireRole from "@/app/components/RequireRole";
 import RootRedirect from "@/app/components/RootRedirect";
 import AuthLogoutListener from "@/app/components/AuthLogoutListener";
 import LoginPage from "@/features/auth/components/LoginPage";
+import SignupPage from "@/features/auth/components/SignupPage";
 import AdminBookingsPage from "@/features/bookings/components/AdminBookingsPage";
+import AdminEquipmentPage from "@/features/equipment/components/AdminEquipmentPage";
 import AdminRevenuePage from "@/features/revenue/components/AdminRevenuePage";
 import MyInvoicesPage from "@/features/invoices/components/MyInvoicesPage";
 import AdminRoomsRoute from "@/app/routes/AdminRoomsRoute";
@@ -25,13 +27,21 @@ export function AppRouter() {
             </GuestRoute>
           }
         />
+        <Route
+          path="/signup"
+          element={
+            <GuestRoute>
+              <SignupPage />
+            </GuestRoute>
+          }
+        />
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<DashboardRoute />} />
           <Route path="/my-invoices" element={<MyInvoicesPage />} />
           <Route
             path="/admin/rooms"
             element={
-              <RequireRole allowedRoles={["ADMIN"]}>
+              <RequireRole allowedRoles={["ADMIN", "MANAGER"]}>
                 <AdminRoomsRoute />
               </RequireRole>
             }
@@ -39,8 +49,16 @@ export function AppRouter() {
           <Route
             path="/admin/bookings"
             element={
-              <RequireRole allowedRoles={["ADMIN"]}>
+              <RequireRole allowedRoles={["ADMIN", "MANAGER"]}>
                 <AdminBookingsPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/admin/equipment"
+            element={
+              <RequireRole allowedRoles={["ADMIN", "MANAGER", "STAFF"]}>
+                <AdminEquipmentPage />
               </RequireRole>
             }
           />
@@ -55,7 +73,7 @@ export function AppRouter() {
           <Route
             path="/admin/revenue"
             element={
-              <RequireRole allowedRoles={["ADMIN"]}>
+              <RequireRole allowedRoles={["ADMIN", "MANAGER"]}>
                 <AdminRevenuePage />
               </RequireRole>
             }

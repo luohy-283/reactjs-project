@@ -41,6 +41,7 @@ export function actionsColumn<T extends object>(
   return {
     title: "Thao tác",
     key: "actions",
+    fixed: "right",
     ...overrides,
     render,
   };

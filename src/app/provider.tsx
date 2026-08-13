@@ -15,7 +15,7 @@ function ThemedApp({ children }: { children: ReactNode }) {
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         // Fixed cssVar scope + no hash → switch updates variables in place (no style rebuild flash).
         // Do NOT set cssVar.key to light/dark — that remounts the variable scope and flashes.
-        cssVar: true,
+        cssVar: {},
         hashed: false,
       }}
     >

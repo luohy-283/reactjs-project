@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Form, Input, Button, Card } from "antd";
+import { Form, Input, Button, Typography } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import { useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { ErrorMessage } from "@/components/ui/error/ErrorMessage";
+import { AuthGuestLayout } from "@/features/auth/components/AuthGuestLayout";
 import { useAuth } from "@/features/auth/context/AuthContext";
 
 export default function LoginPage() {
@@ -30,44 +31,41 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        background: "#f0f2f5",
-      }}
+    <AuthGuestLayout
+      title="Đăng nhập"
+      footer={
+        <Typography.Paragraph style={{ marginBottom: 0, textAlign: "center" }}>
+          Chưa có tài khoản? <Link to="/signup">Đăng ký</Link>
+        </Typography.Paragraph>
+      }
     >
-      <Card title="Đăng nhập" style={{ width: 360 }}>
-        <ErrorMessage message={errorMsg} style={{ marginBottom: 16 }} />
-        <Form layout="vertical" onFinish={handleLogin}>
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[{ required: true, message: "Vui lòng nhập email" }]}
-          >
-            <Input prefix={<UserOutlined />} placeholder="Nhập email" />
-          </Form.Item>
+      <ErrorMessage message={errorMsg} style={{ marginBottom: 16 }} />
+      <Form layout="vertical" onFinish={handleLogin}>
+        <Form.Item
+          label="Email"
+          name="email"
+          rules={[{ required: true, message: "Vui lòng nhập email" }]}
+        >
+          <Input prefix={<UserOutlined />} placeholder="Nhập email" />
+        </Form.Item>
 
-          <Form.Item
-            label="Mật khẩu"
-            name="password"
-            rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="Nhập mật khẩu"
-            />
-          </Form.Item>
+        <Form.Item
+          label="Mật khẩu"
+          name="password"
+          rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
+        >
+          <Input.Password
+            prefix={<LockOutlined />}
+            placeholder="Nhập mật khẩu"
+          />
+        </Form.Item>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={loading}>
-              Đăng nhập
-            </Button>
-          </Form.Item>
-        </Form>
-      </Card>
-    </div>
+        <Form.Item>
+          <Button type="primary" htmlType="submit" block loading={loading}>
+            Đăng nhập
+          </Button>
+        </Form.Item>
+      </Form>
+    </AuthGuestLayout>
   );
 }

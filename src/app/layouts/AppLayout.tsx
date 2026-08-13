@@ -28,13 +28,20 @@ export default function AppLayout() {
 
   const menuItems = defineMenuItems([
     { key: "/dashboard", label: "Dashboard" },
-    ...(user?.role === "ADMIN"
+    ...(user?.role === "ADMIN" || user?.role === "MANAGER"
       ? [
           { key: "/admin/rooms", label: "Quản lý phòng" },
           { key: "/admin/bookings", label: "Duyệt đặt phòng" },
-          { key: "/admin/users", label: "Quản lý user" },
           { key: "/admin/revenue", label: "Doanh thu" },
         ]
+      : []),
+    ...(user?.role === "ADMIN"
+      ? [{ key: "/admin/users", label: "Quản lý user" }]
+      : []),
+    ...(user?.role === "ADMIN" ||
+    user?.role === "MANAGER" ||
+    user?.role === "STAFF"
+      ? [{ key: "/admin/equipment", label: "Quản lý thiết bị" }]
       : []),
   ]);
 

@@ -6,8 +6,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { login as loginApi } from "@/features/auth/api/auth.service";
-import type { User } from "@/features/auth/api/auth.types";
+import {
+  login as loginApi,
+  signup as signupApi,
+} from "@/features/auth/api/auth.service";
+import type { SignupRequest, User } from "@/features/auth/api/auth.types";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/auth-storage";
 
 interface AuthContextType {
@@ -15,6 +18,7 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  signup: (input: SignupRequest) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
 }
@@ -60,13 +64,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const response = await loginApi({ email, password });
-    localStorage.setItem(AUTH_TOKEN_KEY, response.token);
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(response.user));
-    setToken(response.token);
-    setUser(response.user);
+  const storeSession = useCallback((tokenValue: string, nextUser: User) => {
+    localStorage.setItem(AUTH_TOKEN_KEY, tokenValue);
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser));
+    setToken(tokenValue);
+    setUser(nextUser);
   }, []);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const response = await loginApi({ email, password });
+      storeSession(response.token, response.user);
+    },
+    [storeSession],
+  );
+
+  const signup = useCallback(
+    async (input: SignupRequest) => {
+      const response = await signupApi(input);
+      storeSession(response.token, response.user);
+    },
+    [storeSession],
+  );
 
   const updateStoredUser = useCallback((next: User) => {
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(next));
@@ -79,10 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       isAuthenticated: Boolean(token && user),
       login,
+      signup,
       logout,
       setUser: updateStoredUser,
     }),
-    [user, token, login, logout, updateStoredUser],
+    [user, token, login, signup, logout, updateStoredUser],
   );
 
   return (

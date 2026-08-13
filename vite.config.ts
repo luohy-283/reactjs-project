@@ -32,6 +32,15 @@ export default defineConfig(({ mode }) => {
                   "ngrok-skip-browser-warning": "true",
                 },
               },
+              "/ws": {
+                target: proxyTarget,
+                changeOrigin: true,
+                secure: true,
+                ws: true,
+                headers: {
+                  "ngrok-skip-browser-warning": "true",
+                },
+              },
             },
           }
         : {}),

@@ -24,7 +24,7 @@ export function useUsersPage(
 ) {
   return useAsyncFetch(
     (signal) => getUsersPage({ ...options, signal }),
-    [options.page, options.size, options.sort, options.q, options.activated],
+    [options.page, options.size, options.sort, options.q, options.activated, options.role],
     { initialData: EMPTY_USERS_PAGE, enabled },
   );
 }

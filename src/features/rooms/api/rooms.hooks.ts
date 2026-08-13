@@ -18,7 +18,7 @@ export function useRoomsPage(
 ) {
   return useAsyncFetch(
     (signal) => getRoomsPage({ ...options, signal }),
-    [options.page, options.size, options.sort, options.q, options.active],
+    [options.page, options.size, options.sort, options.q, options.active, options.vip],
     { initialData: EMPTY_PAGE, enabled },
   );
 }

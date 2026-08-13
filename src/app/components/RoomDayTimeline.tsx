@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, Modal, Tooltip, Typography, theme } from "antd";
+import { Card, Modal, Space, Tag, Tooltip, Typography, theme } from "antd";
 import dayjs from "dayjs";
 import type { Booking } from "@/lib/types/booking";
 import type { Room } from "@/features/rooms/api/rooms.types";
@@ -57,15 +57,10 @@ export function RoomDayTimeline({
     [],
   );
 
-  const activeRooms = useMemo(
-    () => rooms.filter((r) => r.isActive),
-    [rooms],
-  );
-
   const trackWidth = hours.length * HOUR_WIDTH;
   const contentWidth = LABEL_WIDTH + trackWidth;
 
-  if (!loading && activeRooms.length === 0) {
+  if (!loading && rooms.length === 0) {
     return <NoData description="Không có phòng họp" />;
   }
 
@@ -136,7 +131,7 @@ export function RoomDayTimeline({
             </div>
           </div>
 
-          {activeRooms.map((room) => {
+          {rooms.map((room) => {
             const roomBookings = bookings.filter((b) => b.roomId === room.id);
             return (
               <div
@@ -164,7 +159,14 @@ export function RoomDayTimeline({
                     justifyContent: "center",
                   }}
                 >
-                  <span>{room.name}</span>
+                  <Space size={4} wrap>
+                    <span>{room.name}</span>
+                    {room.isVip ? (
+                      <Tag color="gold" style={{ marginInlineEnd: 0, fontSize: 10, lineHeight: "16px", paddingInline: 4 }}>
+                        VIP
+                      </Tag>
+                    ) : null}
+                  </Space>
                   <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                     {room.capacity} người
                   </Typography.Text>

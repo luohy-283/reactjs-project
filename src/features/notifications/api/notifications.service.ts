@@ -38,21 +38,49 @@ function toNotification(n: BackendNotification): AppNotification {
   };
 }
 
+/** Map a STOMP / REST notification payload into AppNotification. */
+export function mapNotificationPayload(raw: unknown): AppNotification | null {
+  if (!raw || typeof raw !== "object") return null;
+  const n = raw as BackendNotification;
+  if (n.id == null || !n.type || !n.title) return null;
+  return toNotification(n);
+}
+
+async function fetchNotificationsPage(
+  sort: string,
+  signal?: AbortSignal,
+): Promise<PagedResult<AppNotification>> {
+  const { data } = await apiClient.get<
+    BackendNotification[] | SpringPageResponse<BackendNotification>
+  >("/notifications", {
+    params: { page: 0, size: 20, sort },
+    signal,
+  });
+  return toPagedResult(data, toNotification);
+}
+
+/** Prefer local JHipster `createdDate`; fall back to remote `createdAt`. */
+let preferredNotificationSort: "createdDate,desc" | "createdAt,desc" =
+  "createdDate,desc";
+
 export async function getNotifications(
   signal?: AbortSignal,
 ): Promise<PagedResult<AppNotification>> {
+  const primary = preferredNotificationSort;
+  const secondary =
+    primary === "createdDate,desc" ? "createdAt,desc" : "createdDate,desc";
   try {
-    // Remote entity sorts by `createdAt`; `createdDate` causes Spring 500.
-    const { data } = await apiClient.get<
-      BackendNotification[] | SpringPageResponse<BackendNotification>
-    >("/notifications", {
-      params: { page: 0, size: 20, sort: "createdAt,desc" },
-      signal,
-    });
-    return toPagedResult(data, toNotification);
+    return await fetchNotificationsPage(primary, signal);
   } catch (error) {
     if (isAbortError(error)) throw error;
-    throw toApiError(error, "Không tải được thông báo");
+    try {
+      const page = await fetchNotificationsPage(secondary, signal);
+      preferredNotificationSort = secondary;
+      return page;
+    } catch (fallbackError) {
+      if (isAbortError(fallbackError)) throw fallbackError;
+      throw toApiError(fallbackError, "Không tải được thông báo");
+    }
   }
 }
 

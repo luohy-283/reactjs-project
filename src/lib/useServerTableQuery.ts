@@ -3,11 +3,12 @@ import {
   DEFAULT_PAGE_SIZE,
   toPageParams,
   type PageParams,
+  type SortParam,
   type TableQuery,
 } from "@/lib/pagination";
 
 /** Shared Ant Design table query state → Spring `page`/`size`/`sort`. */
-export function useServerTableQuery(initialSort?: string) {
+export function useServerTableQuery(initialSort?: SortParam) {
   const [query, setQuery] = useState<TableQuery>({
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,

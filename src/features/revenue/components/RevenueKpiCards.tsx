@@ -89,10 +89,26 @@ function buildKpis(
 ): KpiDef[] {
   return [
     {
-      key: "total",
-      title: "Tổng doanh thu",
+      key: "gross",
+      title: "Gross",
       value: data?.totalAmount ?? 0,
       previous: previous.totalAmount,
+      kind: "higherBetter",
+      formatter: (v) => formatVnd(Number(v)),
+    },
+    {
+      key: "equipmentCost",
+      title: "Chi phí TB",
+      value: data?.equipmentCost ?? 0,
+      previous: previous.equipmentCost ?? 0,
+      kind: "lowerBetter",
+      formatter: (v) => formatVnd(Number(v)),
+    },
+    {
+      key: "net",
+      title: "Net",
+      value: data?.netAmount ?? 0,
+      previous: previous.netAmount ?? 0,
       kind: "higherBetter",
       formatter: (v) => formatVnd(Number(v)),
     },
@@ -137,6 +153,8 @@ export function RevenueKpiCards({
     averageAmount: 0,
     cancelledCount: 0,
     cancellationRate: 0,
+    equipmentCost: 0,
+    netAmount: 0,
   };
   const previousMonth = previous.yearMonth
     ? previous.yearMonth.slice(5) + "/" + previous.yearMonth.slice(0, 4)
@@ -147,7 +165,7 @@ export function RevenueKpiCards({
   return (
     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
       {kpis.map((kpi) => (
-        <Col key={kpi.key} xs={24} sm={12} xl={6}>
+        <Col key={kpi.key} xs={24} sm={12} xl={8}>
           <Card loading={loading}>
             <Statistic
               title={kpi.title}

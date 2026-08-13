@@ -25,7 +25,18 @@ export function TableToolbar({ children, extra, style }: TableToolbarProps) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, flex: 1 }}>
         {children}
       </div>
-      {extra ? <div>{extra}</div> : null}
+      {extra ? (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
+          {extra}
+        </div>
+      ) : null}
     </div>
   );
 }
