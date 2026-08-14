@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type CSSProperties,
@@ -104,6 +103,31 @@ export type DataTableProps<T extends object> = Omit<
 };
 
 type KeyedColumn<T> = ColumnType<T> & { key: string };
+
+/** Same table if one key set contains the other (column add/remove). Else reset order. */
+function isCompatibleColumnSet(prev: string[], next: string[]): boolean {
+  const prevSet = new Set(prev);
+  const nextSet = new Set(next);
+  return (
+    prev.every((key) => nextSet.has(key)) ||
+    next.every((key) => prevSet.has(key))
+  );
+}
+
+function mergeColumnKeys(prev: string[] | null, allKeys: string[]): string[] {
+  if (prev == null) return allKeys;
+  if (!isCompatibleColumnSet(prev, allKeys)) return allKeys;
+  const keep = prev.filter((k) => allKeys.includes(k));
+  const added = allKeys.filter((k) => !prev.includes(k));
+  const next = [...keep, ...added];
+  if (
+    next.length === prev.length &&
+    next.every((key, index) => key === prev[index])
+  ) {
+    return prev;
+  }
+  return next;
+}
 
 function columnKey<T>(col: ColumnType<T>, index: number): string {
   if (typeof col.key === "string" || typeof col.key === "number") {
@@ -208,14 +232,18 @@ type HeaderCellProps = HTMLAttributes<HTMLTableCellElement> & {
 type BodyCellProps = HTMLAttributes<HTMLTableCellElement> & { id?: string };
 
 /** Selection / STT / fixed columns — no dnd-kit (avoids stuck `pressed` + overlap). */
+function omitCellId<T extends { id?: string }>(props: T): Omit<T, "id"> {
+  const rest = { ...props };
+  delete rest.id;
+  return rest;
+}
+
 function PlainHeaderCell(props: HeaderCellProps) {
-  const { id: _id, ...rest } = props;
-  return <th {...rest} />;
+  return <th {...omitCellId(props)} />;
 }
 
 function PlainBodyCell(props: BodyCellProps) {
-  const { id: _id, ...rest } = props;
-  return <td {...rest} />;
+  return <td {...omitCellId(props)} />;
 }
 
 function DraggableBodyCell(props: BodyCellProps & { id: string }) {
@@ -335,24 +363,15 @@ export function DataTable<T extends object>({
     () => keyedColumns.map((col) => col.key),
     [keyedColumns],
   );
-
-  useEffect(() => {
-    const mergeKeys = (prev: string[] | null): string[] => {
-      if (prev == null) return allKeys;
-      const keep = prev.filter((k) => allKeys.includes(k));
-      const added = allKeys.filter((k) => !prev.includes(k));
-      const next = [...keep, ...added];
-      if (
-        next.length === prev.length &&
-        next.every((key, index) => key === prev[index])
-      ) {
-        return prev;
-      }
-      return next;
-    };
-    setVisibleKeys(mergeKeys);
-    setColumnOrder(mergeKeys);
-  }, [allKeys]);
+  const [syncedKeys, setSyncedKeys] = useState(allKeys);
+  const keysChanged =
+    allKeys.length !== syncedKeys.length ||
+    allKeys.some((key, index) => key !== syncedKeys[index]);
+  if (keysChanged) {
+    setSyncedKeys(allKeys);
+    setVisibleKeys((prev) => mergeColumnKeys(prev, allKeys));
+    setColumnOrder((prev) => mergeColumnKeys(prev, allKeys));
+  }
 
   const columnSettingOptions: ColumnSettingOption[] = useMemo(
     () =>

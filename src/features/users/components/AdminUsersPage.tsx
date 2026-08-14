@@ -532,6 +532,7 @@ export default function AdminUsersPage({
               />
             ) : (
               <DataTable
+                key="users"
                 rowKey="id"
                 columns={userColumns}
                 data={usersPage.items}
@@ -583,7 +584,7 @@ export default function AdminUsersPage({
               />
             ) : (
               <DataTable
-                key={requestSearch}
+                key={`requests-${requestSearch}`}
                 rowKey="id"
                 columns={requestColumns}
                 data={displayRequests}

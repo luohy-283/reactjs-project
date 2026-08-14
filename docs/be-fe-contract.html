@@ -515,6 +515,16 @@
     .role-public { background: rgba(100, 116, 139, 0.15); color: var(--public); }
     .role-auth { background: var(--accent-dim); color: var(--accent); }
 
+    .be-must {
+      margin-top: 0.75rem;
+      padding: 0.65rem 0.8rem;
+      background: var(--warn-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+    }
+    .be-must strong { display: block; margin-bottom: 0.25rem; }
+
     pre {
       font-family: var(--mono);
       font-size: 0.72rem;
@@ -831,8 +841,7 @@
       <section class="section is-active" id="sec-overview" aria-labelledby="h-overview">
         <h1 id="h-overview">API contract + Database schema</h1>
         <p class="lead">
-          BE handoff: full <code>/api/…</code> paths, roles, payloads, and database tables/enums.
-          Not an FE guide.
+          Handoff BE: path, role, <strong>FE gửi gì</strong>, <strong>BE trả gì</strong>, ghi chú API đặc biệt, việc BE phải làm, schema DB (enum nằm cùng hàng cột).
         </p>
         <div class="meta-strip">
           <div class="meta-card"><div class="k">Base URL</div><div class="v">http://localhost:8080/api</div></div>
@@ -875,6 +884,51 @@
           Canonical room/booking writes: <code>/api/rooms</code>, <code>/api/bookings</code>
           (aliases <code>/api/admin/rooms</code>, <code>/api/admin/bookings</code> exist).
         </div>
+        <div class="panel">
+          <div class="panel-hd">RoomDTO enrichment (list + get + write responses)</div>
+          <div class="panel-bd">
+            <p style="margin-bottom:0.75rem">
+              Persisted columns are mapped from <code>room</code>. After load, <code>RoomService.enrich*</code>
+              attaches inventory summaries from <code>room_equipment</code> where <code>status = OK</code>:
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Field</th><th>Source</th><th>FE use</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><code>equipmentCategories[]</code></td>
+                    <td>Distinct <code>equipment.category</code></td>
+                    <td>Filter <code>?equipmentCategory=</code> (AND). Do <strong>not</strong> show as tag labels — use <code>equipmentNames</code>.</td>
+                  </tr>
+                  <tr>
+                    <td><code>equipmentNames[]</code></td>
+                    <td>Distinct <code>equipment.name</code> (ordered)</td>
+                    <td>Timeline tags, booking Select labels, tooltips — e.g. “Micro không dây”, “Máy chiếu Full HD”.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="muted" style="margin-top:0.75rem;margin-bottom:0">
+              Inventory đầy đủ (mọi <code>status</code>, gồm BROKEN) chỉ có trên
+              <code>GET /api/rooms/{id}/equipment</code> — JSON <strong>array</strong>, không phải Page.
+              FE 3D: gọi inventory; nếu fail (trừ abort) thì fallback <code>equipmentNames</code> / categories trên RoomDTO.
+            </p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hd">Backend phải làm (không tùy chọn)</div>
+          <div class="panel-bd">
+            <ol style="margin:0;padding-left:1.25rem">
+              <li>Chạy Liquibase: cột <code>room.layout_type</code>, <code>floor_width_m</code>, <code>floor_depth_m</code>; enum Java + DB <code>MICROPHONE</code>; seed/update catalog micro <code>category=MICROPHONE</code> (không để <code>OTHER</code> nếu tên là “Micro không dây”). Restart BE sau changelog mới.</li>
+              <li>Mọi <code>RoomDTO</code> (GET list, GET id, POST/PUT/PATCH response): luôn gắn <code>equipmentCategories[]</code> và <code>equipmentNames[]</code> từ <code>room_equipment</code> <code>status=OK</code> thôi. Hai field này <strong>không</strong> persist. Body write từ FE nếu gửi hai array này thì <strong>bỏ qua</strong>.</li>
+              <li><code>GET /api/rooms?equipmentCategory=</code> lặp được; AND: phòng phải có inventory OK cho <em>mỗi</em> category gửi lên. Giá trị đúng enum: <code>PROJECTOR</code> <code>DISPLAY</code> <code>AUDIO</code> <code>VC</code> <code>MICROPHONE</code> <code>OTHER</code>.</li>
+              <li>Write room: nếu thiếu layout/floor thì default <code>layoutType=STANDARD</code>, <code>floorWidthM=6.00</code>, <code>floorDepthM=4.50</code>. Không suy floor từ <code>capacity</code>.</li>
+              <li><code>PATCH /api/rooms/{id}</code>: FE luôn gửi <code>id</code> trong body (= path). Status-only: <code>{ "id", "isActive" }</code> — không đụng lock. Form: gửi đủ field + <code>lockedDepartment: { "id": n }</code> hoặc <code>null</code> (public/unlock). BE: nếu body thiếu id thì gán từ path; path ≠ body.id → 400 <code>idinvalid</code>. Form PATCH (<code>name</code> có mặt) gọi <code>resolveLockedDepartment</code> cả khi null.</li>
+              <li>JSON lock: <code>lockedDepartment</code> (object), không có <code>lockedDepartmentId</code>. <code>vipAmenities</code> = CSV code <code>VIDEO_4K,SOUNDPROOF,CATERING,DEDICATED_SUPPORT,PRIVACY_GLASS</code>.</li>
+              <li><code>GET /api/rooms/{id}/equipment</code> trả <strong>toàn bộ</strong> dòng inventory (OK + BROKEN + RETIRED), mỗi phần tử có <code>equipmentName</code>.</li>
+            </ol>
+          </div>
+        </div>
       </section>
 
       <section class="section" id="sec-database" aria-labelledby="h-database" hidden>
@@ -897,10 +951,14 @@
         </table></div></div>
 
         <h3>jhi_authority / jhi_user_authority</h3>
-        <div class="panel"><div class="panel-bd">
-          <p><code>jhi_authority.name</code> PK: <code>ROLE_ADMIN</code>, <code>ROLE_MANAGER</code>, <code>ROLE_STAFF</code>, <code>ROLE_USER</code>.</p>
-          <p style="margin-top:0.5rem"><code>jhi_user_authority</code>: (<code>user_id</code>, <code>authority_name</code>) composite PK.</p>
-        </div></div>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>jhi_authority.name</code></td><td>varchar(50) PK</td><td>Chỉ các giá trị: <code>ROLE_ADMIN</code> \| <code>ROLE_MANAGER</code> \| <code>ROLE_STAFF</code> \| <code>ROLE_USER</code></td></tr>
+            <tr><td><code>jhi_user_authority.user_id</code></td><td>bigint PK, FK jhi_user</td><td></td></tr>
+            <tr><td><code>jhi_user_authority.authority_name</code></td><td>varchar(50) PK, FK jhi_authority</td><td></td></tr>
+          </tbody>
+        </table></div></div>
 
         <h3>department</h3>
         <div class="panel"><div class="table-wrap"><table>
@@ -923,7 +981,68 @@
             <tr><td><code>locked_department_id</code></td><td>bigint FK?</td><td>null = public</td></tr>
             <tr><td><code>price_per_hour</code></td><td>decimal(19,2)</td><td>VND/hour</td></tr>
             <tr><td><code>is_vip</code></td><td>boolean</td><td>default false</td></tr>
-            <tr><td><code>vip_amenities</code></td><td>varchar(500)</td><td>nullable</td></tr>
+            <tr><td><code>vip_amenities</code></td><td>varchar(500) nullable</td><td>CSV codes: <code>VIDEO_4K</code>,<code>SOUNDPROOF</code>,<code>CATERING</code>,<code>DEDICATED_SUPPORT</code>,<code>PRIVACY_GLASS</code></td></tr>
+            <tr><td><code>layout_type</code></td><td>varchar(20) NOT NULL</td><td>Enum <code>RoomLayoutType</code>: <code>COMPACT</code> \| <code>STANDARD</code> \| <code>SPACIOUS</code> \| <code>BOARDROOM</code> \| <code>AUDITORIUM</code>. Độc lập <code>capacity</code>. Default write: <code>STANDARD</code>.</td></tr>
+            <tr><td><code>floor_width_m</code></td><td>decimal(5,2) NOT NULL ≥ 1</td><td>Mét — kích thước sàn 3D. Default write: <code>6.00</code>.</td></tr>
+            <tr><td><code>floor_depth_m</code></td><td>decimal(5,2) NOT NULL ≥ 1</td><td>Mét. Default write: <code>4.50</code>.</td></tr>
+          </tbody>
+        </table></div></div>
+        <div class="note"><code>equipmentCategories</code> / <code>equipmentNames</code> <strong>không</strong> phải cột DB — chỉ JSON RoomDTO, tính từ <code>room_equipment</code> + <code>equipment</code> (<code>status=OK</code>).</div>
+
+        <h3>Room — map JSON (camelCase) ↔ DB / entity</h3>
+        <p class="muted">Jackson: JSON field = Java field. FE đọc/ghi đúng tên cột JSON này. Không dùng snake_case trên API.</p>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead>
+            <tr>
+              <th>JSON (FE↔BE)</th>
+              <th>JSON type</th>
+              <th>Java</th>
+              <th>DB</th>
+              <th>FE gửi khi write?</th>
+              <th>BE trả khi read?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>number (Long)</td><td><code>Long id</code></td><td><code>room.id</code> bigint</td><td>POST: không. PATCH: luôn gửi, = path. BE bind path nếu body thiếu.</td><td>có</td></tr>
+            <tr><td><code>name</code></td><td>string ≤100</td><td><code>String</code></td><td><code>name</code> varchar(100) NOT NULL</td><td>POST/PATCH form: có</td><td>có</td></tr>
+            <tr><td><code>capacity</code></td><td>number int ≥1</td><td><code>Integer</code></td><td><code>capacity</code> integer NOT NULL</td><td>POST/PATCH form: có</td><td>có</td></tr>
+            <tr><td><code>isActive</code></td><td>boolean</td><td><code>Boolean</code></td><td><code>is_active</code> boolean NOT NULL</td><td>POST: FE không gửi (BE default true). PATCH deactivate/activate: chỉ <code>{ isActive }</code></td><td>có (FE cũng chấp nhận alias <code>active</code>)</td></tr>
+            <tr><td><code>pricePerHour</code></td><td>number (BigDecimal 19,2)</td><td><code>BigDecimal</code></td><td><code>price_per_hour</code></td><td>POST/PATCH form: có</td><td>có — FE <code>Number()</code></td></tr>
+            <tr><td><code>isVip</code></td><td>boolean</td><td><code>Boolean</code> default false</td><td><code>is_vip</code></td><td>POST/PATCH form: có</td><td>có</td></tr>
+            <tr><td><code>vipAmenities</code></td><td>string CSV hoặc null</td><td><code>String</code> ≤500</td><td><code>vip_amenities</code></td><td>CSV đúng code: <code>VIDEO_4K</code>,<code>SOUNDPROOF</code>,<code>CATERING</code>,<code>DEDICATED_SUPPORT</code>,<code>PRIVACY_GLASS</code> — không phải chữ tự do “TV, coffee”</td><td>có</td></tr>
+            <tr><td><code>layoutType</code></td><td>string enum</td><td><code>RoomLayoutType</code></td><td><code>layout_type</code> varchar(20): COMPACT\|STANDARD\|SPACIOUS\|BOARDROOM\|AUDITORIUM</td><td>POST/PATCH form: có. Thiếu → BE <code>STANDARD</code></td><td>có. FE fallback <code>STANDARD</code></td></tr>
+            <tr><td><code>floorWidthM</code></td><td>number (BigDecimal 5,2) ≥1</td><td><code>BigDecimal</code></td><td><code>floor_width_m</code></td><td>POST/PATCH form: có. Thiếu → BE <code>6.00</code></td><td>có — FE <code>Number()</code></td></tr>
+            <tr><td><code>floorDepthM</code></td><td>number ≥1</td><td><code>BigDecimal</code></td><td><code>floor_depth_m</code></td><td>POST/PATCH form: có. Thiếu → BE <code>4.50</code></td><td>có</td></tr>
+            <tr><td><code>lockedDepartment</code></td><td><code>null</code> hoặc <code>{ id }</code> lúc gửi; lúc trả <code>{ id, code, name }</code></td><td><code>DepartmentDTO</code></td><td><code>locked_department_id</code> FK nullable</td><td>Không có field <code>lockedDepartmentId</code>. POST/form PATCH: luôn gửi <code>{ id }</code> hoặc <code>null</code> (public/unlock). Status-only PATCH: không gửi field này.</td><td>object hoặc null</td></tr>
+            <tr><td><code>equipmentCategories</code></td><td>string[] enum names</td><td><code>List&lt;EquipmentCategory&gt;</code></td><td>không cột</td><td>không (bỏ qua nếu gửi)</td><td>bắt buộc, [] nếu không có OK</td></tr>
+            <tr><td><code>equipmentNames</code></td><td>string[]</td><td><code>List&lt;String&gt;</code></td><td>không cột</td><td>không (bỏ qua nếu gửi)</td><td>bắt buộc, [] nếu không có OK</td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>equipment — map JSON ↔ DB</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>JSON</th><th>JSON type</th><th>DB / entity</th><th>Ghi chú</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>number</td><td><code>equipment.id</code> bigint</td><td></td></tr>
+            <tr><td><code>name</code></td><td>string ≤100</td><td><code>name</code> varchar(100)</td><td>Label UI / nguồn <code>equipmentNames</code></td></tr>
+            <tr><td><code>category</code></td><td>string</td><td><code>category</code> varchar(20) PROJECTOR\|DISPLAY\|AUDIO\|VC\|MICROPHONE\|OTHER</td><td>Filter + mesh. FE catalog UI không còn option OTHER.</td></tr>
+            <tr><td><code>unitCost</code></td><td>number (19,2)</td><td><code>unit_cost</code> decimal</td><td>FE <code>Number()</code></td></tr>
+            <tr><td><code>isActive</code></td><td>boolean</td><td><code>is_active</code></td><td></td></tr>
+          </tbody>
+        </table></div></div>
+
+        <h3>room_equipment — map JSON ↔ DB</h3>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>JSON</th><th>JSON type</th><th>DB / entity</th><th>Ghi chú</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>number</td><td><code>room_equipment.id</code></td><td></td></tr>
+            <tr><td><code>roomId</code></td><td>number</td><td><code>room_id</code> FK</td><td>JSON phẳng, không nest <code>room: {id}</code></td></tr>
+            <tr><td><code>equipmentId</code></td><td>number</td><td><code>equipment_id</code> FK</td><td>JSON phẳng</td></tr>
+            <tr><td><code>equipmentName</code></td><td>string</td><td>join <code>equipment.name</code></td><td>Không persist trên bảng inventory. BE phải fill.</td></tr>
+            <tr><td><code>category</code></td><td>string enum</td><td>join <code>equipment.category</code></td><td>Không persist trên inventory</td></tr>
+            <tr><td><code>unitCost</code></td><td>number</td><td>join <code>equipment.unit_cost</code></td><td>Không persist trên inventory</td></tr>
+            <tr><td><code>quantity</code></td><td>number int ≥0</td><td><code>quantity</code> integer</td><td></td></tr>
+            <tr><td><code>status</code></td><td>string</td><td><code>status</code> varchar(20) OK\|BROKEN\|RETIRED</td><td></td></tr>
           </tbody>
         </table></div></div>
 
@@ -934,12 +1053,12 @@
             <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
             <tr><td><code>title</code></td><td>varchar(200)</td><td></td></tr>
             <tr><td><code>start_time</code> / <code>end_time</code></td><td>timestamp</td><td>Instant</td></tr>
-            <tr><td><code>status</code></td><td>varchar</td><td>BookingStatus</td></tr>
+            <tr><td><code>status</code></td><td>varchar NOT NULL</td><td>Enum <code>BookingStatus</code>: <code>PENDING</code> \| <code>APPROVED</code> \| <code>CANCELLED</code> \| <code>EXPIRED</code></td></tr>
             <tr><td><code>room_id</code></td><td>bigint FK</td><td></td></tr>
             <tr><td><code>user_id</code></td><td>bigint FK → jhi_user</td><td></td></tr>
             <tr><td><code>price_per_hour</code></td><td>decimal(19,2)</td><td>snapshot</td></tr>
             <tr><td><code>amount</code></td><td>decimal(19,2)</td><td>snapshot total</td></tr>
-            <tr><td><code>payment_status</code></td><td>varchar(20)</td><td>UNPAID | PAID (set on approve)</td></tr>
+            <tr><td><code>payment_status</code></td><td>varchar(20) nullable</td><td>Enum <code>PaymentStatus</code>: <code>UNPAID</code> \| <code>PAID</code>. Null khi booking còn PENDING. Gán <code>UNPAID</code> lúc approve.</td></tr>
             <tr><td><code>approved_by_id</code></td><td>bigint FK → jhi_user</td><td>set on approve</td></tr>
           </tbody>
         </table></div></div>
@@ -959,7 +1078,7 @@
             <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
             <tr><td><code>user_id</code></td><td>FK jhi_user</td><td></td></tr>
             <tr><td><code>requested_department_id</code></td><td>FK department</td><td></td></tr>
-            <tr><td><code>status</code></td><td>varchar(20)</td><td>PENDING | APPROVED | REJECTED</td></tr>
+            <tr><td><code>status</code></td><td>varchar(20) NOT NULL</td><td>Enum <code>DepartmentChangeRequestStatus</code>: <code>PENDING</code> \| <code>APPROVED</code> \| <code>REJECTED</code></td></tr>
             <tr><td><code>reviewed_by_id</code></td><td>FK jhi_user?</td><td></td></tr>
             <tr><td><code>reviewed_date</code></td><td>timestamp?</td><td></td></tr>
             <tr><td>audit</td><td>…</td><td></td></tr>
@@ -972,7 +1091,7 @@
           <tbody>
             <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
             <tr><td><code>user_id</code></td><td>FK jhi_user</td><td></td></tr>
-            <tr><td><code>type</code></td><td>varchar(50)</td><td>NotificationType</td></tr>
+            <tr><td><code>type</code></td><td>varchar(50) NOT NULL</td><td>Enum <code>NotificationType</code>: <code>BOOKING_PENDING</code> \| <code>BOOKING_APPROVED</code> \| <code>BOOKING_REJECTED</code> \| <code>BOOKING_CANCELLED</code> \| <code>BOOKING_EXPIRED</code> \| <code>DEPT_CHANGE_PENDING</code> \| <code>DEPT_CHANGE_APPROVED</code> \| <code>DEPT_CHANGE_REJECTED</code></td></tr>
             <tr><td><code>title</code> / <code>message</code></td><td>varchar</td><td></td></tr>
             <tr><td><code>booking_id</code></td><td>bigint nullable</td><td><strong>polymorphic ref</strong> — booking id OR dept-change-request id; <em>no FK</em></td></tr>
             <tr><td><code>read_date</code></td><td>timestamp?</td><td>null = unread</td></tr>
@@ -985,12 +1104,20 @@
           <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
           <tbody>
             <tr><td><code>id</code></td><td>bigint PK</td><td></td></tr>
-            <tr><td><code>name</code></td><td>varchar(100)</td><td></td></tr>
-            <tr><td><code>category</code></td><td>varchar(20)</td><td>EquipmentCategory</td></tr>
+            <tr><td><code>name</code></td><td>varchar(100)</td><td>Catalog display name (UI labels / <code>equipmentNames</code>)</td></tr>
+            <tr><td><code>category</code></td><td>varchar(20) NOT NULL</td><td>Enum <code>EquipmentCategory</code>: <code>PROJECTOR</code> \| <code>DISPLAY</code> \| <code>AUDIO</code> \| <code>VC</code> \| <code>MICROPHONE</code> \| <code>OTHER</code>. Chỉ dùng filter AND + mesh 3D. Label UI = <code>name</code>, không map enum.</td></tr>
             <tr><td><code>unit_cost</code></td><td>decimal(19,2)</td><td></td></tr>
             <tr><td><code>is_active</code></td><td>boolean</td><td></td></tr>
           </tbody>
         </table></div></div>
+        <div class="note">
+          <strong>Seed catalog (ids):</strong>
+          1 Máy chiếu Full HD (<code>PROJECTOR</code>),
+          2 Màn hình LED 55" (<code>DISPLAY</code>),
+          3 Loa hội nghị (<code>AUDIO</code>),
+          4 Camera họp trực tuyến (<code>VC</code>),
+          5 Micro không dây (<code>MICROPHONE</code>).
+        </div>
 
         <h3>room_equipment</h3>
         <div class="panel"><div class="table-wrap"><table>
@@ -1000,7 +1127,7 @@
             <tr><td><code>room_id</code></td><td>FK room</td><td>UNIQUE(room_id, equipment_id)</td></tr>
             <tr><td><code>equipment_id</code></td><td>FK equipment</td><td></td></tr>
             <tr><td><code>quantity</code></td><td>integer</td><td></td></tr>
-            <tr><td><code>status</code></td><td>varchar(20)</td><td>RoomEquipmentStatus</td></tr>
+            <tr><td><code>status</code></td><td>varchar(20) NOT NULL</td><td>Enum <code>RoomEquipmentStatus</code>: <code>OK</code> \| <code>BROKEN</code> \| <code>RETIRED</code>. Chỉ <code>OK</code> vào filter / <code>equipmentCategories</code> / <code>equipmentNames</code>.</td></tr>
           </tbody>
         </table></div></div>
 
@@ -1013,7 +1140,7 @@
             <tr><td><code>quantity</code></td><td>integer</td><td></td></tr>
             <tr><td><code>unit_cost</code></td><td>decimal(19,2)</td><td></td></tr>
             <tr><td><code>reason</code></td><td>varchar(500)?</td><td></td></tr>
-            <tr><td><code>status</code></td><td>varchar(20)</td><td>PurchaseStatus</td></tr>
+            <tr><td><code>status</code></td><td>varchar(20) NOT NULL</td><td>Enum <code>PurchaseStatus</code>: <code>PENDING</code> \| <code>APPROVED</code> \| <code>REJECTED</code> \| <code>FULFILLED</code></td></tr>
             <tr><td><code>requested_by_id</code></td><td>FK jhi_user</td><td></td></tr>
             <tr><td><code>approved_by_id</code></td><td>FK jhi_user?</td><td></td></tr>
             <tr><td><code>fulfilled_at</code></td><td>timestamp?</td><td></td></tr>
@@ -1021,31 +1148,19 @@
           </tbody>
         </table></div></div>
 
-        <h3>Enums</h3>
-        <div class="panel"><div class="table-wrap"><table>
-          <thead><tr><th>Enum</th><th>Values</th></tr></thead>
-          <tbody>
-            <tr><td>BookingStatus</td><td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">CANCELLED</span><span class="pill">EXPIRED</span></div></td></tr>
-            <tr><td>PaymentStatus</td><td><div class="pill-row"><span class="pill">UNPAID</span><span class="pill">PAID</span></div></td></tr>
-            <tr><td>EquipmentCategory</td><td><div class="pill-row"><span class="pill">PROJECTOR</span><span class="pill">DISPLAY</span><span class="pill">AUDIO</span><span class="pill">VC</span><span class="pill">OTHER</span></div></td></tr>
-            <tr><td>RoomEquipmentStatus</td><td><div class="pill-row"><span class="pill">OK</span><span class="pill">BROKEN</span><span class="pill">RETIRED</span></div></td></tr>
-            <tr><td>PurchaseStatus</td><td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">REJECTED</span><span class="pill">FULFILLED</span></div></td></tr>
-            <tr><td>NotificationType</td><td><div class="pill-row"><span class="pill">BOOKING_PENDING</span><span class="pill">BOOKING_APPROVED</span><span class="pill">BOOKING_REJECTED</span><span class="pill">BOOKING_CANCELLED</span><span class="pill">BOOKING_EXPIRED</span><span class="pill">DEPT_CHANGE_PENDING</span><span class="pill">DEPT_CHANGE_APPROVED</span><span class="pill">DEPT_CHANGE_REJECTED</span></div></td></tr>
-            <tr><td>DepartmentChangeRequestStatus</td><td><div class="pill-row"><span class="pill">PENDING</span><span class="pill">APPROVED</span><span class="pill">REJECTED</span></div></td></tr>
-          </tbody>
-        </table></div></div>
-
         <h3>Seeds (summary)</h3>
         <div class="panel"><div class="panel-bd muted">
           Users: admin / manager / staff / user @company.com — password <code>123456</code>.
           Departments: IT, HR, SALES. Demo rooms/bookings via reseed changelog.
-          Equipment catalog seeded (projector/display/audio/…).
+          Equipment catalog + <code>room_equipment</code> seed (Coda AV, VIP full set, Zeta mics, Lambda mixed OK/broken, …).
+          Room layout seed: capacity ≠ floor size (e.g. Coda 8 chỗ SPACIOUS 8×6; Zeta 4 chỗ COMPACT 4×3; Lambda 24 chỗ BOARDROOM 10×5; Omega AUDITORIUM 14×10).
+          Dashboard: filter by <code>equipmentCategory</code> (AND); timeline/Select show <code>equipmentNames</code> (+ layout/density); room name / Admin “Xem 3D” opens procedural R3F viewer.
         </div></div>
       </section>
 
       <section class="section" id="sec-apis" aria-labelledby="h-apis" hidden>
         <h2 id="h-apis">API catalog</h2>
-        <p class="lead">Click a row for request / response. Paths always include <code>/api</code>.</p>
+        <p class="lead">Click một dòng: cột trái = FE gửi (query/body), cột phải = BE trả (status + JSON). Ghi chú đặc biệt và việc BE phải làm nằm dưới.</p>
         <div class="toolbar" role="search">
           <label id="roleFilterLabel">Role</label>
           <div class="seg" role="group" aria-labelledby="roleFilterLabel">
@@ -1280,11 +1395,12 @@ const APIS = [
     "path": "/api/rooms",
     "role": "USER+",
     "domain": "Rooms",
-    "query": "q?, active?, vip?, page?, size?, sort?",
+    "query": "q?, active?, vip?, equipmentCategory? (repeat, AND), page?, size?, sort?",
     "bodySummary": "—",
-    "request": "GET /api/rooms?page=0&size=20&sort=name,asc&active=true&vip=false",
-    "response": "Spring Page<RoomDTO> — { id, name, capacity, isActive, isVip, vipAmenities, pricePerHour, lockedDepartment }",
-    "notes": "Non-admin: active-only + dept visibility (public OR locked to own dept)."
+    "request": "Query (không body):\nGET /api/rooms?page=0&size=20&sort=name,asc&active=true&vip=false&q=coda&equipmentCategory=PROJECTOR&equipmentCategory=DISPLAY\n\nQuery params FE được gửi:\n  page, size, sort — Spring Pageable\n  q — string, optional, search name\n  active — boolean, optional (USER không active=false: BE vẫn chỉ trả phòng active)\n  vip — boolean, optional\n  equipmentCategory — lặp, giá trị enum EquipmentCategory, AND",
+    "response": "HTTP 200. Body Spring Page (không phải array trần):\n{\n  \"content\": [\n    {\n      \"id\": 1,\n      \"name\": \"Coda\",\n      \"capacity\": 8,\n      \"isActive\": true,\n      \"isVip\": false,\n      \"vipAmenities\": null,\n      \"layoutType\": \"SPACIOUS\",\n      \"floorWidthM\": 8.00,\n      \"floorDepthM\": 6.00,\n      \"pricePerHour\": 150000,\n      \"lockedDepartment\": null,\n      \"equipmentCategories\": [\"PROJECTOR\", \"DISPLAY\"],\n      \"equipmentNames\": [\"Máy chiếu Full HD\", \"Màn hình LED 55\\\"\"]\n    }\n  ],\n  \"number\": 0,\n  \"size\": 20,\n  \"totalElements\": 28,\n  \"totalPages\": 2\n}",
+    "notes": "Đặc biệt: equipmentCategory trên query = filter AND theo category OK. equipmentCategories trên response = distinct category OK (FE dùng AND filter). equipmentNames = distinct catalog name OK (FE hiện tag/Select). Không hiện label từ enum (MICROPHONE ≠ bỏ; OTHER ≠ “Khác” trên UI).",
+    "beMust": "Enrich cả hai array trên mọi phần tử content. Filter AND đúng từng equipmentCategory. USER: chỉ phòng active + public hoặc locked đúng department của user."
   },
   {
     "id": "get-room",
@@ -1294,9 +1410,10 @@ const APIS = [
     "domain": "Rooms",
     "query": "—",
     "bodySummary": "—",
-    "request": "(no body)",
-    "response": "RoomDTO | 404",
-    "notes": ""
+    "request": "Không body. Path: GET /api/rooms/1\nHeader: Authorization Bearer <jwt>",
+    "response": "HTTP 200 một RoomDTO (không bọc Page):\n{\n  \"id\": 1,\n  \"name\": \"Coda\",\n  \"capacity\": 8,\n  \"isActive\": true,\n  \"isVip\": false,\n  \"vipAmenities\": null,\n  \"layoutType\": \"SPACIOUS\",\n  \"floorWidthM\": 8.00,\n  \"floorDepthM\": 6.00,\n  \"pricePerHour\": 150000,\n  \"lockedDepartment\": null,\n  \"equipmentCategories\": [\"PROJECTOR\"],\n  \"equipmentNames\": [\"Máy chiếu Full HD\"]\n}\nHTTP 404 nếu không tồn tại hoặc USER không được thấy phòng.",
+    "notes": "Cùng enrichment list. FE 3D/admin vẫn gọi thêm GET /rooms/{id}/equipment cho qty/status.",
+    "beMust": "404 khi phòng không visible với caller. Luôn enrich hai array."
   },
   {
     "id": "post-room",
@@ -1305,10 +1422,11 @@ const APIS = [
     "role": "MANAGER+",
     "domain": "Rooms",
     "query": "—",
-    "bodySummary": "{ name, capacity, isActive, isVip, vipAmenities?, pricePerHour, lockedDepartment? }",
-    "request": "{\n  \"name\": \"Meeting A\",\n  \"capacity\": 10,\n  \"isActive\": true,\n  \"isVip\": false,\n  \"pricePerHour\": 100000,\n  \"lockedDepartment\": null\n}",
-    "response": "201 RoomDTO",
-    "notes": "Alias also /api/admin/rooms. error.idexists"
+    "bodySummary": "{ name, capacity, isActive, isVip, vipAmenities?, layoutType?, floorWidthM?, floorDepthM?, pricePerHour, lockedDepartment? }",
+    "request": "{\n  \"name\": \"Meeting A\",\n  \"capacity\": 10,\n  \"isActive\": true,\n  \"isVip\": false,\n  \"vipAmenities\": null,\n  \"layoutType\": \"STANDARD\",\n  \"floorWidthM\": 6.5,\n  \"floorDepthM\": 5.0,\n  \"pricePerHour\": 100000,\n  \"lockedDepartment\": null\n}\nKhông gửi id. Không gửi equipmentCategories / equipmentNames (nếu gửi, BE bỏ qua, không persist).",
+    "response": "HTTP 201 + Location /api/rooms/{id}. Body RoomDTO đã persist + enrichment (hai array có thể [] nếu chưa gắn inventory):\n{\n  \"id\": 99,\n  \"name\": \"Meeting A\",\n  \"capacity\": 10,\n  \"isActive\": true,\n  \"isVip\": false,\n  \"layoutType\": \"STANDARD\",\n  \"floorWidthM\": 6.5,\n  \"floorDepthM\": 5.0,\n  \"pricePerHour\": 100000,\n  \"lockedDepartment\": null,\n  \"equipmentCategories\": [],\n  \"equipmentNames\": []\n}",
+    "notes": "Alias POST /api/admin/rooms. error.idexists nếu body có id. layout/floor optional — thiếu thì default STANDARD / 6.00 / 4.50.",
+    "beMust": "applyDefaults layout/floor. Response phải enrich. Không lưu equipmentNames vào bảng room."
   },
   {
     "id": "put-room",
@@ -1317,10 +1435,11 @@ const APIS = [
     "role": "MANAGER+",
     "domain": "Rooms",
     "query": "—",
-    "bodySummary": "{ id, name, capacity, isActive, isVip, pricePerHour, lockedDepartment? }",
-    "request": "{\n  \"id\": 1,\n  \"name\": \"Meeting A\",\n  \"capacity\": 12,\n  \"isActive\": true,\n  \"isVip\": true,\n  \"vipAmenities\": \"TV, coffee\",\n  \"pricePerHour\": 120000,\n  \"lockedDepartment\": { \"id\": 1 }\n}",
-    "response": "RoomDTO",
-    "notes": "Alias /api/admin/rooms/{id}"
+    "bodySummary": "{ id, name, capacity, isActive, isVip, layoutType?, floorWidthM?, floorDepthM?, pricePerHour, lockedDepartment? }",
+    "request": "{\n  \"id\": 1,\n  \"name\": \"Meeting A\",\n  \"capacity\": 12,\n  \"isActive\": true,\n  \"isVip\": true,\n  \"vipAmenities\": \"VIDEO_4K,SOUNDPROOF\",\n  \"layoutType\": \"SPACIOUS\",\n  \"floorWidthM\": 9.0,\n  \"floorDepthM\": 6.5,\n  \"pricePerHour\": 120000,\n  \"lockedDepartment\": { \"id\": 1 }\n}\nPath id phải = body.id. FE hiện không gọi PUT — chỉ PATCH.",
+    "response": "HTTP 200 RoomDTO (enrich như GET). lockedDepartment trên response là object { id, code, name } nếu lock.",
+    "notes": "Alias PUT /api/admin/rooms/{id}.",
+    "beMust": "id path = body.id. Enrich response. Bỏ qua equipmentNames/categories nếu FE gửi."
   },
   {
     "id": "patch-room",
@@ -1330,9 +1449,10 @@ const APIS = [
     "domain": "Rooms",
     "query": "—",
     "bodySummary": "{ id, …partial }",
-    "request": "{\n  \"id\": 1,\n  \"isActive\": false\n}",
-    "response": "RoomDTO",
-    "notes": "Soft deactivate. error.hasbookings if PENDING/APPROVED future bookings remain."
+    "request": "FE PATCH — luôn có id (= path).\nDeactivate:\n{ \"id\": 1, \"isActive\": false }\nForm (MANAGER):\n{\n  \"id\": 1,\n  \"name\": \"Meeting A\",\n  \"capacity\": 12,\n  \"isActive\": true,\n  \"isVip\": true,\n  \"vipAmenities\": \"VIDEO_4K,SOUNDPROOF\",\n  \"layoutType\": \"SPACIOUS\",\n  \"floorWidthM\": 9.0,\n  \"floorDepthM\": 6.5,\n  \"pricePerHour\": 120000,\n  \"lockedDepartment\": { \"id\": 1 }\n}\nPublic / unlock: \"lockedDepartment\": null (form luôn gửi key này).",
+    "response": "HTTP 200 RoomDTO (enrich).",
+    "notes": "FE chỉ PATCH /api/rooms/{id} (không PUT). error.hasbookings khi tắt phòng còn PENDING/APPROVED.",
+    "beMust": "bindPathId. Form (name != null): resolveLockedDepartment kể cả JSON null. Status-only: không đổi lock."
   },
   {
     "id": "del-room",
@@ -1714,9 +1834,10 @@ const APIS = [
     "domain": "RoomEquipment",
     "query": "—",
     "bodySummary": "—",
-    "request": "(no body)",
-    "response": "RoomEquipmentDTO[] — { id, roomId, equipment, quantity, status }",
-    "notes": ""
+    "request": "Không query, không body. GET /api/rooms/1/equipment\nHeader: Bearer.",
+    "response": "HTTP 200 JSON array (không Page):\n[\n  {\n    \"id\": 10,\n    \"roomId\": 1,\n    \"equipmentId\": 5,\n    \"equipmentName\": \"Micro không dây\",\n    \"category\": \"MICROPHONE\",\n    \"unitCost\": 2500000,\n    \"quantity\": 2,\n    \"status\": \"OK\"\n  },\n  {\n    \"id\": 11,\n    \"roomId\": 1,\n    \"equipmentId\": 1,\n    \"equipmentName\": \"Máy chiếu Full HD\",\n    \"category\": \"PROJECTOR\",\n    \"unitCost\": 15000000,\n    \"quantity\": 1,\n    \"status\": \"BROKEN\"\n  }\n]\nPhòng không tồn tại / không visible → 404 (không trả []).",
+    "notes": "Đặc biệt: gồm cả BROKEN/RETIRED. FE 3D dùng equipmentName + category + quantity + status. List RoomDTO không thay endpoint này.",
+    "beMust": "Trả đủ dòng inventory. Mỗi phần tử phải có equipmentName từ catalog, không chỉ category."
   },
   {
     "id": "put-room-eq",
@@ -1913,7 +2034,7 @@ const APIS = [
       function matchesFilter(api) {
         if (roleFilter !== "all" && api.role !== roleFilter) return false;
         if (!searchQ) return true;
-        const hay = `${api.method} ${api.path} ${api.domain} ${api.query} ${api.bodySummary} ${api.notes || ""}`.toLowerCase();
+        const hay = `${api.method} ${api.path} ${api.domain} ${api.query} ${api.bodySummary} ${api.notes || ""} ${api.beMust || ""}`.toLowerCase();
         return hay.includes(searchQ);
       }
 
@@ -1924,7 +2045,10 @@ const APIS = [
         apiBody.innerHTML = list.map((api) => {
           const open = openApiId === api.id;
           const notes = api.notes
-            ? `<div class="note" style="margin-top:0.75rem"><strong>Notes:</strong> ${escapeHtml(api.notes)}</div>`
+            ? `<div class="note" style="margin-top:0.75rem"><strong>Ghi chú API đặc biệt:</strong> ${escapeHtml(api.notes)}</div>`
+            : "";
+          const beMust = api.beMust
+            ? `<div class="be-must"><strong>Backend phải:</strong> ${escapeHtml(api.beMust)}</div>`
             : "";
           return `
             <tr class="api-row${open ? " is-open" : ""}" data-api-id="${api.id}" tabindex="0" role="button" aria-expanded="${open}">
@@ -1940,20 +2064,21 @@ const APIS = [
                 <div class="detail-grid">
                   <div>
                     <div class="muted" style="margin-bottom:0.35rem;display:flex;justify-content:space-between;align-items:center">
-                      <span>Request</span>
+                      <span>FE gửi (query / body)</span>
                       <button type="button" class="copy-btn" data-copy="${encodeURIComponent(api.request)}">Copy</button>
                     </div>
                     <pre>${escapeHtml(api.request)}</pre>
                   </div>
                   <div>
                     <div class="muted" style="margin-bottom:0.35rem;display:flex;justify-content:space-between;align-items:center">
-                      <span>Response</span>
+                      <span>BE trả (HTTP + JSON)</span>
                       <button type="button" class="copy-btn" data-copy="${encodeURIComponent(api.response)}">Copy</button>
                     </div>
                     <pre>${escapeHtml(api.response)}</pre>
                   </div>
                 </div>
                 ${notes}
+                ${beMust}
               </td>
             </tr>`;
         }).join("");

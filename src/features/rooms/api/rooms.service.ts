@@ -9,6 +9,7 @@ import {
 import type {
   CreateRoomPayload,
   Room,
+  RoomLayoutType,
   UpdateRoomPayload,
 } from "@/features/rooms/api/rooms.types";
 import type { Department } from "@/lib/types/department";
@@ -23,6 +24,11 @@ interface BackendRoom {
   pricePerHour?: number;
   isVip?: boolean;
   vipAmenities?: string | null;
+  layoutType?: RoomLayoutType;
+  floorWidthM?: number | string;
+  floorDepthM?: number | string;
+  equipmentCategories?: string[];
+  equipmentNames?: string[];
 }
 
 export interface GetRoomsOptions extends PageParams {
@@ -32,6 +38,8 @@ export interface GetRoomsOptions extends PageParams {
   active?: boolean;
   /** Filter by VIP flag; omit for all */
   vip?: boolean;
+  /** AND filter: room must have OK inventory for each category */
+  equipmentCategory?: string[];
   signal?: AbortSignal;
 }
 
@@ -45,6 +53,13 @@ function toRoom(room: BackendRoom): Room {
     pricePerHour: Number(room.pricePerHour ?? 0),
     isVip: Boolean(room.isVip),
     vipAmenities: room.vipAmenities ?? null,
+    layoutType: room.layoutType ?? "STANDARD",
+    floorWidthM: room.floorWidthM != null ? Number(room.floorWidthM) : undefined,
+    floorDepthM: room.floorDepthM != null ? Number(room.floorDepthM) : undefined,
+    equipmentCategories: Array.isArray(room.equipmentCategories)
+      ? room.equipmentCategories
+      : [],
+    equipmentNames: Array.isArray(room.equipmentNames) ? room.equipmentNames : [],
   };
 }
 
@@ -53,6 +68,9 @@ function buildQueryParams(options: Omit<GetRoomsOptions, "signal">) {
   if (options.q?.trim()) params.q = options.q.trim();
   if (options.active !== undefined) params.active = options.active;
   if (options.vip !== undefined) params.vip = options.vip;
+  if (options.equipmentCategory && options.equipmentCategory.length > 0) {
+    params.equipmentCategory = options.equipmentCategory;
+  }
   if (options.page != null) params.page = options.page;
   if (options.size != null) params.size = options.size;
   if (options.sort) params.sort = options.sort;
@@ -81,7 +99,7 @@ export async function getRoomsPage(
 /** Full list — BE returns a page; request a large size for admin/schedule tables. */
 export async function getRooms(
   signal?: AbortSignal,
-  options?: Pick<GetRoomsOptions, "active" | "q">,
+  options?: Pick<GetRoomsOptions, "active" | "q" | "equipmentCategory" | "vip">,
 ): Promise<Room[]> {
   const result = await getRoomsPage({
     signal,
@@ -92,21 +110,26 @@ export async function getRooms(
   return result.items;
 }
 
+function lockedDepartmentJson(lockedDepartmentId?: number | null): { id: number } | null {
+  if (lockedDepartmentId == null) return null;
+  return { id: lockedDepartmentId };
+}
+
 /** Remote Swagger: POST /api/rooms only (no /admin/rooms). isActive defaulted by BE. */
 export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
   const body: Record<string, unknown> = {
     name: payload.name,
     capacity: payload.capacity,
     pricePerHour: payload.pricePerHour,
+    lockedDepartment: lockedDepartmentJson(payload.lockedDepartmentId),
   };
   if (payload.isVip !== undefined) body.isVip = payload.isVip;
   if (payload.vipAmenities !== undefined) {
     body.vipAmenities = payload.vipAmenities;
   }
-  // Omit until remote BE documents lockedDepartment on CreateRoomRequest.
-  if (payload.lockedDepartmentId != null) {
-    body.lockedDepartment = { id: payload.lockedDepartmentId };
-  }
+  if (payload.layoutType !== undefined) body.layoutType = payload.layoutType;
+  if (payload.floorWidthM !== undefined) body.floorWidthM = payload.floorWidthM;
+  if (payload.floorDepthM !== undefined) body.floorDepthM = payload.floorDepthM;
   try {
     const { data } = await apiClient.post<BackendRoom>("/rooms", body);
     return toRoom(data);
@@ -115,7 +138,7 @@ export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
   }
 }
 
-/** Remote Swagger: PATCH /api/rooms/{id} only (no /admin/rooms). */
+/** PATCH /api/rooms/{id} — body always includes `id` (same as path). */
 export async function updateRoom(payload: UpdateRoomPayload): Promise<Room> {
   const isStatusOnly =
     payload.isActive !== undefined &&
@@ -124,22 +147,26 @@ export async function updateRoom(payload: UpdateRoomPayload): Promise<Room> {
     payload.lockedDepartmentId === undefined &&
     payload.pricePerHour === undefined &&
     payload.isVip === undefined &&
-    payload.vipAmenities === undefined;
+    payload.vipAmenities === undefined &&
+    payload.layoutType === undefined &&
+    payload.floorWidthM === undefined &&
+    payload.floorDepthM === undefined;
 
   const body: Record<string, unknown> = isStatusOnly
-    ? { isActive: payload.isActive }
+    ? { id: payload.id, isActive: payload.isActive }
     : {
+        id: payload.id,
         name: payload.name,
         capacity: payload.capacity,
         isActive: payload.isActive,
         pricePerHour: payload.pricePerHour,
         isVip: payload.isVip,
         vipAmenities: payload.vipAmenities,
+        layoutType: payload.layoutType,
+        floorWidthM: payload.floorWidthM,
+        floorDepthM: payload.floorDepthM,
+        lockedDepartment: lockedDepartmentJson(payload.lockedDepartmentId),
       };
-  // Omit null — remote currently has no lockedDepartment field (awaiting BE).
-  if (!isStatusOnly && payload.lockedDepartmentId != null) {
-    body.lockedDepartment = { id: payload.lockedDepartmentId };
-  }
 
   try {
     const { data } = await apiClient.patch<BackendRoom>(

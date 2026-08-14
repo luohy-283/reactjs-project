@@ -23,12 +23,21 @@ import { SearchInput } from "@/components/ui/search/SearchInput";
 import { NoSearchResult } from "@/components/ui/empty/NoSearchResult";
 import { useToast } from "@/components/ui/feedback/useFeedback";
 import { RoomDayTimeline } from "@/app/components/RoomDayTimeline";
+import { Room3DDialog } from "@/app/components/Room3DDialog";
+import type { Room } from "@/features/rooms/api/rooms.types";
+import { EQUIPMENT_CATEGORIES } from "@/features/equipment/api/equipment.types";
+import type { EquipmentCategory } from "@/features/equipment/api/equipment.types";
 
 import { createBooking } from "@/features/bookings/api/bookings.service";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useRoomSchedule } from "@/app/hooks/use-room-schedule";
 import { estimateBookingAmount, formatVnd } from "@/lib/money";
 import { toApiDateTime } from "@/lib/datetime";
+import {
+  computeDensityLabel,
+  formatRoomEquipment,
+  layoutTypeLabel,
+} from "@/lib/room-layout";
 
 /** App-layer route: composes auth + rooms + bookings (no cross-feature imports). */
 export default function DashboardRoute() {
@@ -36,7 +45,13 @@ export default function DashboardRoute() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const dateStr = selectedDate.format("YYYY-MM-DD");
-  const { rooms, bookings, error, isLoading, refetch } = useRoomSchedule(dateStr);
+  const [equipmentFilter, setEquipmentFilter] = useState<EquipmentCategory[]>(
+    [],
+  );
+  const { rooms, bookings, error, isLoading, refetch } = useRoomSchedule(
+    dateStr,
+    { equipmentCategory: equipmentFilter },
+  );
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +62,7 @@ export default function DashboardRoute() {
     endTime: Dayjs;
     title: string;
   }>();
+  const [room3d, setRoom3d] = useState<Room | null>(null);
 
   const watchedRoomId = Form.useWatch("roomId", form);
   const watchedStart = Form.useWatch("startTime", form);
@@ -169,15 +185,33 @@ export default function DashboardRoute() {
   const resetFilters = () => {
     setSelectedDate(dayjs());
     setSearch("");
+    setEquipmentFilter([]);
   };
 
   const searchMiss =
-    Boolean(search.trim()) &&
+    (Boolean(search.trim()) || equipmentFilter.length > 0) &&
     !isLoading &&
-    rooms.length > 0 &&
     filteredRooms.length === 0;
 
+  const roomSelectOptions = filteredRooms.map((room) => {
+    const density = computeDensityLabel(
+      room.floorWidthM,
+      room.floorDepthM,
+      room.capacity,
+    );
+    const layout = layoutTypeLabel(room.layoutType);
+    const eq = formatRoomEquipment(
+      room.equipmentNames,
+      room.equipmentCategories,
+    );
+    return {
+      value: room.id,
+      label: `${room.name} · ${room.capacity} chỗ · ${layout}/${density} · ${eq} · ${formatVnd(room.pricePerHour)}/giờ`,
+    };
+  });
+
   return (
+    <>
     <PageLayout>
       <PageHeader
         title="Lịch phòng họp"
@@ -207,6 +241,22 @@ export default function DashboardRoute() {
             onChange={setSearch}
             placeholder="Tìm theo phòng, lịch đặt…"
           />
+          <Space direction="vertical" size={4} style={{ minWidth: 260 }}>
+            <span>Thiết bị</span>
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="Chọn thiết bị…"
+              value={equipmentFilter}
+              onChange={(v) => setEquipmentFilter(v)}
+              options={EQUIPMENT_CATEGORIES.map((c) => ({
+                value: c.value,
+                label: c.label,
+              }))}
+              style={{ width: "100%", minWidth: 240 }}
+              maxTagCount="responsive"
+            />
+          </Space>
         </SearchForm>
       </PageHeader>
 
@@ -227,6 +277,7 @@ export default function DashboardRoute() {
             bookings={filteredBookings}
             loading={isLoading}
             onEmptySlotClick={(slot) => openBookingModal(slot)}
+            onRoomView3d={setRoom3d}
           />
         )}
       </PageContent>
@@ -249,10 +300,9 @@ export default function DashboardRoute() {
           >
             <Select
               placeholder="Chọn phòng"
-              options={rooms.map((room) => ({
-                value: room.id,
-                label: `${room.name} (${room.capacity} người) — ${formatVnd(room.pricePerHour)}/giờ`,
-              }))}
+              options={roomSelectOptions}
+              showSearch
+              optionFilterProp="label"
             />
           </Form.Item>
 
@@ -332,5 +382,11 @@ export default function DashboardRoute() {
         </Form>
       </CreateDialog>
     </PageLayout>
+    <Room3DDialog
+      open={room3d != null}
+      room={room3d}
+      onClose={() => setRoom3d(null)}
+    />
+    </>
   );
 }

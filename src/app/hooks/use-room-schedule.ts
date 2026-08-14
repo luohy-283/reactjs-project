@@ -5,8 +5,16 @@ import { isAbortError } from "@/lib/api-error";
 import type { Booking } from "@/lib/types/booking";
 import type { Room } from "@/features/rooms/api/rooms.types";
 
+type UseRoomScheduleOptions = {
+  equipmentCategory?: string[];
+};
+
 /** Composes rooms + bookings APIs at the app layer (no cross-feature imports). */
-export function useRoomSchedule(date: string) {
+export function useRoomSchedule(
+  date: string,
+  options: UseRoomScheduleOptions = {},
+) {
+  const equipmentKey = (options.equipmentCategory ?? []).slice().sort().join(",");
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<unknown>(null);
@@ -20,12 +28,16 @@ export function useRoomSchedule(date: string) {
 
     setIsLoading(true);
     setError(null);
-    // Drop prior-day bookings immediately so the timeline never re-projects
-    // stale events onto the newly selected date while fetch is in flight.
     setBookings([]);
+    const equipmentCategory = equipmentKey
+      ? equipmentKey.split(",")
+      : undefined;
     try {
       const [roomsData, bookingsData] = await Promise.all([
-        getRooms(controller.signal, { active: true }),
+        getRooms(controller.signal, {
+          active: true,
+          equipmentCategory,
+        }),
         getBookings(date, controller.signal),
       ]);
       if (!controller.signal.aborted) {
@@ -37,7 +49,7 @@ export function useRoomSchedule(date: string) {
     } finally {
       if (!controller.signal.aborted) setIsLoading(false);
     }
-  }, [date]);
+  }, [date, equipmentKey]);
 
   useEffect(() => {
     void runFetch();

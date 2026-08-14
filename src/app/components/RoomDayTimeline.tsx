@@ -1,18 +1,25 @@
 import { useMemo, useState } from "react";
-import { Card, Modal, Space, Tag, Tooltip, Typography, theme } from "antd";
+import { Button, Card, Modal, Space, Tag, Tooltip, Typography, theme } from "antd";
 import dayjs from "dayjs";
 import type { Booking } from "@/lib/types/booking";
 import type { Room } from "@/features/rooms/api/rooms.types";
 import { HEADER_HEIGHT } from "@/components/layouts/Topbar";
 import { formatVnd } from "@/lib/money";
 import { NoData } from "@/components/ui/empty/NoData";
+import {
+  computeDensityLabel,
+  equipmentCategoryLabel,
+  formatFloorSize,
+  layoutTypeLabel,
+} from "@/lib/room-layout";
 
 const DAY_START_HOUR = 7;
 const DAY_END_HOUR = 22;
 const TOTAL_MINUTES = (DAY_END_HOUR - DAY_START_HOUR) * 60;
 const HOUR_WIDTH = 72;
-const ROW_HEIGHT = 56;
-const LABEL_WIDTH = 160;
+const ROW_MIN_HEIGHT = 64;
+const LABEL_WIDTH = 220;
+const MAX_VISIBLE_EQUIPMENT_TAGS = 2;
 /** Topbar + page chrome (margins, header, filters, legend) above/below the grid. */
 const VIEWPORT_CHROME = 260;
 
@@ -28,6 +35,7 @@ type RoomDayTimelineProps = {
   bookings: Booking[];
   loading?: boolean;
   onEmptySlotClick?: (slot: TimelineSlotClick) => void;
+  onRoomView3d?: (room: Room) => void;
 };
 
 function minutesFromDayStart(iso: string, date: string): number {
@@ -49,6 +57,7 @@ export function RoomDayTimeline({
   bookings,
   loading,
   onEmptySlotClick,
+  onRoomView3d,
 }: RoomDayTimelineProps) {
   const { token } = theme.useToken();
   const [detail, setDetail] = useState<Booking | null>(null);
@@ -81,6 +90,7 @@ export function RoomDayTimeline({
             position: "relative",
             border: `1px solid ${token.colorBorderSecondary}`,
             borderRadius: token.borderRadiusLG,
+            scrollbarGutter: "stable",
           }}
         >
           <div
@@ -133,6 +143,39 @@ export function RoomDayTimeline({
 
           {rooms.map((room) => {
             const roomBookings = bookings.filter((b) => b.roomId === room.id);
+            const density = computeDensityLabel(
+              room.floorWidthM,
+              room.floorDepthM,
+              room.capacity,
+            );
+            const floor = formatFloorSize(room.floorWidthM, room.floorDepthM);
+            const categories = room.equipmentCategories ?? [];
+            const equipmentLabels =
+              (room.equipmentNames?.length ?? 0) > 0
+                ? (room.equipmentNames ?? [])
+                : categories.map(equipmentCategoryLabel);
+            const tooltipTitle = (
+              <div>
+                <div>{room.name}</div>
+                <div>
+                  {room.capacity} chỗ · {layoutTypeLabel(room.layoutType)} ·{" "}
+                  {density}
+                  {floor ? ` · ${floor}` : ""}
+                </div>
+                <div>
+                  {equipmentLabels.length > 0
+                    ? equipmentLabels.join(", ")
+                    : "Không có thiết bị"}
+                </div>
+                <div>{formatVnd(room.pricePerHour)}/giờ</div>
+              </div>
+            );
+            const visibleEquipment = equipmentLabels.slice(
+              0,
+              MAX_VISIBLE_EQUIPMENT_TAGS,
+            );
+            const hiddenEquipmentCount =
+              equipmentLabels.length - visibleEquipment.length;
             return (
               <div
                 key={room.id}
@@ -142,7 +185,7 @@ export function RoomDayTimeline({
                   width: contentWidth,
                   minWidth: contentWidth,
                   borderTop: `1px solid ${token.colorBorderSecondary}`,
-                  height: ROW_HEIGHT,
+                  minHeight: ROW_MIN_HEIGHT,
                 }}
               >
                 <div
@@ -151,31 +194,111 @@ export function RoomDayTimeline({
                     position: "sticky",
                     left: 0,
                     zIndex: 2,
-                    padding: "8px 8px 8px 12px",
+                    padding: "6px 8px 6px 12px",
                     fontSize: 13,
                     fontWeight: 500,
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
+                    gap: 2,
+                    overflow: "hidden",
                   }}
                 >
-                  <Space size={4} wrap>
-                    <span>{room.name}</span>
-                    {room.isVip ? (
-                      <Tag color="gold" style={{ marginInlineEnd: 0, fontSize: 10, lineHeight: "16px", paddingInline: 4 }}>
-                        VIP
-                      </Tag>
-                    ) : null}
-                  </Space>
-                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                    {room.capacity} người
+                  <Tooltip title={tooltipTitle}>
+                    <Space size={4} wrap={false} style={{ maxWidth: "100%" }}>
+                      {onRoomView3d ? (
+                        <Button
+                          type="link"
+                          size="small"
+                          style={{
+                            padding: 0,
+                            height: "auto",
+                            fontSize: 13,
+                            fontWeight: 500,
+                          }}
+                          onClick={() => onRoomView3d(room)}
+                        >
+                          {room.name}
+                        </Button>
+                      ) : (
+                        <span>{room.name}</span>
+                      )}
+                      {room.isVip ? (
+                        <Tag
+                          color="gold"
+                          style={{
+                            marginInlineEnd: 0,
+                            fontSize: 10,
+                            lineHeight: "16px",
+                            paddingInline: 4,
+                          }}
+                        >
+                          VIP
+                        </Tag>
+                      ) : null}
+                    </Space>
+                  </Tooltip>
+                  <Typography.Text
+                    type="secondary"
+                    style={{
+                      fontSize: 11,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {room.capacity} chỗ · {layoutTypeLabel(room.layoutType)} ·{" "}
+                    {density}
+                    {floor ? ` · ${floor}` : ""}
                   </Typography.Text>
+                  <Space size={2} wrap={false} style={{ maxWidth: "100%" }}>
+                    {equipmentLabels.length === 0 ? (
+                      <Typography.Text type="secondary" style={{ fontSize: 10 }}>
+                        Không có thiết bị
+                      </Typography.Text>
+                    ) : (
+                      <>
+                        {visibleEquipment.map((label) => (
+                          <Tag
+                            key={label}
+                            style={{
+                              marginInlineEnd: 0,
+                              fontSize: 10,
+                              lineHeight: "16px",
+                              paddingInline: 4,
+                            }}
+                          >
+                            {label}
+                          </Tag>
+                        ))}
+                        {hiddenEquipmentCount > 0 ? (
+                          <Tooltip
+                            title={equipmentLabels
+                              .slice(MAX_VISIBLE_EQUIPMENT_TAGS)
+                              .join(", ")}
+                          >
+                            <Tag
+                              style={{
+                                marginInlineEnd: 0,
+                                fontSize: 10,
+                                lineHeight: "16px",
+                                paddingInline: 4,
+                              }}
+                            >
+                              +{hiddenEquipmentCount}
+                            </Tag>
+                          </Tooltip>
+                        ) : null}
+                      </>
+                    )}
+                  </Space>
                 </div>
                 <div
                   style={{
                     position: "relative",
                     width: trackWidth,
                     flexShrink: 0,
+                    minHeight: ROW_MIN_HEIGHT,
                     background: `repeating-linear-gradient(to right, ${token.colorFillQuaternary} 0, ${token.colorFillQuaternary} 1px, transparent 1px, transparent ${HOUR_WIDTH}px)`,
                     cursor: onEmptySlotClick ? "cell" : "default",
                   }}
@@ -231,9 +354,9 @@ export function RoomDayTimeline({
                           style={{
                             position: "absolute",
                             top: 8,
+                            bottom: 8,
                             left,
                             width,
-                            height: ROW_HEIGHT - 16,
                             border: "none",
                             borderRadius: 4,
                             background: statusColor(b.status),
@@ -256,6 +379,8 @@ export function RoomDayTimeline({
               </div>
             );
           })}
+          {/* Reserve space so horizontal scrollbar does not cover the last room row. */}
+          <div style={{ height: 14, width: contentWidth, minWidth: contentWidth }} aria-hidden />
         </div>
         <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: "block" }}>
           Click ô trống để đặt phòng · Vàng = chờ duyệt · Xanh = đã duyệt · Đỏ cam = hết hạn · Xám = đã hủy ·

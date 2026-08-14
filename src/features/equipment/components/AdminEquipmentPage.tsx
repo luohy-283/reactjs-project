@@ -80,6 +80,7 @@ const CATEGORY_LABEL: Record<EquipmentCategory, string> = {
   DISPLAY: "Màn hình",
   AUDIO: "Âm thanh",
   VC: "Họp trực tuyến",
+  MICROPHONE: "Micro không dây",
   OTHER: "Khác",
 };
 
@@ -166,7 +167,7 @@ export default function AdminEquipmentPage() {
     setEditing(null);
     equipmentForm.resetFields();
     equipmentForm.setFieldsValue({
-      category: "OTHER",
+      category: "PROJECTOR",
       unitCost: 0,
     });
     setEquipmentModalOpen(true);
@@ -516,6 +517,7 @@ export default function AdminEquipmentPage() {
               </SearchForm>
             </div>
             <DataTable
+              key="catalog"
               rowKey="id"
               columns={catalogColumns}
               data={equipmentPage.items}
@@ -562,6 +564,7 @@ export default function AdminEquipmentPage() {
               </SearchForm>
             </div>
             <DataTable
+              key="purchases"
               rowKey="id"
               columns={purchaseColumns}
               data={purchasePage.items}

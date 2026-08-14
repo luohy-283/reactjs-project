@@ -449,6 +449,7 @@ export default function AdminBookingsPage() {
             </div>
 
             <DataTable<Booking>
+              key={tab}
               rowKey="id"
               columns={activeColumns}
               data={tableRows}

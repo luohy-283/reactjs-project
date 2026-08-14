@@ -6,6 +6,7 @@ import { DataTable } from "@/components/ui/table/DataTable";
 import { DeleteButton } from "@/components/ui/button/DeleteButton";
 import { DeleteDialog } from "@/components/ui/dialog/DeleteDialog";
 import { EditButton } from "@/components/ui/button/EditButton";
+import { ViewButton } from "@/components/ui/button/ViewButton";
 import { EditDialog } from "@/components/ui/dialog/EditDialog";
 import { FetchError } from "@/components/ui/error/FetchError";
 import { PageContent } from "@/components/ui/page/PageContent";
@@ -23,8 +24,8 @@ import { actionsColumn, defineColumns, sortableColumn } from "@/components/ui/ta
 import { useAppModal, useToast } from "@/components/ui/feedback/useFeedback";
 import { createRoom, updateRoom } from "@/features/rooms/api/rooms.service";
 import { useRoomsPage } from "@/features/rooms/api/rooms.hooks";
-import type { Room } from "@/features/rooms/api/rooms.types";
-import { VIP_AMENITY_OPTIONS } from "@/features/rooms/api/rooms.types";
+import type { Room, RoomLayoutType } from "@/features/rooms/api/rooms.types";
+import { ROOM_LAYOUT_OPTIONS, VIP_AMENITY_OPTIONS } from "@/features/rooms/api/rooms.types";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatVnd } from "@/lib/money";
 import type { Department } from "@/lib/types/department";
@@ -41,6 +42,9 @@ type RoomFormValues = {
   pricePerHour: number;
   isVip?: boolean;
   vipAmenityList?: string[];
+  layoutType?: RoomLayoutType;
+  floorWidthM?: number;
+  floorDepthM?: number;
 };
 
 function amenitiesToCsv(list: string[] | undefined): string | null {
@@ -59,6 +63,7 @@ function csvToAmenities(csv: string | null | undefined): string[] {
 export type AdminRoomsPageProps = {
   departments: Department[];
   departmentsLoading?: boolean;
+  onView3D?: (room: Room) => void;
 };
 
 const ROOM_STATUS_OPTIONS = [
@@ -83,6 +88,7 @@ const ROOM_ACTIVE_COLOR: Record<string, string> = {
 
 export default function AdminRoomsPage({
   departments,
+  onView3D,
 }: AdminRoomsPageProps) {
   const toast = useToast();
   const appModal = useAppModal();
@@ -126,6 +132,9 @@ export default function AdminRoomsPage({
       pricePerHour: 100000,
       isVip: false,
       vipAmenityList: [],
+      layoutType: "STANDARD",
+      floorWidthM: 6.5,
+      floorDepthM: 5,
     });
     setModalOpen(true);
   };
@@ -139,6 +148,9 @@ export default function AdminRoomsPage({
       pricePerHour: room.pricePerHour,
       isVip: Boolean(room.isVip),
       vipAmenityList: csvToAmenities(room.vipAmenities),
+      layoutType: room.layoutType ?? "STANDARD",
+      floorWidthM: room.floorWidthM ?? 6.5,
+      floorDepthM: room.floorDepthM ?? 5,
     });
     setModalOpen(true);
   };
@@ -167,6 +179,9 @@ export default function AdminRoomsPage({
           pricePerHour: values.pricePerHour,
           isVip,
           vipAmenities,
+          layoutType: values.layoutType,
+          floorWidthM: values.floorWidthM,
+          floorDepthM: values.floorDepthM,
         });
         toast.success("Cập nhật phòng thành công");
       } else {
@@ -177,6 +192,9 @@ export default function AdminRoomsPage({
           pricePerHour: values.pricePerHour,
           isVip,
           vipAmenities,
+          layoutType: values.layoutType,
+          floorWidthM: values.floorWidthM,
+          floorDepthM: values.floorDepthM,
         });
         toast.success("Thêm phòng thành công");
       }
@@ -296,6 +314,54 @@ export default function AdminRoomsPage({
       </Form.Item>
 
       <Form.Item
+        label="Kiểu bố cục"
+        name="layoutType"
+        rules={[{ required: true, message: "Chọn kiểu bố cục" }]}
+        tooltip="Độc lập với số chỗ — dùng để mô tả không gian và 3D."
+      >
+        <Select
+          options={ROOM_LAYOUT_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.label,
+          }))}
+          onChange={(value: RoomLayoutType) => {
+            const preset = ROOM_LAYOUT_OPTIONS.find((o) => o.value === value);
+            if (preset) {
+              form.setFieldsValue({
+                floorWidthM: preset.defaultWidth,
+                floorDepthM: preset.defaultDepth,
+              });
+            }
+          }}
+        />
+      </Form.Item>
+
+      <Space size={12} style={{ display: "flex", width: "100%" }} align="start">
+        <Form.Item
+          label="Rộng sàn (m)"
+          name="floorWidthM"
+          rules={[
+            { required: true, message: "Nhập chiều rộng" },
+            { type: "number", min: 1, message: "Tối thiểu 1m" },
+          ]}
+          style={{ flex: 1 }}
+        >
+          <InputNumber min={1} step={0.5} style={{ width: "100%" }} />
+        </Form.Item>
+        <Form.Item
+          label="Sâu sàn (m)"
+          name="floorDepthM"
+          rules={[
+            { required: true, message: "Nhập chiều sâu" },
+            { type: "number", min: 1, message: "Tối thiểu 1m" },
+          ]}
+          style={{ flex: 1 }}
+        >
+          <InputNumber min={1} step={0.5} style={{ width: "100%" }} />
+        </Form.Item>
+      </Space>
+
+      <Form.Item
         label="Khóa theo phòng ban"
         name="lockedDepartmentId"
         tooltip="Công khai: mọi đơn vị đều thấy. Chọn 1 phòng ban: chỉ đơn vị đó (và admin) thấy/đặt."
@@ -379,6 +445,9 @@ export default function AdminRoomsPage({
     }),
     actionsColumn<Room>((_, room) => (
       <TableRowActions>
+        {onView3D ? (
+          <ViewButton onClick={() => onView3D(room)}>Xem 3D</ViewButton>
+        ) : null}
         <EditButton onClick={() => openEditModal(room)} />
         {room.isActive ? (
           <DeleteButton onClick={() => setDeactivateTarget(room)}>

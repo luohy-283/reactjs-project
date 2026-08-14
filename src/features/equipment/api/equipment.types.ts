@@ -3,6 +3,7 @@ export type EquipmentCategory =
   | "DISPLAY"
   | "AUDIO"
   | "VC"
+  | "MICROPHONE"
   | "OTHER";
 
 export type RoomEquipmentStatus = "OK" | "BROKEN" | "RETIRED";
@@ -86,7 +87,7 @@ export const EQUIPMENT_CATEGORIES: {
   { value: "DISPLAY", label: "Màn hình" },
   { value: "AUDIO", label: "Âm thanh" },
   { value: "VC", label: "Họp trực tuyến" },
-  { value: "OTHER", label: "Khác" },
+  { value: "MICROPHONE", label: "Micro không dây" },
 ];
 
 export const PURCHASE_STATUS_OPTIONS: {
